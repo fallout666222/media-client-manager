@@ -10,13 +10,15 @@ interface TimeSheetGridProps {
   mediaTypes: string[];
   timeEntries: Record<string, Record<string, TimeEntry>>;
   onTimeUpdate: (client: string, mediaType: string, hours: number) => void;
+  isReadOnly?: boolean;
 }
 
 export const TimeSheetGrid = ({ 
   clients, 
   mediaTypes, 
   timeEntries,
-  onTimeUpdate 
+  onTimeUpdate,
+  isReadOnly = false
 }: TimeSheetGridProps) => {
   return (
     <div className="overflow-x-auto">
@@ -49,6 +51,7 @@ export const TimeSheetGrid = ({
                       const hours = parseFloat(e.target.value) || 0;
                       onTimeUpdate(client, type, hours);
                     }}
+                    disabled={isReadOnly}
                   />
                 </td>
               ))}

@@ -3,7 +3,7 @@ import { WeekPicker } from '@/components/TimeSheet/WeekPicker';
 import { TimeSheetGrid } from '@/components/TimeSheet/TimeSheetGrid';
 import { Settings } from '@/components/TimeSheet/Settings';
 import { Button } from "@/components/ui/button";
-import { Settings as SettingsIcon, Send } from "lucide-react";
+import { Settings as SettingsIcon, Send, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+
+export type TimeSheetStatus = 'unconfirmed' | 'under-review' | 'accepted' | 'needs-revision';
 
 const DEFAULT_CATEGORIES = [
   'Administrative',
@@ -28,6 +30,7 @@ const TimeSheet = () => {
   const [clients, setClients] = useState([...DEFAULT_CATEGORIES]);
   const [mediaTypes, setMediaTypes] = useState(['TV', 'Radio', 'Print', 'Digital']);
   const [timeEntries, setTimeEntries] = useState<Record<string, Record<string, { hours: number }>>>({});
+  const [status, setStatus] = useState<TimeSheetStatus>('unconfirmed');
   const { toast } = useToast();
 
   const handleTimeUpdate = (client: string, mediaType: string, hours: number) => {
@@ -69,18 +72,32 @@ const TimeSheet = () => {
   };
 
   const handleSubmitForReview = () => {
+    setStatus('under-review');
     toast({
       title: "Timesheet Submitted",
       description: "Your timesheet has been sent for review.",
     });
   };
 
-  const totalHours = Object.values(timeEntries).reduce((clientSum, clientEntries) => {
-    return clientSum + Object.values(clientEntries).reduce((sum, { hours }) => sum + hours, 0);
-  }, 0);
+  const handleExportToExcel = () => {
+    // TODO: Implement Excel export functionality
+    toast({
+      title: "Export Started",
+      description: "Your timesheet is being exported to Excel.",
+    });
+  };
 
-  const expectedHours = 40;
-  const remainingHours = Math.max(0, expectedHours - totalHours);
+  const calculateRemainingHours = () => {
+    const totalHours = Object.values(timeEntries).reduce((clientSum, clientEntries) => {
+      return clientSum + Object.values(clientEntries).reduce((sum, { hours }) => sum + hours, 0);
+    }, 0);
+
+    const workingDays = 5; // TODO: Calculate actual working days
+    const expectedHours = workingDays * 8;
+    return Math.max(0, expectedHours - totalHours);
+  };
+
+  const remainingHours = calculateRemainingHours();
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -108,7 +125,14 @@ const TimeSheet = () => {
               />
             </DialogContent>
           </Dialog>
-          <Button onClick={handleSubmitForReview}>
+          <Button variant="outline" onClick={handleExportToExcel}>
+            <Download className="h-4 w-4 mr-2" />
+            Export to Excel
+          </Button>
+          <Button 
+            onClick={handleSubmitForReview}
+            disabled={status === 'under-review' || status === 'accepted'}
+          >
             <Send className="h-4 w-4 mr-2" />
             Submit for Review
           </Button>
@@ -120,12 +144,17 @@ const TimeSheet = () => {
           currentDate={currentDate}
           onWeekChange={setCurrentDate}
         />
-        <div className="text-sm text-muted-foreground">
-          {remainingHours > 0 ? (
-            <span>Remaining hours this week: {remainingHours}</span>
-          ) : (
-            <span className="text-green-600">All hours logged for this week</span>
-          )}
+        <div className="flex justify-between items-center mt-2">
+          <div className="text-sm text-muted-foreground">
+            {remainingHours > 0 ? (
+              <span>Remaining hours this week: {remainingHours}</span>
+            ) : (
+              <span className="text-green-600">All hours logged for this week</span>
+            )}
+          </div>
+          <div className="text-sm">
+            Status: <span className="font-medium capitalize">{status.replace('-', ' ')}</span>
+          </div>
         </div>
       </div>
 
@@ -134,6 +163,7 @@ const TimeSheet = () => {
         mediaTypes={mediaTypes}
         timeEntries={timeEntries}
         onTimeUpdate={handleTimeUpdate}
+        isReadOnly={status === 'under-review' || status === 'accepted'}
       />
     </div>
   );
