@@ -1,16 +1,13 @@
 import React from 'react';
 import { Input } from "@/components/ui/input";
-
-interface TimeEntry {
-  hours: number;
-}
+import { TimeEntry, TimeSheetStatus } from '@/types/timesheet';
 
 interface TimeSheetGridProps {
   clients: string[];
   mediaTypes: string[];
   timeEntries: Record<string, Record<string, TimeEntry>>;
   onTimeUpdate: (client: string, mediaType: string, hours: number) => void;
-  isReadOnly?: boolean;
+  status: TimeSheetStatus;
 }
 
 export const TimeSheetGrid = ({ 
@@ -18,8 +15,10 @@ export const TimeSheetGrid = ({
   mediaTypes, 
   timeEntries,
   onTimeUpdate,
-  isReadOnly = false
+  status
 }: TimeSheetGridProps) => {
+  const isReadOnly = status === 'under-review' || status === 'accepted';
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse">

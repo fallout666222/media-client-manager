@@ -1,0 +1,12 @@
+export type TimeSheetStatus = 'unconfirmed' | 'under-review' | 'accepted' | 'needs-revision';
+
+export interface TimeEntry {
+  hours: number;
+  status: TimeSheetStatus;
+}
+
+export interface TimeSheetData {
+  [client: string]: {
+    [mediaType: string]: TimeEntry;
+  };
+}

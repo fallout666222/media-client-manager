@@ -2,16 +2,12 @@ import React, { useState } from 'react';
 import { TimeSheetGrid } from '@/components/TimeSheet/TimeSheetGrid';
 import { Settings } from '@/components/TimeSheet/Settings';
 import { WeekPicker } from '@/components/TimeSheet/WeekPicker';
+import { ApprovalActions } from '@/components/TimeSheet/ApprovalActions';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { FileDown, Settings2 } from 'lucide-react';
 import { format } from 'date-fns';
-
-type TimeEntry = {
-  hours: number;
-};
-
-type TimeSheetStatus = 'unconfirmed' | 'under-review' | 'accepted' | 'needs-revision';
+import { TimeEntry, TimeSheetStatus, TimeSheetData } from '@/types/timesheet';
 
 const TimeSheet = () => {
   const [showSettings, setShowSettings] = useState(false);
@@ -26,9 +22,12 @@ const TimeSheet = () => {
     'VACATION'
   ]);
   const [mediaTypes, setMediaTypes] = useState<string[]>(['TV', 'Radio', 'Print', 'Digital']);
-  const [timeEntries, setTimeEntries] = useState<Record<string, Record<string, TimeEntry>>>({});
+  const [timeEntries, setTimeEntries] = useState<TimeSheetData>({});
   const [status, setStatus] = useState<TimeSheetStatus>('unconfirmed');
   const { toast } = useToast();
+
+  // TODO: This should come from authentication context
+  const isManager = true;
 
   const handleTimeUpdate = (client: string, mediaType: string, hours: number) => {
     if (status === 'under-review' || status === 'accepted') {
@@ -44,7 +43,7 @@ const TimeSheet = () => {
       ...prev,
       [client]: {
         ...(prev[client] || {}),
-        [mediaType]: { hours }
+        [mediaType]: { hours, status }
       }
     }));
   };
@@ -56,16 +55,19 @@ const TimeSheet = () => {
       }, 0);
     }, 0);
     
-    // Assuming 40 hours work week
     return 40 - totalHours;
   };
 
   const handleSubmitForReview = () => {
     setStatus('under-review');
-    toast({
-      title: "Timesheet Submitted",
-      description: "Your timesheet has been submitted for review",
-    });
+  };
+
+  const handleApprove = () => {
+    setStatus('accepted');
+  };
+
+  const handleReject = () => {
+    setStatus('needs-revision');
   };
 
   const handleExportToExcel = () => {
@@ -99,7 +101,15 @@ const TimeSheet = () => {
   return (
     <div className="container py-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Timesheet</h1>
+        <div>
+          <h1 className="text-2xl font-bold">Timesheet</h1>
+          <p className="text-sm text-muted-foreground">
+            Status: <span className="font-medium capitalize">{status.replace('-', ' ')}</span>
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Remaining Hours: <span className="font-medium">{calculateRemainingHours()}</span>
+          </p>
+        </div>
         <div className="flex gap-2">
           <Button
             variant="outline"
@@ -136,21 +146,13 @@ const TimeSheet = () => {
             />
             
             <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">
-                  Status: <span className="font-medium capitalize">{status.replace('-', ' ')}</span>
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Remaining Hours: <span className="font-medium">{calculateRemainingHours()}</span>
-                </p>
-              </div>
-              
-              <Button
-                onClick={handleSubmitForReview}
-                disabled={status === 'under-review' || status === 'accepted'}
-              >
-                Submit for Review
-              </Button>
+              <ApprovalActions
+                status={status}
+                isManager={isManager}
+                onSubmitForReview={handleSubmitForReview}
+                onApprove={handleApprove}
+                onReject={handleReject}
+              />
             </div>
 
             <TimeSheetGrid
@@ -158,7 +160,7 @@ const TimeSheet = () => {
               mediaTypes={mediaTypes}
               timeEntries={timeEntries}
               onTimeUpdate={handleTimeUpdate}
-              isReadOnly={status === 'under-review' || status === 'accepted'}
+              status={status}
             />
           </div>
         </>
