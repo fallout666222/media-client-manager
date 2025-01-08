@@ -1,39 +1,45 @@
 import React, { useState } from 'react';
-import { WeekPicker } from '@/components/TimeSheet/WeekPicker';
 import { TimeSheetGrid } from '@/components/TimeSheet/TimeSheetGrid';
 import { Settings } from '@/components/TimeSheet/Settings';
-import { Button } from "@/components/ui/button";
-import { Settings as SettingsIcon, Send, Download } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
+import { WeekPicker } from '@/components/TimeSheet/WeekPicker';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { FileDown, Settings2 } from 'lucide-react';
+import { format } from 'date-fns';
 
-export type TimeSheetStatus = 'unconfirmed' | 'under-review' | 'accepted' | 'needs-revision';
+type TimeEntry = {
+  hours: number;
+};
 
-const DEFAULT_CATEGORIES = [
-  'Administrative',
-  'Education/Training',
-  'General Research',
-  'Network Requests',
-  'New Business',
-  'Sick Leave',
-  'VACATION'
-];
+type TimeSheetStatus = 'unconfirmed' | 'under-review' | 'accepted' | 'needs-revision';
 
 const TimeSheet = () => {
+  const [showSettings, setShowSettings] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [clients, setClients] = useState([...DEFAULT_CATEGORIES]);
-  const [mediaTypes, setMediaTypes] = useState(['TV', 'Radio', 'Print', 'Digital']);
-  const [timeEntries, setTimeEntries] = useState<Record<string, Record<string, { hours: number }>>>({});
+  const [clients, setClients] = useState<string[]>([
+    'Administrative',
+    'Education/Training',
+    'General Research',
+    'Network Requests',
+    'New Business',
+    'Sick Leave',
+    'VACATION'
+  ]);
+  const [mediaTypes, setMediaTypes] = useState<string[]>(['TV', 'Radio', 'Print', 'Digital']);
+  const [timeEntries, setTimeEntries] = useState<Record<string, Record<string, TimeEntry>>>({});
   const [status, setStatus] = useState<TimeSheetStatus>('unconfirmed');
   const { toast } = useToast();
 
   const handleTimeUpdate = (client: string, mediaType: string, hours: number) => {
+    if (status === 'under-review' || status === 'accepted') {
+      toast({
+        title: "Cannot modify timesheet",
+        description: "This timesheet is currently under review or has been accepted",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setTimeEntries(prev => ({
       ...prev,
       [client]: {
@@ -43,128 +49,120 @@ const TimeSheet = () => {
     }));
   };
 
-  const handleAddClient = (client: string) => {
-    if (!clients.includes(client)) {
-      setClients([...clients, client]);
-    }
-  };
-
-  const handleRemoveClient = (client: string) => {
-    if (DEFAULT_CATEGORIES.includes(client)) {
-      toast({
-        title: "Cannot remove default category",
-        description: "This is a system default category and cannot be removed.",
-        variant: "destructive",
-      });
-      return;
-    }
-    setClients(clients.filter(c => c !== client));
-  };
-
-  const handleAddMediaType = (type: string) => {
-    if (!mediaTypes.includes(type)) {
-      setMediaTypes([...mediaTypes, type]);
-    }
-  };
-
-  const handleRemoveMediaType = (type: string) => {
-    setMediaTypes(mediaTypes.filter(t => t !== type));
+  const calculateRemainingHours = () => {
+    const totalHours = Object.values(timeEntries).reduce((clientSum, client) => {
+      return clientSum + Object.values(client).reduce((mediaSum, media) => {
+        return mediaSum + media.hours;
+      }, 0);
+    }, 0);
+    
+    // Assuming 40 hours work week
+    return 40 - totalHours;
   };
 
   const handleSubmitForReview = () => {
     setStatus('under-review');
     toast({
       title: "Timesheet Submitted",
-      description: "Your timesheet has been sent for review.",
+      description: "Your timesheet has been submitted for review",
     });
   };
 
   const handleExportToExcel = () => {
-    // TODO: Implement Excel export functionality
     toast({
       title: "Export Started",
-      description: "Your timesheet is being exported to Excel.",
+      description: "Your timesheet is being exported to Excel",
     });
+    // Excel export functionality to be implemented
   };
 
-  const calculateRemainingHours = () => {
-    const totalHours = Object.values(timeEntries).reduce((clientSum, clientEntries) => {
-      return clientSum + Object.values(clientEntries).reduce((sum, { hours }) => sum + hours, 0);
-    }, 0);
-
-    const workingDays = 5; // TODO: Calculate actual working days
-    const expectedHours = workingDays * 8;
-    return Math.max(0, expectedHours - totalHours);
+  const handleAddClient = (client: string) => {
+    if (!clients.includes(client)) {
+      setClients(prev => [...prev, client]);
+    }
   };
 
-  const remainingHours = calculateRemainingHours();
+  const handleRemoveClient = (client: string) => {
+    setClients(prev => prev.filter(c => c !== client));
+  };
+
+  const handleAddMediaType = (type: string) => {
+    if (!mediaTypes.includes(type)) {
+      setMediaTypes(prev => [...prev, type]);
+    }
+  };
+
+  const handleRemoveMediaType = (type: string) => {
+    setMediaTypes(prev => prev.filter(t => t !== type));
+  };
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold">Weekly Timesheet</h1>
-        <div className="flex gap-4">
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <SettingsIcon className="h-4 w-4 mr-2" />
-                Settings
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Timesheet Settings</DialogTitle>
-              </DialogHeader>
-              <Settings
-                clients={clients}
-                mediaTypes={mediaTypes}
-                onAddClient={handleAddClient}
-                onRemoveClient={handleRemoveClient}
-                onAddMediaType={handleAddMediaType}
-                onRemoveMediaType={handleRemoveMediaType}
-              />
-            </DialogContent>
-          </Dialog>
-          <Button variant="outline" onClick={handleExportToExcel}>
-            <Download className="h-4 w-4 mr-2" />
+    <div className="container py-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Timesheet</h1>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setShowSettings(!showSettings)}
+          >
+            <Settings2 className="h-4 w-4 mr-2" />
+            Settings
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleExportToExcel}
+          >
+            <FileDown className="h-4 w-4 mr-2" />
             Export to Excel
           </Button>
-          <Button 
-            onClick={handleSubmitForReview}
-            disabled={status === 'under-review' || status === 'accepted'}
-          >
-            <Send className="h-4 w-4 mr-2" />
-            Submit for Review
-          </Button>
         </div>
       </div>
 
-      <div className="mb-6">
-        <WeekPicker
-          currentDate={currentDate}
-          onWeekChange={setCurrentDate}
+      {showSettings ? (
+        <Settings
+          clients={clients}
+          mediaTypes={mediaTypes}
+          onAddClient={handleAddClient}
+          onRemoveClient={handleRemoveClient}
+          onAddMediaType={handleAddMediaType}
+          onRemoveMediaType={handleRemoveMediaType}
         />
-        <div className="flex justify-between items-center mt-2">
-          <div className="text-sm text-muted-foreground">
-            {remainingHours > 0 ? (
-              <span>Remaining hours this week: {remainingHours}</span>
-            ) : (
-              <span className="text-green-600">All hours logged for this week</span>
-            )}
-          </div>
-          <div className="text-sm">
-            Status: <span className="font-medium capitalize">{status.replace('-', ' ')}</span>
-          </div>
-        </div>
-      </div>
+      ) : (
+        <>
+          <div className="space-y-4">
+            <WeekPicker
+              currentDate={currentDate}
+              onWeekChange={setCurrentDate}
+            />
+            
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">
+                  Status: <span className="font-medium capitalize">{status.replace('-', ' ')}</span>
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Remaining Hours: <span className="font-medium">{calculateRemainingHours()}</span>
+                </p>
+              </div>
+              
+              <Button
+                onClick={handleSubmitForReview}
+                disabled={status === 'under-review' || status === 'accepted'}
+              >
+                Submit for Review
+              </Button>
+            </div>
 
-      <TimeSheetGrid
-        clients={clients}
-        mediaTypes={mediaTypes}
-        timeEntries={timeEntries}
-        onTimeUpdate={handleTimeUpdate}
-        isReadOnly={status === 'under-review' || status === 'accepted'}
-      />
+            <TimeSheetGrid
+              clients={clients}
+              mediaTypes={mediaTypes}
+              timeEntries={timeEntries}
+              onTimeUpdate={handleTimeUpdate}
+              isReadOnly={status === 'under-review' || status === 'accepted'}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 };
