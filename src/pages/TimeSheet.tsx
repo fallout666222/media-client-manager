@@ -3,12 +3,11 @@ import { TimeSheetGrid } from '@/components/TimeSheet/TimeSheetGrid';
 import { Settings } from '@/components/TimeSheet/Settings';
 import { WeekPicker } from '@/components/TimeSheet/WeekPicker';
 import { ApprovalActions } from '@/components/TimeSheet/ApprovalActions';
-import { TimeSheetFilters } from '@/components/TimeSheet/TimeSheetFilters';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { FileDown, Settings2 } from 'lucide-react';
 import { format } from 'date-fns';
-import { TimeEntry, TimeSheetStatus, TimeSheetData, Department, Employee } from '@/types/timesheet';
+import { TimeEntry, TimeSheetStatus, TimeSheetData } from '@/types/timesheet';
 
 const TimeSheet = () => {
   const [showSettings, setShowSettings] = useState(false);
@@ -27,22 +26,8 @@ const TimeSheet = () => {
   const [status, setStatus] = useState<TimeSheetStatus>('unconfirmed');
   const { toast } = useToast();
 
-  const [selectedDepartment, setSelectedDepartment] = useState('');
-  const [selectedEmployee, setSelectedEmployee] = useState('');
-
-  // Mock data for departments and employees - replace with actual data source
-  const departments: Department[] = [
-    { id: 'dept1', name: 'Marketing' },
-    { id: 'dept2', name: 'Sales' },
-    { id: 'dept3', name: 'Operations' }
-  ];
-
-  const employees: Employee[] = [
-    { id: 'emp1', name: 'John Doe', department: 'dept1' },
-    { id: 'emp2', name: 'Jane Smith', department: 'dept1' },
-    { id: 'emp3', name: 'Bob Johnson', department: 'dept2' },
-    { id: 'emp4', name: 'Alice Brown', department: 'dept3' }
-  ];
+  // TODO: This should come from authentication context
+  const isManager = true;
 
   const getCurrentWeekKey = () => {
     return format(currentDate, 'yyyy-MM-dd');
@@ -155,15 +140,6 @@ const TimeSheet = () => {
     setMediaTypes(prev => prev.filter(t => t !== type));
   };
 
-  const handleDepartmentChange = (departmentId: string) => {
-    setSelectedDepartment(departmentId);
-    setSelectedEmployee(''); // Reset employee selection when department changes
-  };
-
-  const handleEmployeeChange = (employeeId: string) => {
-    setSelectedEmployee(employeeId);
-  };
-
   const currentWeekEntries = timeEntries[getCurrentWeekKey()] || {};
 
   return (
@@ -208,15 +184,6 @@ const TimeSheet = () => {
       ) : (
         <>
           <div className="space-y-4">
-            <TimeSheetFilters
-              departments={departments}
-              employees={employees}
-              selectedDepartment={selectedDepartment}
-              selectedEmployee={selectedEmployee}
-              onDepartmentChange={handleDepartmentChange}
-              onEmployeeChange={handleEmployeeChange}
-            />
-
             <WeekPicker
               currentDate={currentDate}
               onWeekChange={setCurrentDate}
@@ -225,7 +192,7 @@ const TimeSheet = () => {
             <div className="flex items-center justify-between">
               <ApprovalActions
                 status={status}
-                isManager={true}
+                isManager={isManager}
                 onSubmitForReview={handleSubmitForReview}
                 onApprove={handleApprove}
                 onReject={handleReject}
