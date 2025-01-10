@@ -10,3 +10,14 @@ export interface TimeSheetData {
     [mediaType: string]: TimeEntry;
   };
 }
+
+export interface Employee {
+  id: string;
+  name: string;
+  department: string;
+}
+
+export interface Department {
+  id: string;
+  name: string;
+}
