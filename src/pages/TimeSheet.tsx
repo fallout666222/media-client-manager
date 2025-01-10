@@ -22,12 +22,16 @@ const TimeSheet = () => {
     'VACATION'
   ]);
   const [mediaTypes, setMediaTypes] = useState<string[]>(['TV', 'Radio', 'Print', 'Digital']);
-  const [timeEntries, setTimeEntries] = useState<TimeSheetData>({});
+  const [timeEntries, setTimeEntries] = useState<Record<string, TimeSheetData>>({});
   const [status, setStatus] = useState<TimeSheetStatus>('unconfirmed');
   const { toast } = useToast();
 
   // TODO: This should come from authentication context
   const isManager = true;
+
+  const getCurrentWeekKey = () => {
+    return format(currentDate, 'yyyy-MM-dd');
+  };
 
   const handleTimeUpdate = (client: string, mediaType: string, hours: number) => {
     if (status === 'under-review' || status === 'accepted') {
@@ -39,17 +43,55 @@ const TimeSheet = () => {
       return;
     }
 
+    const weekKey = getCurrentWeekKey();
+    const currentWeekTotal = calculateWeekTotal(weekKey, client, mediaType, hours);
+
+    if (currentWeekTotal > 40) {
+      toast({
+        title: "Exceeded weekly limit",
+        description: "Total hours for the week cannot exceed 40",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setTimeEntries(prev => ({
       ...prev,
-      [client]: {
-        ...(prev[client] || {}),
-        [mediaType]: { hours, status }
+      [weekKey]: {
+        ...prev[weekKey],
+        [client]: {
+          ...(prev[weekKey]?.[client] || {}),
+          [mediaType]: { hours, status }
+        }
       }
     }));
   };
 
+  const calculateWeekTotal = (weekKey: string, currentClient: string, currentMediaType: string, newHours: number) => {
+    let total = 0;
+    const weekEntries = timeEntries[weekKey] || {};
+    
+    // Calculate total for all entries except the current one being updated
+    Object.entries(weekEntries).forEach(([client, mediaEntries]) => {
+      Object.entries(mediaEntries).forEach(([mediaType, entry]) => {
+        if (client === currentClient && mediaType === currentMediaType) {
+          return; // Skip the current entry being updated
+        }
+        total += entry.hours;
+      });
+    });
+    
+    // Add the new hours
+    total += newHours;
+    
+    return total;
+  };
+
   const calculateRemainingHours = () => {
-    const totalHours = Object.values(timeEntries).reduce((clientSum, client) => {
+    const weekKey = getCurrentWeekKey();
+    const weekEntries = timeEntries[weekKey] || {};
+    
+    const totalHours = Object.values(weekEntries).reduce((clientSum, client) => {
       return clientSum + Object.values(client).reduce((mediaSum, media) => {
         return mediaSum + media.hours;
       }, 0);
@@ -98,6 +140,8 @@ const TimeSheet = () => {
     setMediaTypes(prev => prev.filter(t => t !== type));
   };
 
+  const currentWeekEntries = timeEntries[getCurrentWeekKey()] || {};
+
   return (
     <div className="container py-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -107,7 +151,7 @@ const TimeSheet = () => {
             Status: <span className="font-medium capitalize">{status.replace('-', ' ')}</span>
           </p>
           <p className="text-sm text-muted-foreground">
-            Remaining Hours: <span className="font-medium">{calculateRemainingHours()}</span>
+            Remaining Hours This Week: <span className="font-medium">{calculateRemainingHours()}</span>
           </p>
         </div>
         <div className="flex gap-2">
@@ -158,7 +202,7 @@ const TimeSheet = () => {
             <TimeSheetGrid
               clients={clients}
               mediaTypes={mediaTypes}
-              timeEntries={timeEntries}
+              timeEntries={currentWeekEntries}
               onTimeUpdate={handleTimeUpdate}
               status={status}
             />
