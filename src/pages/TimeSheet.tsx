@@ -9,7 +9,11 @@ import { FileDown, Settings2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { TimeEntry, TimeSheetStatus, TimeSheetData } from '@/types/timesheet';
 
-const TimeSheet = () => {
+interface TimeSheetProps {
+  userRole: 'admin' | 'user' | 'manager';
+}
+
+const TimeSheet = ({ userRole }: TimeSheetProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [clients, setClients] = useState<string[]>([
@@ -27,7 +31,7 @@ const TimeSheet = () => {
   const { toast } = useToast();
 
   // TODO: This should come from authentication context
-  const isManager = true;
+  const isManager = userRole === 'manager' || userRole === 'admin';
 
   const getCurrentWeekKey = () => {
     return format(currentDate, 'yyyy-MM-dd');
@@ -149,6 +153,9 @@ const TimeSheet = () => {
           <h1 className="text-2xl font-bold">Timesheet</h1>
           <p className="text-sm text-muted-foreground">
             Status: <span className="font-medium capitalize">{status.replace('-', ' ')}</span>
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Logged in as: <span className="font-medium capitalize">{userRole}</span>
           </p>
           <p className="text-sm text-muted-foreground">
             Remaining Hours This Week: <span className="font-medium">{calculateRemainingHours()}</span>
