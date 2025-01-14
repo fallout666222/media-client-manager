@@ -27,3 +27,9 @@ export interface User {
   password: string;
   role: 'admin' | 'user' | 'manager';
 }
+
+export interface UserFormData {
+  username: string;
+  password: string;
+  role: 'admin' | 'user' | 'manager';
+}
