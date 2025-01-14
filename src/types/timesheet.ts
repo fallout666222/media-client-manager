@@ -26,6 +26,7 @@ export interface User {
   username: string;
   password: string;
   role: 'admin' | 'user' | 'manager';
+  firstWeek?: string;
 }
 
 export interface UserFormData {

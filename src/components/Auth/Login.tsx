@@ -5,9 +5,9 @@ import { useToast } from "@/hooks/use-toast";
 import { User } from "@/types/timesheet";
 
 const USERS: User[] = [
-  { username: "admin", password: "admin", role: "admin" },
+  { username: "admin", password: "admin", role: "admin", firstWeek: "2024-01-01" },
   { username: "user", password: "user", role: "user" },
-  { username: "manager", password: "manager", role: "manager" },
+  { username: "manager", password: "manager", role: "manager", firstWeek: "2024-01-01" },
 ];
 
 interface LoginProps {
@@ -30,7 +30,9 @@ export const Login = ({ onLogin }: LoginProps) => {
       onLogin(user);
       toast({
         title: "Login Successful",
-        description: `Welcome back, ${username}!`,
+        description: user.firstWeek 
+          ? `Welcome back, ${username}!`
+          : "Welcome! Please wait for an admin to set your first working week.",
       });
     } else {
       toast({

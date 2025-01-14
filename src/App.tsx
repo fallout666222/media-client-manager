@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import TimeSheet from "./pages/TimeSheet";
 import { Login } from "./components/Auth/Login";
 import { UserManagement } from "./components/Auth/UserManagement";
+import { FirstWeekManagement } from "./components/Auth/FirstWeekManagement";
 import { useState } from "react";
 import { User, UserFormData } from "./types/timesheet";
 import { Button } from "./components/ui/button";
@@ -31,11 +32,16 @@ const App = () => {
   };
 
   const handleCreateUser = (userData: UserFormData) => {
-    // In a real application, this would make an API call
-    // For now, we'll just show a success message
     toast({
       title: "User Created",
       description: `New ${userData.role} account created: ${userData.username}`,
+    });
+  };
+
+  const handleSetFirstWeek = (username: string, date: string) => {
+    toast({
+      title: "First Week Set",
+      description: `First week set for ${username}: ${date}`,
     });
   };
 
@@ -77,10 +83,19 @@ const App = () => {
               element={
                 user ? (
                   <div className="container mx-auto p-4 pt-16">
-                    <TimeSheet userRole={user.role} />
+                    {user.firstWeek ? (
+                      <TimeSheet userRole={user.role} />
+                    ) : (
+                      <div className="text-center p-8">
+                        <h2 className="text-xl font-semibold mb-4">
+                          Welcome! Please wait for an admin to set your first working week.
+                        </h2>
+                      </div>
+                    )}
                     {user.role === "admin" && (
-                      <div className="mt-8">
+                      <div className="mt-8 space-y-8">
                         <UserManagement onCreateUser={handleCreateUser} />
+                        <FirstWeekManagement onSetFirstWeek={handleSetFirstWeek} />
                       </div>
                     )}
                   </div>
