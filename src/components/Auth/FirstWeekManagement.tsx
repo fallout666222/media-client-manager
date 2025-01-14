@@ -14,16 +14,10 @@ import { Label } from "@/components/ui/label";
 
 interface FirstWeekManagementProps {
   onSetFirstWeek: (username: string, date: string) => void;
+  users: User[];
 }
 
-// This is our mock users list - in a real application, this would come from an API
-const USERS: User[] = [
-  { username: "admin", password: "admin", role: "admin", firstWeek: "2024-01-01" },
-  { username: "user", password: "user", role: "user" },
-  { username: "manager", password: "manager", role: "manager", firstWeek: "2024-01-01" },
-];
-
-export const FirstWeekManagement = ({ onSetFirstWeek }: FirstWeekManagementProps) => {
+export const FirstWeekManagement = ({ onSetFirstWeek, users }: FirstWeekManagementProps) => {
   const [username, setUsername] = useState("");
   const [startDate, setStartDate] = useState("");
   const { toast } = useToast();
@@ -48,7 +42,7 @@ export const FirstWeekManagement = ({ onSetFirstWeek }: FirstWeekManagementProps
   };
 
   // Filter out users who already have a first week set
-  const usersWithoutFirstWeek = USERS.filter(user => !user.firstWeek);
+  const usersWithoutFirstWeek = users.filter(user => !user.firstWeek);
 
   return (
     <div className="space-y-6 p-4 bg-white rounded-lg shadow">

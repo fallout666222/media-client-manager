@@ -4,17 +4,12 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { User } from "@/types/timesheet";
 
-const USERS: User[] = [
-  { username: "admin", password: "admin", role: "admin", firstWeek: "2024-01-01" },
-  { username: "user", password: "user", role: "user" },
-  { username: "manager", password: "manager", role: "manager", firstWeek: "2024-01-01" },
-];
-
 interface LoginProps {
   onLogin: (user: User) => void;
+  users: User[];
 }
 
-export const Login = ({ onLogin }: LoginProps) => {
+export const Login = ({ onLogin, users }: LoginProps) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const { toast } = useToast();
@@ -22,7 +17,7 @@ export const Login = ({ onLogin }: LoginProps) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const user = USERS.find(
+    const user = users.find(
       (u) => u.username === username && u.password === password
     );
 

@@ -15,8 +15,16 @@ import { useToast } from "./hooks/use-toast";
 
 const queryClient = new QueryClient();
 
+// Initial users list
+const INITIAL_USERS: User[] = [
+  { username: "admin", password: "admin", role: "admin", firstWeek: "2024-01-01" },
+  { username: "user", password: "user", role: "user" },
+  { username: "manager", password: "manager", role: "manager", firstWeek: "2024-01-01" },
+];
+
 const App = () => {
   const [user, setUser] = useState<User | null>(null);
+  const [users, setUsers] = useState<User[]>(INITIAL_USERS);
   const { toast } = useToast();
 
   const handleLogin = (user: User) => {
@@ -32,6 +40,10 @@ const App = () => {
   };
 
   const handleCreateUser = (userData: UserFormData) => {
+    const newUser: User = {
+      ...userData,
+    };
+    setUsers((prevUsers) => [...prevUsers, newUser]);
     toast({
       title: "User Created",
       description: `New ${userData.role} account created: ${userData.username}`,
@@ -39,6 +51,15 @@ const App = () => {
   };
 
   const handleSetFirstWeek = (username: string, date: string) => {
+    setUsers((prevUsers) =>
+      prevUsers.map((u) =>
+        u.username === username ? { ...u, firstWeek: date } : u
+      )
+    );
+    // If the current user is the one being updated, update their state as well
+    if (user && user.username === username) {
+      setUser((prevUser) => prevUser ? { ...prevUser, firstWeek: date } : null);
+    }
     toast({
       title: "First Week Set",
       description: `First week set for ${username}: ${date}`,
@@ -72,7 +93,7 @@ const App = () => {
               path="/login"
               element={
                 !user ? (
-                  <Login onLogin={handleLogin} />
+                  <Login onLogin={handleLogin} users={users} />
                 ) : (
                   <Navigate to="/" replace />
                 )
@@ -95,7 +116,10 @@ const App = () => {
                     {user.role === "admin" && (
                       <div className="mt-8 space-y-8">
                         <UserManagement onCreateUser={handleCreateUser} />
-                        <FirstWeekManagement onSetFirstWeek={handleSetFirstWeek} />
+                        <FirstWeekManagement 
+                          onSetFirstWeek={handleSetFirstWeek}
+                          users={users}
+                        />
                       </div>
                     )}
                   </div>
