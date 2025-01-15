@@ -105,7 +105,7 @@ const App = () => {
                 user ? (
                   <div className="container mx-auto p-4 pt-16">
                     {user.firstWeek ? (
-                      <TimeSheet userRole={user.role} />
+                      <TimeSheet userRole={user.role} firstWeek={user.firstWeek} />
                     ) : (
                       <div className="text-center p-8">
                         <h2 className="text-xl font-semibold mb-4">

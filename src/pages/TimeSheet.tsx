@@ -1,21 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TimeSheetGrid } from '@/components/TimeSheet/TimeSheetGrid';
 import { Settings } from '@/components/TimeSheet/Settings';
 import { WeekPicker } from '@/components/TimeSheet/WeekPicker';
 import { ApprovalActions } from '@/components/TimeSheet/ApprovalActions';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { FileDown, Settings2 } from 'lucide-react';
-import { format } from 'date-fns';
+import { FileDown, Settings2, RotateCcw } from 'lucide-react';
+import { format, parse } from 'date-fns';
 import { TimeEntry, TimeSheetStatus, TimeSheetData } from '@/types/timesheet';
 
 interface TimeSheetProps {
   userRole: 'admin' | 'user' | 'manager';
+  firstWeek?: string;
 }
 
-const TimeSheet = ({ userRole }: TimeSheetProps) => {
+const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
   const [showSettings, setShowSettings] = useState(false);
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(
+    firstWeek ? parse(firstWeek, 'yyyy-MM-dd', new Date()) : new Date()
+  );
   const [clients, setClients] = useState<string[]>([
     'Administrative',
     'Education/Training',
@@ -30,7 +33,13 @@ const TimeSheet = ({ userRole }: TimeSheetProps) => {
   const [status, setStatus] = useState<TimeSheetStatus>('unconfirmed');
   const { toast } = useToast();
 
-  // TODO: This should come from authentication context
+  // Set initial date to first week when component mounts
+  useEffect(() => {
+    if (firstWeek) {
+      setCurrentDate(parse(firstWeek, 'yyyy-MM-dd', new Date()));
+    }
+  }, [firstWeek]);
+
   const isManager = userRole === 'manager' || userRole === 'admin';
 
   const getCurrentWeekKey = () => {
@@ -75,20 +84,16 @@ const TimeSheet = ({ userRole }: TimeSheetProps) => {
     let total = 0;
     const weekEntries = timeEntries[weekKey] || {};
     
-    // Calculate total for all entries except the current one being updated
     Object.entries(weekEntries).forEach(([client, mediaEntries]) => {
       Object.entries(mediaEntries).forEach(([mediaType, entry]) => {
         if (client === currentClient && mediaType === currentMediaType) {
-          return; // Skip the current entry being updated
+          return;
         }
         total += entry.hours;
       });
     });
     
-    // Add the new hours
-    total += newHours;
-    
-    return total;
+    return total + newHours;
   };
 
   const calculateRemainingHours = () => {
@@ -121,7 +126,6 @@ const TimeSheet = ({ userRole }: TimeSheetProps) => {
       title: "Export Started",
       description: "Your timesheet is being exported to Excel",
     });
-    // Excel export functionality to be implemented
   };
 
   const handleAddClient = (client: string) => {
@@ -144,6 +148,16 @@ const TimeSheet = ({ userRole }: TimeSheetProps) => {
     setMediaTypes(prev => prev.filter(t => t !== type));
   };
 
+  const handleReturnToFirstUnconfirmed = () => {
+    if (firstWeek) {
+      setCurrentDate(parse(firstWeek, 'yyyy-MM-dd', new Date()));
+      toast({
+        title: "Returned to First Week",
+        description: "You've been returned to your first working week",
+      });
+    }
+  };
+
   const currentWeekEntries = timeEntries[getCurrentWeekKey()] || {};
 
   return (
@@ -162,6 +176,14 @@ const TimeSheet = ({ userRole }: TimeSheetProps) => {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={handleReturnToFirstUnconfirmed}
+            className="flex items-center gap-2"
+          >
+            <RotateCcw className="h-4 w-4" />
+            Return to First Week
+          </Button>
           <Button
             variant="outline"
             onClick={() => setShowSettings(!showSettings)}
