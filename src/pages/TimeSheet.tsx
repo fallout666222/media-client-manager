@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { TimeSheetGrid } from '@/components/TimeSheet/TimeSheetGrid';
-import { Settings } from '@/components/TimeSheet/Settings';
-import { WeekPicker } from '@/components/TimeSheet/WeekPicker';
-import { ApprovalActions } from '@/components/TimeSheet/ApprovalActions';
-import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { FileDown, Settings2, RotateCcw } from 'lucide-react';
-import { format, parse } from 'date-fns';
-import { TimeEntry, TimeSheetStatus, TimeSheetData } from '@/types/timesheet';
+import { parse, format } from 'date-fns';
+import { TimeSheetStatus, TimeSheetData } from '@/types/timesheet';
+import { TimeSheetHeader } from '@/components/TimeSheet/TimeSheetHeader';
+import { TimeSheetControls } from '@/components/TimeSheet/TimeSheetControls';
+import { TimeSheetContent } from '@/components/TimeSheet/TimeSheetContent';
 
 interface TimeSheetProps {
   userRole: 'admin' | 'user' | 'manager';
@@ -33,7 +30,6 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
   const [status, setStatus] = useState<TimeSheetStatus>('unconfirmed');
   const { toast } = useToast();
 
-  // Set initial date to first week when component mounts
   useEffect(() => {
     if (firstWeek) {
       setCurrentDate(parse(firstWeek, 'yyyy-MM-dd', new Date()));
@@ -42,9 +38,7 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
 
   const isManager = userRole === 'manager' || userRole === 'admin';
 
-  const getCurrentWeekKey = () => {
-    return format(currentDate, 'yyyy-MM-dd');
-  };
+  const getCurrentWeekKey = () => format(currentDate, 'yyyy-MM-dd');
 
   const handleTimeUpdate = (client: string, mediaType: string, hours: number) => {
     if (status === 'under-review' || status === 'accepted') {
@@ -161,83 +155,39 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
   const currentWeekEntries = timeEntries[getCurrentWeekKey()] || {};
 
   return (
-    <div className="container py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Timesheet</h1>
-          <p className="text-sm text-muted-foreground">
-            Status: <span className="font-medium capitalize">{status.replace('-', ' ')}</span>
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Logged in as: <span className="font-medium capitalize">{userRole}</span>
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Remaining Hours This Week: <span className="font-medium">{calculateRemainingHours()}</span>
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={handleReturnToFirstUnconfirmed}
-            className="flex items-center gap-2"
-          >
-            <RotateCcw className="h-4 w-4" />
-            Return to First Week
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setShowSettings(!showSettings)}
-          >
-            <Settings2 className="h-4 w-4 mr-2" />
-            Settings
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handleExportToExcel}
-          >
-            <FileDown className="h-4 w-4 mr-2" />
-            Export to Excel
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <TimeSheetHeader
+        userRole={userRole}
+        remainingHours={calculateRemainingHours()}
+        status={status}
+        onReturnToFirstWeek={handleReturnToFirstUnconfirmed}
+        onToggleSettings={() => setShowSettings(!showSettings)}
+        onExportToExcel={handleExportToExcel}
+        firstWeek={firstWeek}
+      />
 
-      {showSettings ? (
-        <Settings
-          clients={clients}
-          mediaTypes={mediaTypes}
-          onAddClient={handleAddClient}
-          onRemoveClient={handleRemoveClient}
-          onAddMediaType={handleAddMediaType}
-          onRemoveMediaType={handleRemoveMediaType}
-        />
-      ) : (
-        <>
-          <div className="space-y-4">
-            <WeekPicker
-              currentDate={currentDate}
-              onWeekChange={setCurrentDate}
-            />
-            
-            <div className="flex items-center justify-between">
-              <ApprovalActions
-                status={status}
-                isManager={isManager}
-                onSubmitForReview={handleSubmitForReview}
-                onApprove={handleApprove}
-                onReject={handleReject}
-              />
-            </div>
+      <TimeSheetControls
+        currentDate={currentDate}
+        onWeekChange={setCurrentDate}
+        status={status}
+        isManager={isManager}
+        onSubmitForReview={handleSubmitForReview}
+        onApprove={handleApprove}
+        onReject={handleReject}
+      />
 
-            <TimeSheetGrid
-              clients={clients}
-              mediaTypes={mediaTypes}
-              timeEntries={currentWeekEntries}
-              onTimeUpdate={handleTimeUpdate}
-              status={status}
-            />
-          </div>
-        </>
-      )}
+      <TimeSheetContent
+        showSettings={showSettings}
+        clients={clients}
+        mediaTypes={mediaTypes}
+        timeEntries={currentWeekEntries}
+        status={status}
+        onTimeUpdate={handleTimeUpdate}
+        onAddClient={handleAddClient}
+        onRemoveClient={handleRemoveClient}
+        onAddMediaType={handleAddMediaType}
+        onRemoveMediaType={handleRemoveMediaType}
+      />
     </div>
   );
 };
