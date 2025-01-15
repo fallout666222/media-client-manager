@@ -49,6 +49,17 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
     const selectedWeekStart = startOfWeek(date, { weekStartsOn: 1 });
     const previousWeek = addWeeks(selectedWeekStart, -1);
     const previousWeekKey = format(previousWeek, 'yyyy-MM-dd');
+    const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
+
+    // If current week is under review, prevent switching
+    if (status === 'under-review' && currentWeekKey !== format(date, 'yyyy-MM-dd')) {
+      toast({
+        title: "Cannot Switch Weeks",
+        description: "Current week is under review. Please wait for approval before switching weeks.",
+        variant: "destructive"
+      });
+      return false;
+    }
 
     // Cannot select weeks before first week
     if (isBefore(selectedWeekStart, firstWeekDate)) {
