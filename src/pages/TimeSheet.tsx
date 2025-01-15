@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { parse, format } from 'date-fns';
+import { parse, format, isAfter, isBefore, addWeeks, startOfWeek } from 'date-fns';
 import { TimeSheetStatus, TimeSheetData } from '@/types/timesheet';
 import { TimeSheetHeader } from '@/components/TimeSheet/TimeSheetHeader';
 import { TimeSheetControls } from '@/components/TimeSheet/TimeSheetControls';
@@ -27,6 +27,7 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
   ]);
   const [mediaTypes, setMediaTypes] = useState<string[]>(['TV', 'Radio', 'Print', 'Digital']);
   const [timeEntries, setTimeEntries] = useState<Record<string, TimeSheetData>>({});
+  const [submittedWeeks, setSubmittedWeeks] = useState<string[]>([]);
   const [status, setStatus] = useState<TimeSheetStatus>('unconfirmed');
   const { toast } = useToast();
 
@@ -39,6 +40,58 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
   const isManager = userRole === 'manager' || userRole === 'admin';
 
   const getCurrentWeekKey = () => format(currentDate, 'yyyy-MM-dd');
+
+  const validateWeekSelection = (date: Date): boolean => {
+    if (!firstWeek) return false;
+    
+    const firstWeekDate = parse(firstWeek, 'yyyy-MM-dd', new Date());
+    const today = new Date();
+    const selectedWeekStart = startOfWeek(date, { weekStartsOn: 1 });
+    const previousWeek = addWeeks(selectedWeekStart, -1);
+    const previousWeekKey = format(previousWeek, 'yyyy-MM-dd');
+
+    // Cannot select weeks before first week
+    if (isBefore(selectedWeekStart, firstWeekDate)) {
+      toast({
+        title: "Invalid Week Selection",
+        description: "Cannot select weeks before your first working week",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    // Cannot select future weeks
+    if (isAfter(selectedWeekStart, today)) {
+      toast({
+        title: "Invalid Week Selection",
+        description: "Cannot select future weeks",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    // If previous week exists and is not submitted, cannot edit current week
+    if (!submittedWeeks.includes(previousWeekKey) && !format(firstWeekDate, 'yyyy-MM-dd').includes(previousWeekKey)) {
+      toast({
+        title: "Previous Week Not Submitted",
+        description: "Please submit the previous week's timesheet first",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleWeekChange = (date: Date) => {
+    if (!validateWeekSelection(date)) {
+      return;
+    }
+    setCurrentDate(date);
+    const weekKey = format(date, 'yyyy-MM-dd');
+    // Set status based on whether the week has been submitted
+    setStatus(submittedWeeks.includes(weekKey) ? 'under-review' : 'unconfirmed');
+  };
 
   const handleTimeUpdate = (client: string, mediaType: string, hours: number) => {
     if (status === 'under-review' || status === 'accepted') {
@@ -90,20 +143,9 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
     return total + newHours;
   };
 
-  const calculateRemainingHours = () => {
-    const weekKey = getCurrentWeekKey();
-    const weekEntries = timeEntries[weekKey] || {};
-    
-    const totalHours = Object.values(weekEntries).reduce((clientSum, client) => {
-      return clientSum + Object.values(client).reduce((mediaSum, media) => {
-        return mediaSum + media.hours;
-      }, 0);
-    }, 0);
-    
-    return 40 - totalHours;
-  };
-
   const handleSubmitForReview = () => {
+    const weekKey = getCurrentWeekKey();
+    setSubmittedWeeks(prev => [...prev, weekKey]);
     setStatus('under-review');
   };
 
@@ -112,6 +154,8 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
   };
 
   const handleReject = () => {
+    const weekKey = getCurrentWeekKey();
+    setSubmittedWeeks(prev => prev.filter(w => w !== weekKey));
     setStatus('needs-revision');
   };
 
@@ -144,10 +188,20 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
 
   const handleReturnToFirstUnconfirmed = () => {
     if (firstWeek) {
-      setCurrentDate(parse(firstWeek, 'yyyy-MM-dd', new Date()));
+      const firstWeekDate = parse(firstWeek, 'yyyy-MM-dd', new Date());
+      let currentWeek = firstWeekDate;
+      let weekKey = format(currentWeek, 'yyyy-MM-dd');
+      
+      // Find the first unsubmitted week
+      while (submittedWeeks.includes(weekKey) && !isAfter(currentWeek, new Date())) {
+        currentWeek = addWeeks(currentWeek, 1);
+        weekKey = format(currentWeek, 'yyyy-MM-dd');
+      }
+
+      setCurrentDate(currentWeek);
       toast({
-        title: "Returned to First Week",
-        description: "You've been returned to your first working week",
+        title: "Returned to First Unconfirmed Week",
+        description: "You've been returned to your first unconfirmed week",
       });
     }
   };
@@ -158,7 +212,7 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
     <div className="space-y-6">
       <TimeSheetHeader
         userRole={userRole}
-        remainingHours={calculateRemainingHours()}
+        remainingHours={calculateWeekTotal(getCurrentWeekKey(), '', '', 0)}
         status={status}
         onReturnToFirstWeek={handleReturnToFirstUnconfirmed}
         onToggleSettings={() => setShowSettings(!showSettings)}
@@ -168,7 +222,7 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
 
       <TimeSheetControls
         currentDate={currentDate}
-        onWeekChange={setCurrentDate}
+        onWeekChange={handleWeekChange}
         status={status}
         isManager={isManager}
         onSubmitForReview={handleSubmitForReview}
