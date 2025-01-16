@@ -37,8 +37,6 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
     }
   }, [firstWeek]);
 
-  const isManager = userRole === 'manager' || userRole === 'admin';
-
   const getCurrentWeekKey = () => format(currentDate, 'yyyy-MM-dd');
 
   const validateWeekSelection = (date: Date): boolean => {
@@ -224,7 +222,7 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
         currentDate={currentDate}
         onWeekChange={handleWeekChange}
         status={status}
-        isManager={isManager}
+        isManager={userRole === 'manager' || userRole === 'admin'}
         onSubmitForReview={handleSubmitForReview}
         onApprove={handleApprove}
         onReject={handleReject}
