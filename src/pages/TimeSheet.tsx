@@ -57,7 +57,7 @@ const TimeSheet = ({ userRole, firstWeek = '', users = [] }: TimeSheetProps) => 
 
   return (
     <div className="space-y-6">
-      {userRole === 'admin' && (
+      {userRole === 'admin' && users && (
         <UserSelector
           users={users}
           selectedUser={selectedUser}

@@ -1,14 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TimeSheetControls } from './TimeSheetControls';
 import { TimeSheetContent } from './TimeSheetContent';
 import { TimeSheetStatus } from '@/types/timesheet';
 import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
 
 interface TimeSheetManagerProps {
   userRole: string;
   firstWeek: string;
   currentDate: Date;
   onWeekChange: (date: Date) => void;
+}
+
+interface WeekStatus {
+  [key: string]: TimeSheetStatus;
 }
 
 export const TimeSheetManager = ({
@@ -18,7 +23,7 @@ export const TimeSheetManager = ({
   onWeekChange
 }: TimeSheetManagerProps) => {
   const [showSettings, setShowSettings] = useState(false);
-  const [status, setStatus] = useState<TimeSheetStatus>('unconfirmed');
+  const [weekStatuses, setWeekStatuses] = useState<WeekStatus>({});
   const [clients, setClients] = useState<string[]>([
     'Administrative',
     'Education/Training',
@@ -32,8 +37,24 @@ export const TimeSheetManager = ({
   const [timeEntries, setTimeEntries] = useState({});
   const { toast } = useToast();
 
+  const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
+  const status = weekStatuses[currentWeekKey] || 'unconfirmed';
+
+  useEffect(() => {
+    // Initialize status for first week
+    if (firstWeek && !weekStatuses[firstWeek]) {
+      setWeekStatuses(prev => ({
+        ...prev,
+        [firstWeek]: 'unconfirmed'
+      }));
+    }
+  }, [firstWeek]);
+
   const handleSubmitForReview = () => {
-    setStatus('under-review');
+    setWeekStatuses(prev => ({
+      ...prev,
+      [currentWeekKey]: 'under-review'
+    }));
     toast({
       title: "Timesheet Submitted",
       description: "Your timesheet has been submitted for review",
@@ -41,7 +62,10 @@ export const TimeSheetManager = ({
   };
 
   const handleApprove = () => {
-    setStatus('accepted');
+    setWeekStatuses(prev => ({
+      ...prev,
+      [currentWeekKey]: 'accepted'
+    }));
     toast({
       title: "Timesheet Approved",
       description: "The timesheet has been approved",
@@ -49,7 +73,10 @@ export const TimeSheetManager = ({
   };
 
   const handleReject = () => {
-    setStatus('needs-revision');
+    setWeekStatuses(prev => ({
+      ...prev,
+      [currentWeekKey]: 'needs-revision'
+    }));
     toast({
       title: "Timesheet Rejected",
       description: "The timesheet has been sent back for revision",
@@ -64,6 +91,14 @@ export const TimeSheetManager = ({
         [mediaType]: { hours, status }
       }
     }));
+
+    // If this is the first entry for a week, initialize its status
+    if (!weekStatuses[currentWeekKey]) {
+      setWeekStatuses(prev => ({
+        ...prev,
+        [currentWeekKey]: 'unconfirmed'
+      }));
+    }
   };
 
   const handleAddClient = (client: string) => {
