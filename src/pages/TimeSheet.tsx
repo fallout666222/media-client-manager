@@ -1,21 +1,39 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parse, format, isAfter, isBefore, addWeeks, startOfWeek } from 'date-fns';
-import { TimeSheetStatus, TimeSheetData } from '@/types/timesheet';
+import { TimeSheetStatus, TimeSheetData, User } from '@/types/timesheet';
 import { TimeSheetHeader } from '@/components/TimeSheet/TimeSheetHeader';
 import { TimeSheetControls } from '@/components/TimeSheet/TimeSheetControls';
 import { TimeSheetContent } from '@/components/TimeSheet/TimeSheetContent';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { Button } from '@/components/ui/button';
+import { Check, ChevronsUpDown } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface TimeSheetProps {
   userRole: 'admin' | 'user' | 'manager';
   firstWeek?: string;
+  users?: User[];
 }
 
-const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
+const TimeSheet = ({ userRole, firstWeek, users = [] }: TimeSheetProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [currentDate, setCurrentDate] = useState(
     firstWeek ? parse(firstWeek, 'yyyy-MM-dd', new Date()) : new Date()
   );
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [open, setOpen] = useState(false);
   const [clients, setClients] = useState<string[]>([
     'Administrative',
     'Education/Training',
@@ -42,13 +60,15 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
   const validateWeekSelection = (date: Date): boolean => {
     if (!firstWeek) return false;
     
+    // Admin can switch weeks without restrictions
+    if (userRole === 'admin') return true;
+    
     const firstWeekDate = parse(firstWeek, 'yyyy-MM-dd', new Date());
     const today = new Date();
     const selectedWeekStart = startOfWeek(date, { weekStartsOn: 1 });
     const previousWeek = addWeeks(selectedWeekStart, -1);
     const previousWeekKey = format(previousWeek, 'yyyy-MM-dd');
 
-    // Cannot select weeks before first week
     if (isBefore(selectedWeekStart, firstWeekDate)) {
       toast({
         title: "Invalid Week Selection",
@@ -58,7 +78,6 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
       return false;
     }
 
-    // Cannot select future weeks
     if (isAfter(selectedWeekStart, today)) {
       toast({
         title: "Invalid Week Selection",
@@ -68,7 +87,6 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
       return false;
     }
 
-    // If previous week exists and is not submitted, cannot edit current week
     if (!submittedWeeks.includes(previousWeekKey) && !format(firstWeekDate, 'yyyy-MM-dd').includes(previousWeekKey)) {
       toast({
         title: "Previous Week Not Submitted",
@@ -79,16 +97,6 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
     }
 
     return true;
-  };
-
-  const handleWeekChange = (date: Date) => {
-    if (!validateWeekSelection(date)) {
-      return;
-    }
-    setCurrentDate(date);
-    const weekKey = format(date, 'yyyy-MM-dd');
-    // Set status based on whether the week has been submitted
-    setStatus(submittedWeeks.includes(weekKey) ? 'under-review' : 'unconfirmed');
   };
 
   const handleTimeUpdate = (client: string, mediaType: string, hours: number) => {
@@ -208,6 +216,50 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
 
   return (
     <div className="space-y-6">
+      {userRole === 'admin' && (
+        <div className="w-full max-w-sm">
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={open}
+                className="w-full justify-between"
+              >
+                {selectedUser ? selectedUser.username : "Select user..."}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-full p-0">
+              <Command>
+                <CommandInput placeholder="Search users..." />
+                <CommandEmpty>No users found.</CommandEmpty>
+                <CommandGroup>
+                  {users.map((user) => (
+                    <CommandItem
+                      key={user.username}
+                      value={user.username}
+                      onSelect={() => {
+                        setSelectedUser(user);
+                        setOpen(false);
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          selectedUser?.username === user.username ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      {user.username}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
+      )}
+
       <TimeSheetHeader
         userRole={userRole}
         remainingHours={calculateWeekTotal(getCurrentWeekKey(), '', '', 0)}
