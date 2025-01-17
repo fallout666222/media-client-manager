@@ -67,6 +67,15 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
     const totalHours = getTotalHoursForWeek();
     
+    if (totalHours > 40) {
+      toast({
+        title: "Cannot Submit Timesheet",
+        description: `Total hours cannot exceed 40. Current total: ${totalHours} hours`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (totalHours < 40) {
       toast({
         title: "Cannot Submit Timesheet",
@@ -93,8 +102,8 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
       [currentWeekKey]: 'under-review'
     }));
     toast({
-      title: "Timesheet Submitted",
-      description: `Week of ${format(currentDate, 'MMM d, yyyy')} has been submitted for review`,
+      title: "Timesheet Under Review",
+      description: `Week of ${format(currentDate, 'MMM d, yyyy')} has been submitted and is now under review`,
     });
   };
 

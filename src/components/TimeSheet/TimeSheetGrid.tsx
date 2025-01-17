@@ -1,6 +1,7 @@
 import React from 'react';
 import { Input } from "@/components/ui/input";
 import { TimeEntry, TimeSheetStatus } from '@/types/timesheet';
+import { useToast } from "@/hooks/use-toast";
 
 interface TimeSheetGridProps {
   clients: string[];
@@ -18,6 +19,17 @@ export const TimeSheetGrid = ({
   status
 }: TimeSheetGridProps) => {
   const isReadOnly = status === 'under-review' || status === 'accepted';
+  const { toast } = useToast();
+
+  const calculateTotalHours = (excludingClient?: string, excludingType?: string): number => {
+    return Object.entries(timeEntries).reduce((clientSum, [client, mediaEntries]) => {
+      if (client === excludingClient) return clientSum;
+      return clientSum + Object.entries(mediaEntries).reduce((mediaSum, [type, entry]) => {
+        if (type === excludingType && client === excludingClient) return mediaSum;
+        return mediaSum + (entry.hours || 0);
+      }, 0);
+    }, 0);
+  };
 
   return (
     <div className="overflow-x-auto">
@@ -48,6 +60,17 @@ export const TimeSheetGrid = ({
                     value={timeEntries[client]?.[type]?.hours || ''}
                     onChange={(e) => {
                       const hours = parseInt(e.target.value) || 0;
+                      const currentTotal = calculateTotalHours(client, type);
+                      
+                      if (currentTotal + hours > 40) {
+                        toast({
+                          title: "Cannot Add Hours",
+                          description: "Total hours cannot exceed 40 for the week",
+                          variant: "destructive"
+                        });
+                        return;
+                      }
+                      
                       onTimeUpdate(client, type, hours);
                     }}
                     disabled={isReadOnly}
