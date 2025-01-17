@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { parse, format, isAfter, isBefore, addWeeks, startOfWeek } from 'date-fns';
+import { parse, format, isAfter, isBefore, addWeeks, startOfWeek, isEqual } from 'date-fns';
 import { TimeSheetStatus, TimeSheetData } from '@/types/timesheet';
 import { TimeSheetHeader } from '@/components/TimeSheet/TimeSheetHeader';
 import { TimeSheetControls } from '@/components/TimeSheet/TimeSheetControls';
@@ -8,13 +8,13 @@ import { TimeSheetContent } from '@/components/TimeSheet/TimeSheetContent';
 
 interface TimeSheetProps {
   userRole: 'admin' | 'user' | 'manager';
-  firstWeek?: string;
+  firstWeek: string;
 }
 
 const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
   const [showSettings, setShowSettings] = useState(false);
-  const [currentDate, setCurrentDate] = useState(
-    firstWeek ? parse(firstWeek, 'yyyy-MM-dd', new Date()) : new Date()
+  const [currentDate, setCurrentDate] = useState<Date>(
+    parse(firstWeek, 'yyyy-MM-dd', new Date())
   );
   const [clients, setClients] = useState<string[]>([
     'Administrative',
@@ -31,63 +31,46 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
   const [status, setStatus] = useState<TimeSheetStatus>('unconfirmed');
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (firstWeek) {
-      setCurrentDate(parse(firstWeek, 'yyyy-MM-dd', new Date()));
+  // Check if all previous weeks are submitted
+  const areAllPreviousWeeksSubmitted = (targetDate: Date): boolean => {
+    let currentWeek = parse(firstWeek, 'yyyy-MM-dd', new Date());
+    const targetWeek = startOfWeek(targetDate, { weekStartsOn: 1 });
+
+    while (isBefore(currentWeek, targetWeek)) {
+      const weekKey = format(currentWeek, 'yyyy-MM-dd');
+      if (!submittedWeeks.includes(weekKey)) {
+        return false;
+      }
+      currentWeek = addWeeks(currentWeek, 1);
     }
-  }, [firstWeek]);
+    return true;
+  };
 
-  const getCurrentWeekKey = () => format(currentDate, 'yyyy-MM-dd');
-
-  const validateWeekSelection = (date: Date): boolean => {
-    if (!firstWeek) return false;
-    
+  const handleWeekChange = (date: Date) => {
     const firstWeekDate = parse(firstWeek, 'yyyy-MM-dd', new Date());
-    const today = new Date();
-    const selectedWeekStart = startOfWeek(date, { weekStartsOn: 1 });
-    const previousWeek = addWeeks(selectedWeekStart, -1);
-    const previousWeekKey = format(previousWeek, 'yyyy-MM-dd');
-
-    // Cannot select weeks before first week
-    if (isBefore(selectedWeekStart, firstWeekDate)) {
+    
+    // Prevent selecting weeks before first week
+    if (isBefore(date, firstWeekDate)) {
       toast({
         title: "Invalid Week Selection",
         description: "Cannot select weeks before your first working week",
         variant: "destructive"
       });
-      return false;
+      return;
     }
 
-    // Cannot select future weeks
-    if (isAfter(selectedWeekStart, today)) {
+    // Prevent selecting future weeks
+    if (isAfter(date, new Date())) {
       toast({
         title: "Invalid Week Selection",
         description: "Cannot select future weeks",
         variant: "destructive"
       });
-      return false;
-    }
-
-    // If previous week exists and is not submitted, cannot edit current week
-    if (!submittedWeeks.includes(previousWeekKey) && !format(firstWeekDate, 'yyyy-MM-dd').includes(previousWeekKey)) {
-      toast({
-        title: "Previous Week Not Submitted",
-        description: "Please submit the previous week's timesheet first",
-        variant: "destructive"
-      });
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleWeekChange = (date: Date) => {
-    if (!validateWeekSelection(date)) {
       return;
     }
+
     setCurrentDate(date);
     const weekKey = format(date, 'yyyy-MM-dd');
-    // Set status based on whether the week has been submitted
     setStatus(submittedWeeks.includes(weekKey) ? 'under-review' : 'unconfirmed');
   };
 
@@ -101,7 +84,7 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
       return;
     }
 
-    const weekKey = getCurrentWeekKey();
+    const weekKey = format(currentDate, 'yyyy-MM-dd');
     const currentWeekTotal = calculateWeekTotal(weekKey, client, mediaType, hours);
 
     if (currentWeekTotal > 40) {
@@ -125,6 +108,25 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
     }));
   };
 
+  const handleSubmitForReview = () => {
+    if (!areAllPreviousWeeksSubmitted(currentDate)) {
+      toast({
+        title: "Cannot submit timesheet",
+        description: "Please submit previous weeks' timesheets first",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const weekKey = format(currentDate, 'yyyy-MM-dd');
+    setSubmittedWeeks(prev => [...prev, weekKey]);
+    setStatus('under-review');
+    toast({
+      title: "Timesheet Submitted",
+      description: "Your timesheet has been submitted for review",
+    });
+  };
+
   const calculateWeekTotal = (weekKey: string, currentClient: string, currentMediaType: string, newHours: number) => {
     let total = 0;
     const weekEntries = timeEntries[weekKey] || {};
@@ -141,80 +143,20 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
     return total + newHours;
   };
 
-  const handleSubmitForReview = () => {
-    const weekKey = getCurrentWeekKey();
-    setSubmittedWeeks(prev => [...prev, weekKey]);
-    setStatus('under-review');
-  };
-
-  const handleApprove = () => {
-    setStatus('accepted');
-  };
-
-  const handleReject = () => {
-    const weekKey = getCurrentWeekKey();
-    setSubmittedWeeks(prev => prev.filter(w => w !== weekKey));
-    setStatus('needs-revision');
-  };
-
-  const handleExportToExcel = () => {
-    toast({
-      title: "Export Started",
-      description: "Your timesheet is being exported to Excel",
-    });
-  };
-
-  const handleAddClient = (client: string) => {
-    if (!clients.includes(client)) {
-      setClients(prev => [...prev, client]);
-    }
-  };
-
-  const handleRemoveClient = (client: string) => {
-    setClients(prev => prev.filter(c => c !== client));
-  };
-
-  const handleAddMediaType = (type: string) => {
-    if (!mediaTypes.includes(type)) {
-      setMediaTypes(prev => [...prev, type]);
-    }
-  };
-
-  const handleRemoveMediaType = (type: string) => {
-    setMediaTypes(prev => prev.filter(t => t !== type));
-  };
-
-  const handleReturnToFirstUnconfirmed = () => {
-    if (firstWeek) {
-      const firstWeekDate = parse(firstWeek, 'yyyy-MM-dd', new Date());
-      let currentWeek = firstWeekDate;
-      let weekKey = format(currentWeek, 'yyyy-MM-dd');
-      
-      // Find the first unsubmitted week
-      while (submittedWeeks.includes(weekKey) && !isAfter(currentWeek, new Date())) {
-        currentWeek = addWeeks(currentWeek, 1);
-        weekKey = format(currentWeek, 'yyyy-MM-dd');
-      }
-
-      setCurrentDate(currentWeek);
-      toast({
-        title: "Returned to First Unconfirmed Week",
-        description: "You've been returned to your first unconfirmed week",
-      });
-    }
-  };
-
-  const currentWeekEntries = timeEntries[getCurrentWeekKey()] || {};
-
   return (
     <div className="space-y-6">
       <TimeSheetHeader
         userRole={userRole}
-        remainingHours={calculateWeekTotal(getCurrentWeekKey(), '', '', 0)}
+        remainingHours={40 - calculateWeekTotal(format(currentDate, 'yyyy-MM-dd'), '', '', 0)}
         status={status}
-        onReturnToFirstWeek={handleReturnToFirstUnconfirmed}
+        onReturnToFirstWeek={() => handleWeekChange(parse(firstWeek, 'yyyy-MM-dd', new Date()))}
         onToggleSettings={() => setShowSettings(!showSettings)}
-        onExportToExcel={handleExportToExcel}
+        onExportToExcel={() => {
+          toast({
+            title: "Export Started",
+            description: "Your timesheet is being exported to Excel",
+          });
+        }}
         firstWeek={firstWeek}
       />
 
@@ -224,21 +166,47 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
         status={status}
         isManager={userRole === 'manager' || userRole === 'admin'}
         onSubmitForReview={handleSubmitForReview}
-        onApprove={handleApprove}
-        onReject={handleReject}
+        onApprove={() => {
+          setStatus('accepted');
+          toast({
+            title: "Timesheet Approved",
+            description: "The timesheet has been approved",
+          });
+        }}
+        onReject={() => {
+          const weekKey = format(currentDate, 'yyyy-MM-dd');
+          setSubmittedWeeks(prev => prev.filter(w => w !== weekKey));
+          setStatus('needs-revision');
+          toast({
+            title: "Timesheet Rejected",
+            description: "The timesheet needs revision",
+          });
+        }}
       />
 
       <TimeSheetContent
         showSettings={showSettings}
         clients={clients}
         mediaTypes={mediaTypes}
-        timeEntries={currentWeekEntries}
+        timeEntries={timeEntries[format(currentDate, 'yyyy-MM-dd')] || {}}
         status={status}
         onTimeUpdate={handleTimeUpdate}
-        onAddClient={handleAddClient}
-        onRemoveClient={handleRemoveClient}
-        onAddMediaType={handleAddMediaType}
-        onRemoveMediaType={handleRemoveMediaType}
+        onAddClient={(client: string) => {
+          if (!clients.includes(client)) {
+            setClients(prev => [...prev, client]);
+          }
+        }}
+        onRemoveClient={(client: string) => {
+          setClients(prev => prev.filter(c => c !== client));
+        }}
+        onAddMediaType={(type: string) => {
+          if (!mediaTypes.includes(type)) {
+            setMediaTypes(prev => [...prev, type]);
+          }
+        }}
+        onRemoveMediaType={(type: string) => {
+          setMediaTypes(prev => prev.filter(t => t !== type));
+        }}
       />
     </div>
   );
