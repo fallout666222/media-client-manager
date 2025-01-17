@@ -5,6 +5,7 @@ import { TimeSheetStatus, TimeSheetData } from '@/types/timesheet';
 import { TimeSheetHeader } from '@/components/TimeSheet/TimeSheetHeader';
 import { TimeSheetControls } from '@/components/TimeSheet/TimeSheetControls';
 import { TimeSheetContent } from '@/components/TimeSheet/TimeSheetContent';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface TimeSheetProps {
   userRole: 'admin' | 'user' | 'manager';
@@ -31,95 +32,36 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
   const [status, setStatus] = useState<TimeSheetStatus>('unconfirmed');
   const { toast } = useToast();
 
-  // Check if all previous weeks are submitted
-  const areAllPreviousWeeksSubmitted = (targetDate: Date): boolean => {
-    let currentWeek = parse(firstWeek, 'yyyy-MM-dd', new Date());
-    const targetWeek = startOfWeek(targetDate, { weekStartsOn: 1 });
+  const findFirstUnsubmittedWeek = (currentWeekDate: Date): Date | null => {
+    let weekToCheck = parse(firstWeek, 'yyyy-MM-dd', new Date());
+    const currentWeekStart = startOfWeek(currentWeekDate, { weekStartsOn: 1 });
 
-    while (isBefore(currentWeek, targetWeek)) {
-      const weekKey = format(currentWeek, 'yyyy-MM-dd');
+    while (isBefore(weekToCheck, currentWeekStart) || isEqual(weekToCheck, currentWeekStart)) {
+      const weekKey = format(weekToCheck, 'yyyy-MM-dd');
       if (!submittedWeeks.includes(weekKey)) {
-        return false;
+        return weekToCheck;
       }
-      currentWeek = addWeeks(currentWeek, 1);
+      weekToCheck = addWeeks(weekToCheck, 1);
     }
-    return true;
-  };
-
-  const handleWeekChange = (date: Date) => {
-    const firstWeekDate = parse(firstWeek, 'yyyy-MM-dd', new Date());
-    
-    // Prevent selecting weeks before first week
-    if (isBefore(date, firstWeekDate)) {
-      toast({
-        title: "Invalid Week Selection",
-        description: "Cannot select weeks before your first working week",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Prevent selecting future weeks
-    if (isAfter(date, new Date())) {
-      toast({
-        title: "Invalid Week Selection",
-        description: "Cannot select future weeks",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setCurrentDate(date);
-    const weekKey = format(date, 'yyyy-MM-dd');
-    setStatus(submittedWeeks.includes(weekKey) ? 'under-review' : 'unconfirmed');
-  };
-
-  const handleTimeUpdate = (client: string, mediaType: string, hours: number) => {
-    if (status === 'under-review' || status === 'accepted') {
-      toast({
-        title: "Cannot modify timesheet",
-        description: "This timesheet is currently under review or has been accepted",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const weekKey = format(currentDate, 'yyyy-MM-dd');
-    const currentWeekTotal = calculateWeekTotal(weekKey, client, mediaType, hours);
-
-    if (currentWeekTotal > 40) {
-      toast({
-        title: "Exceeded weekly limit",
-        description: "Total hours for the week cannot exceed 40",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setTimeEntries(prev => ({
-      ...prev,
-      [weekKey]: {
-        ...prev[weekKey],
-        [client]: {
-          ...(prev[weekKey]?.[client] || {}),
-          [mediaType]: { hours, status }
-        }
-      }
-    }));
+    return null;
   };
 
   const handleSubmitForReview = () => {
-    if (!areAllPreviousWeeksSubmitted(currentDate)) {
+    const firstUnsubmittedWeek = findFirstUnsubmittedWeek(currentDate);
+    const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
+    
+    if (firstUnsubmittedWeek && !isEqual(firstUnsubmittedWeek, currentDate)) {
+      const unsubmittedWeekKey = format(firstUnsubmittedWeek, 'yyyy-MM-dd');
       toast({
-        title: "Cannot submit timesheet",
-        description: "Please submit previous weeks' timesheets first",
+        title: "Cannot Submit This Week",
+        description: `Please submit the week of ${format(firstUnsubmittedWeek, 'MMM d, yyyy')} first`,
         variant: "destructive"
       });
+      setCurrentDate(firstUnsubmittedWeek);
       return;
     }
 
-    const weekKey = format(currentDate, 'yyyy-MM-dd');
-    setSubmittedWeeks(prev => [...prev, weekKey]);
+    setSubmittedWeeks(prev => [...prev, currentWeekKey]);
     setStatus('under-review');
     toast({
       title: "Timesheet Submitted",
@@ -149,7 +91,7 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
         userRole={userRole}
         remainingHours={40 - calculateWeekTotal(format(currentDate, 'yyyy-MM-dd'), '', '', 0)}
         status={status}
-        onReturnToFirstWeek={() => handleWeekChange(parse(firstWeek, 'yyyy-MM-dd', new Date()))}
+        onReturnToFirstWeek={() => setCurrentDate(parse(firstWeek, 'yyyy-MM-dd', new Date()))}
         onToggleSettings={() => setShowSettings(!showSettings)}
         onExportToExcel={() => {
           toast({
@@ -160,9 +102,18 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
         firstWeek={firstWeek}
       />
 
+      {findFirstUnsubmittedWeek(currentDate) && 
+       !isEqual(findFirstUnsubmittedWeek(currentDate), currentDate) && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>
+            You have unsubmitted timesheets from previous weeks. Please submit them in chronological order.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <TimeSheetControls
         currentDate={currentDate}
-        onWeekChange={handleWeekChange}
+        onWeekChange={setCurrentDate}
         status={status}
         isManager={userRole === 'manager' || userRole === 'admin'}
         onSubmitForReview={handleSubmitForReview}
@@ -190,7 +141,19 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
         mediaTypes={mediaTypes}
         timeEntries={timeEntries[format(currentDate, 'yyyy-MM-dd')] || {}}
         status={status}
-        onTimeUpdate={handleTimeUpdate}
+        onTimeUpdate={(client, mediaType, hours) => {
+          const weekKey = format(currentDate, 'yyyy-MM-dd');
+          setTimeEntries(prev => ({
+            ...prev,
+            [weekKey]: {
+              ...prev[weekKey],
+              [client]: {
+                ...prev[weekKey]?.[client],
+                [mediaType]: { hours, status }
+              }
+            }
+          }));
+        }}
         onAddClient={(client: string) => {
           if (!clients.includes(client)) {
             setClients(prev => [...prev, client]);
