@@ -43,11 +43,11 @@ export const TimeSheetGrid = ({
                     type="number"
                     min="0"
                     max="40"
-                    step="0.5"
+                    step="1"
                     className="timesheet-input"
                     value={timeEntries[client]?.[type]?.hours || ''}
                     onChange={(e) => {
-                      const hours = parseFloat(e.target.value) || 0;
+                      const hours = parseInt(e.target.value) || 0;
                       onTimeUpdate(client, type, hours);
                     }}
                     disabled={isReadOnly}

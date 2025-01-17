@@ -51,9 +51,30 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
     return weekStatuses[currentWeekKey] || 'unconfirmed';
   };
 
+  const getTotalHoursForWeek = (): number => {
+    const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
+    const weekEntries = timeEntries[currentWeekKey] || {};
+    
+    return Object.values(weekEntries).reduce((clientSum, mediaEntries) => {
+      return clientSum + Object.values(mediaEntries).reduce((mediaSum, entry) => {
+        return mediaSum + (entry.hours || 0);
+      }, 0);
+    }, 0);
+  };
+
   const handleSubmitForReview = () => {
     const firstUnsubmittedWeek = findFirstUnsubmittedWeek(currentDate);
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
+    const totalHours = getTotalHoursForWeek();
+    
+    if (totalHours < 40) {
+      toast({
+        title: "Cannot Submit Timesheet",
+        description: `Please fill in all 40 hours before submitting. Current total: ${totalHours} hours`,
+        variant: "destructive"
+      });
+      return;
+    }
     
     if (firstUnsubmittedWeek && !isEqual(firstUnsubmittedWeek, currentDate)) {
       const unsubmittedWeekKey = format(firstUnsubmittedWeek, 'yyyy-MM-dd');
@@ -106,10 +127,7 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
     <div className="space-y-6">
       <TimeSheetHeader
         userRole={userRole}
-        remainingHours={40 - Object.values(timeEntries[format(currentDate, 'yyyy-MM-dd')] || {}).reduce(
-          (sum, mediaEntries) => sum + Object.values(mediaEntries).reduce((total, entry) => total + entry.hours, 0),
-          0
-        )}
+        remainingHours={40 - getTotalHoursForWeek()}
         status={getCurrentWeekStatus()}
         onReturnToFirstWeek={() => setCurrentDate(parse(firstWeek, 'yyyy-MM-dd', new Date()))}
         onToggleSettings={() => setShowSettings(!showSettings)}
