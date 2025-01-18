@@ -86,10 +86,10 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
     }
     
     if (firstUnsubmittedWeek && !isEqual(firstUnsubmittedWeek, currentDate)) {
-      const unsubmittedWeekKey = format(firstUnsubmittedWeek, 'yyyy-MM-dd');
+      const unsubmittedWeekKey = format(firstUnsubmittedWeek, 'MMM d, yyyy');
       toast({
         title: "Cannot Submit This Week",
-        description: `Please submit the week of ${format(firstUnsubmittedWeek, 'MMM d, yyyy')} first`,
+        description: `You must submit timesheets in chronological order. Please submit the week of ${unsubmittedWeekKey} first.`,
         variant: "destructive"
       });
       setCurrentDate(firstUnsubmittedWeek);
@@ -101,10 +101,13 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
       ...prev,
       [currentWeekKey]: 'under-review'
     }));
-    toast({
-      title: "Timesheet Under Review",
-      description: `Week of ${format(currentDate, 'MMM d, yyyy')} has been submitted and is now under review`,
-    });
+    
+    if (totalHours === 40 && (!firstUnsubmittedWeek || isEqual(firstUnsubmittedWeek, currentDate))) {
+      toast({
+        title: "Timesheet Under Review",
+        description: `Week of ${format(currentDate, 'MMM d, yyyy')} has been submitted and is now under review`,
+      });
+    }
   };
 
   const handleApprove = () => {
