@@ -63,23 +63,23 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
   };
 
   const handleSubmitForReview = () => {
+    const totalHours = getTotalHoursForWeek();
     const firstUnsubmittedWeek = findFirstUnsubmittedWeek(currentDate);
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
-    const totalHours = getTotalHoursForWeek();
     
-    if (totalHours > 40) {
+    if (totalHours === 0) {
       toast({
-        title: "Cannot Submit Timesheet",
-        description: `Total hours cannot exceed 40. Current total: ${totalHours} hours`,
+        title: "Cannot Submit Empty Timesheet",
+        description: "Please fill in your hours before submitting.",
         variant: "destructive"
       });
       return;
     }
-    
+
     if (totalHours < 40) {
       toast({
-        title: "Cannot Submit Timesheet",
-        description: `Please fill in all 40 hours before submitting. Current total: ${totalHours} hours`,
+        title: "Insufficient Hours",
+        description: `You must fill in all 40 hours for the week. Current total: ${totalHours} hours`,
         variant: "destructive"
       });
       return;
