@@ -96,16 +96,15 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
       return;
     }
 
-    setSubmittedWeeks(prev => [...prev, currentWeekKey]);
-    setWeekStatuses(prev => ({
-      ...prev,
-      [currentWeekKey]: 'under-review'
-    }));
-    
     if (totalHours === 40 && (!firstUnsubmittedWeek || isEqual(firstUnsubmittedWeek, currentDate))) {
+      setSubmittedWeeks(prev => [...prev, currentWeekKey]);
+      setWeekStatuses(prev => ({
+        ...prev,
+        [currentWeekKey]: 'under-review'
+      }));
       toast({
-        title: "Timesheet Under Review",
-        description: `Week of ${format(currentDate, 'MMM d, yyyy')} has been submitted and is now under review`,
+        title: "Timesheet Submitted",
+        description: `Week of ${format(currentDate, 'MMM d, yyyy')} has been submitted for review`,
       });
     }
   };
