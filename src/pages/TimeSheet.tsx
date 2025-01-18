@@ -63,50 +63,48 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
   };
 
   const handleSubmitForReview = () => {
-    const totalHours = getTotalHoursForWeek();
     const firstUnsubmittedWeek = findFirstUnsubmittedWeek(currentDate);
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
+    const totalHours = getTotalHoursForWeek();
     
-    if (totalHours === 0) {
+    if (totalHours > 40) {
       toast({
-        title: "Cannot Submit Empty Timesheet",
-        description: "Please fill in your hours before submitting.",
+        title: "Cannot Submit Timesheet",
+        description: `Total hours cannot exceed 40. Current total: ${totalHours} hours`,
         variant: "destructive"
       });
       return;
     }
-
+    
     if (totalHours < 40) {
       toast({
-        title: "Insufficient Hours",
-        description: `You must fill in all 40 hours for the week. Current total: ${totalHours} hours`,
+        title: "Cannot Submit Timesheet",
+        description: `Please fill in all 40 hours before submitting. Current total: ${totalHours} hours`,
         variant: "destructive"
       });
       return;
     }
     
     if (firstUnsubmittedWeek && !isEqual(firstUnsubmittedWeek, currentDate)) {
-      const unsubmittedWeekKey = format(firstUnsubmittedWeek, 'MMM d, yyyy');
+      const unsubmittedWeekKey = format(firstUnsubmittedWeek, 'yyyy-MM-dd');
       toast({
         title: "Cannot Submit This Week",
-        description: `You must submit timesheets in chronological order. Please submit the week of ${unsubmittedWeekKey} first.`,
+        description: `Please submit the week of ${format(firstUnsubmittedWeek, 'MMM d, yyyy')} first`,
         variant: "destructive"
       });
       setCurrentDate(firstUnsubmittedWeek);
       return;
     }
 
-    if (totalHours === 40 && (!firstUnsubmittedWeek || isEqual(firstUnsubmittedWeek, currentDate))) {
-      setSubmittedWeeks(prev => [...prev, currentWeekKey]);
-      setWeekStatuses(prev => ({
-        ...prev,
-        [currentWeekKey]: 'under-review'
-      }));
-      toast({
-        title: "Timesheet Submitted",
-        description: `Week of ${format(currentDate, 'MMM d, yyyy')} has been submitted for review`,
-      });
-    }
+    setSubmittedWeeks(prev => [...prev, currentWeekKey]);
+    setWeekStatuses(prev => ({
+      ...prev,
+      [currentWeekKey]: 'under-review'
+    }));
+    toast({
+      title: "Timesheet Under Review",
+      description: `Week of ${format(currentDate, 'MMM d, yyyy')} has been submitted and is now under review`,
+    });
   };
 
   const handleApprove = () => {
