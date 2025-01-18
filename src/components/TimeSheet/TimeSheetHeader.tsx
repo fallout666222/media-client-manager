@@ -43,7 +43,7 @@ export const TimeSheetHeader = ({
             className="flex items-center gap-2"
           >
             <RotateCcw className="h-4 w-4" />
-            Return to First Week
+            Return to First Unsubmitted Week
           </Button>
         )}
         <Button

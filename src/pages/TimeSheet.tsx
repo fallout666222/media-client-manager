@@ -46,6 +46,13 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
     return null;
   };
 
+  const handleReturnToFirstUnsubmittedWeek = () => {
+    const firstUnsubmittedWeek = findFirstUnsubmittedWeek(currentDate);
+    if (firstUnsubmittedWeek) {
+      setCurrentDate(firstUnsubmittedWeek);
+    }
+  };
+
   const getCurrentWeekStatus = (): TimeSheetStatus => {
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
     return weekStatuses[currentWeekKey] || 'unconfirmed';
@@ -138,7 +145,7 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
         userRole={userRole}
         remainingHours={40 - getTotalHoursForWeek()}
         status={getCurrentWeekStatus()}
-        onReturnToFirstWeek={() => setCurrentDate(parse(firstWeek, 'yyyy-MM-dd', new Date()))}
+        onReturnToFirstWeek={handleReturnToFirstUnsubmittedWeek}
         onToggleSettings={() => setShowSettings(!showSettings)}
         onExportToExcel={() => {
           toast({
