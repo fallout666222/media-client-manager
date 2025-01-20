@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parse, format, isAfter, isBefore, addWeeks, startOfWeek, isEqual } from 'date-fns';
 import { TimeSheetStatus, TimeSheetData } from '@/types/timesheet';
@@ -210,7 +210,6 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
         onRemoveMediaType={(type: string) => {
           setMediaTypes(prev => prev.filter(t => t !== type));
         }}
-        userRole={userRole}
       />
     </div>
   );
