@@ -14,6 +14,7 @@ interface TimeSheetContentProps {
   onRemoveClient: (client: string) => void;
   onAddMediaType: (type: string) => void;
   onRemoveMediaType: (type: string) => void;
+  userRole: string;
 }
 
 export const TimeSheetContent = ({
@@ -27,6 +28,7 @@ export const TimeSheetContent = ({
   onRemoveClient,
   onAddMediaType,
   onRemoveMediaType,
+  userRole,
 }: TimeSheetContentProps) => {
   if (showSettings) {
     return (
@@ -37,6 +39,7 @@ export const TimeSheetContent = ({
         onRemoveClient={onRemoveClient}
         onAddMediaType={onAddMediaType}
         onRemoveMediaType={onRemoveMediaType}
+        userRole={userRole}
       />
     );
   }
