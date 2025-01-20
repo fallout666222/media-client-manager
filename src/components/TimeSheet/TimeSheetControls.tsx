@@ -11,6 +11,7 @@ interface TimeSheetControlsProps {
   onSubmitForReview: () => void;
   onApprove: () => void;
   onReject: () => void;
+  readOnly?: boolean;
 }
 
 export const TimeSheetControls = ({
@@ -21,6 +22,7 @@ export const TimeSheetControls = ({
   onSubmitForReview,
   onApprove,
   onReject,
+  readOnly = false,
 }: TimeSheetControlsProps) => {
   return (
     <div className="space-y-4">
