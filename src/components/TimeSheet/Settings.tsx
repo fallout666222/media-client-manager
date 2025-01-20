@@ -101,9 +101,9 @@ export const Settings = ({
                 <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-full p-0">
+            <PopoverContent className="w-full p-0 bg-white border rounded-md shadow-md">
               <Command>
-                <CommandInput placeholder="Search client..." />
+                <CommandInput placeholder="Search client..." className="border-0" />
                 <CommandEmpty>No client found.</CommandEmpty>
                 <CommandGroup>
                   {clients.map((client) => (
@@ -113,6 +113,7 @@ export const Settings = ({
                         setSelectedClient(client);
                         setOpenClient(false);
                       }}
+                      className="cursor-pointer hover:bg-gray-100"
                     >
                       {client}
                     </CommandItem>
@@ -170,9 +171,9 @@ export const Settings = ({
                 <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-full p-0">
+            <PopoverContent className="w-full p-0 bg-white border rounded-md shadow-md">
               <Command>
-                <CommandInput placeholder="Search media type..." />
+                <CommandInput placeholder="Search media type..." className="border-0" />
                 <CommandEmpty>No media type found.</CommandEmpty>
                 <CommandGroup>
                   {mediaTypes.map((type) => (
@@ -182,6 +183,7 @@ export const Settings = ({
                         setSelectedMediaType(type);
                         setOpenMediaType(false);
                       }}
+                      className="cursor-pointer hover:bg-gray-100"
                     >
                       {type}
                     </CommandItem>
