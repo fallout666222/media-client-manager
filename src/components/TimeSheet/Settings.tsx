@@ -27,8 +27,8 @@ interface SettingsProps {
 }
 
 export const Settings = ({
-  clients,
-  mediaTypes,
+  clients = [],
+  mediaTypes = [],
   onAddClient,
   onRemoveClient,
   onAddMediaType,
@@ -101,12 +101,12 @@ export const Settings = ({
                 <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-full p-0 bg-white border rounded-md shadow-md">
+            <PopoverContent className="w-full p-0 bg-white border rounded-md shadow-md z-50">
               <Command>
                 <CommandInput placeholder="Search client..." className="border-0" />
                 <CommandEmpty>No client found.</CommandEmpty>
                 <CommandGroup>
-                  {clients.map((client) => (
+                  {Array.isArray(clients) && clients.map((client) => (
                     <CommandItem
                       key={client}
                       onSelect={() => {
@@ -124,7 +124,7 @@ export const Settings = ({
           </Popover>
         )}
         <div className="flex flex-wrap gap-2">
-          {clients.map((client) => (
+          {Array.isArray(clients) && clients.map((client) => (
             <div
               key={client}
               className="flex items-center gap-2 bg-secondary px-3 py-1 rounded-full"
@@ -171,12 +171,12 @@ export const Settings = ({
                 <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-full p-0 bg-white border rounded-md shadow-md">
+            <PopoverContent className="w-full p-0 bg-white border rounded-md shadow-md z-50">
               <Command>
                 <CommandInput placeholder="Search media type..." className="border-0" />
                 <CommandEmpty>No media type found.</CommandEmpty>
                 <CommandGroup>
-                  {mediaTypes.map((type) => (
+                  {Array.isArray(mediaTypes) && mediaTypes.map((type) => (
                     <CommandItem
                       key={type}
                       onSelect={() => {
@@ -194,7 +194,7 @@ export const Settings = ({
           </Popover>
         )}
         <div className="flex flex-wrap gap-2">
-          {mediaTypes.map((type) => (
+          {Array.isArray(mediaTypes) && mediaTypes.map((type) => (
             <div
               key={type}
               className="flex items-center gap-2 bg-secondary px-3 py-1 rounded-full"
