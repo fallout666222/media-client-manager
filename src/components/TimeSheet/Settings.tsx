@@ -17,8 +17,8 @@ import {
 } from "@/components/ui/popover"
 
 interface SettingsProps {
-  clients: string[];
-  mediaTypes: string[];
+  clients?: string[];
+  mediaTypes?: string[];
   onAddClient: (client: string) => void;
   onRemoveClient: (client: string) => void;
   onAddMediaType: (type: string) => void;
@@ -70,6 +70,8 @@ export const Settings = ({
   };
 
   const isAdmin = userRole === 'admin';
+  const safeClients = Array.isArray(clients) ? clients : [];
+  const safeMediaTypes = Array.isArray(mediaTypes) ? mediaTypes : [];
 
   return (
     <div className="space-y-8">
@@ -106,9 +108,10 @@ export const Settings = ({
                 <CommandInput placeholder="Search client..." className="border-0" />
                 <CommandEmpty>No client found.</CommandEmpty>
                 <CommandGroup>
-                  {Array.isArray(clients) && clients.map((client) => (
+                  {safeClients.map((client) => (
                     <CommandItem
                       key={client}
+                      value={client}
                       onSelect={() => {
                         setSelectedClient(client);
                         setOpenClient(false);
@@ -124,7 +127,7 @@ export const Settings = ({
           </Popover>
         )}
         <div className="flex flex-wrap gap-2">
-          {Array.isArray(clients) && clients.map((client) => (
+          {safeClients.map((client) => (
             <div
               key={client}
               className="flex items-center gap-2 bg-secondary px-3 py-1 rounded-full"
@@ -176,9 +179,10 @@ export const Settings = ({
                 <CommandInput placeholder="Search media type..." className="border-0" />
                 <CommandEmpty>No media type found.</CommandEmpty>
                 <CommandGroup>
-                  {Array.isArray(mediaTypes) && mediaTypes.map((type) => (
+                  {safeMediaTypes.map((type) => (
                     <CommandItem
                       key={type}
+                      value={type}
                       onSelect={() => {
                         setSelectedMediaType(type);
                         setOpenMediaType(false);
@@ -194,7 +198,7 @@ export const Settings = ({
           </Popover>
         )}
         <div className="flex flex-wrap gap-2">
-          {Array.isArray(mediaTypes) && mediaTypes.map((type) => (
+          {safeMediaTypes.map((type) => (
             <div
               key={type}
               className="flex items-center gap-2 bg-secondary px-3 py-1 rounded-full"
