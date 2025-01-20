@@ -10,9 +10,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 interface TimeSheetProps {
   userRole: 'admin' | 'user' | 'manager';
   firstWeek: string;
+  readOnly?: boolean;
 }
 
-const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
+const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [currentDate, setCurrentDate] = useState<Date>(
     parse(firstWeek, 'yyyy-MM-dd', new Date())
@@ -70,6 +71,8 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
   };
 
   const handleSubmitForReview = () => {
+    if (readOnly) return;
+    
     const firstUnsubmittedWeek = findFirstUnsubmittedWeek(currentDate);
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
     const totalHours = getTotalHoursForWeek();
@@ -115,6 +118,8 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
   };
 
   const handleApprove = () => {
+    if (readOnly) return;
+    
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
     setWeekStatuses(prev => ({
       ...prev,
@@ -127,6 +132,8 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
   };
 
   const handleReject = () => {
+    if (readOnly) return;
+    
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
     setWeekStatuses(prev => ({
       ...prev,
@@ -157,7 +164,8 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
       />
 
       {findFirstUnsubmittedWeek(currentDate) && 
-       !isEqual(findFirstUnsubmittedWeek(currentDate), currentDate) && (
+       !isEqual(findFirstUnsubmittedWeek(currentDate), currentDate) && 
+       !readOnly && (
         <Alert variant="destructive" className="mb-4">
           <AlertDescription>
             You have unsubmitted timesheets from previous weeks. Please submit them in chronological order.
@@ -173,6 +181,7 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
         onSubmitForReview={handleSubmitForReview}
         onApprove={handleApprove}
         onReject={handleReject}
+        readOnly={readOnly}
       />
 
       <TimeSheetContent
@@ -182,6 +191,7 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
         timeEntries={timeEntries[format(currentDate, 'yyyy-MM-dd')] || {}}
         status={getCurrentWeekStatus()}
         onTimeUpdate={(client, mediaType, hours) => {
+          if (readOnly) return;
           const weekKey = format(currentDate, 'yyyy-MM-dd');
           setTimeEntries(prev => ({
             ...prev,
@@ -195,21 +205,26 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
           }));
         }}
         onAddClient={(client: string) => {
+          if (readOnly) return;
           if (!clients.includes(client)) {
             setClients(prev => [...prev, client]);
           }
         }}
         onRemoveClient={(client: string) => {
+          if (readOnly) return;
           setClients(prev => prev.filter(c => c !== client));
         }}
         onAddMediaType={(type: string) => {
+          if (readOnly) return;
           if (!mediaTypes.includes(type)) {
             setMediaTypes(prev => [...prev, type]);
           }
         }}
         onRemoveMediaType={(type: string) => {
+          if (readOnly) return;
           setMediaTypes(prev => prev.filter(t => t !== type));
         }}
+        readOnly={readOnly}
       />
     </div>
   );

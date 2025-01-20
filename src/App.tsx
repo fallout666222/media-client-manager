@@ -2,15 +2,16 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Link } from "react-router-dom";
 import TimeSheet from "./pages/TimeSheet";
 import { Login } from "./components/Auth/Login";
 import { UserManagement } from "./components/Auth/UserManagement";
 import { FirstWeekManagement } from "./components/Auth/FirstWeekManagement";
+import UserImpersonation from "./pages/UserImpersonation";
 import { useState } from "react";
 import { User, UserFormData } from "./types/timesheet";
 import { Button } from "./components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogOut, Users } from "lucide-react";
 import { useToast } from "./hooks/use-toast";
 
 const queryClient = new QueryClient();
@@ -77,6 +78,14 @@ const App = () => {
               <span className="text-sm text-gray-600">
                 Logged in as: {user.username} ({user.role})
               </span>
+              {user.role === 'admin' && (
+                <Link to="/view-users">
+                  <Button variant="outline" size="sm" className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    View Users
+                  </Button>
+                </Link>
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -94,6 +103,16 @@ const App = () => {
               element={
                 !user ? (
                   <Login onLogin={handleLogin} users={users} />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              }
+            />
+            <Route
+              path="/view-users"
+              element={
+                user?.role === 'admin' ? (
+                  <UserImpersonation users={users} />
                 ) : (
                   <Navigate to="/" replace />
                 )
