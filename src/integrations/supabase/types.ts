@@ -9,7 +9,109 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      custom_weeks: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          end_date: string
+          hours: number
+          id: string
+          start_date: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          end_date: string
+          hours: number
+          id?: string
+          start_date: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          end_date?: string
+          hours?: number
+          id?: string
+          start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_weeks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          first_week: string | null
+          id: string
+          role: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          first_week?: string | null
+          id: string
+          role: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          first_week?: string | null
+          id?: string
+          role?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      time_entries: {
+        Row: {
+          client: string
+          created_at: string
+          hours: number
+          id: string
+          media_type: string
+          status: string
+          updated_at: string
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          client: string
+          created_at?: string
+          hours: number
+          id?: string
+          media_type: string
+          status: string
+          updated_at?: string
+          user_id: string
+          week_start: string
+        }
+        Update: {
+          client?: string
+          created_at?: string
+          hours?: number
+          id?: string
+          media_type?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
