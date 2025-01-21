@@ -8,15 +8,15 @@ import { Login } from "./components/Auth/Login";
 import { UserManagement } from "./components/Auth/UserManagement";
 import { FirstWeekManagement } from "./components/Auth/FirstWeekManagement";
 import UserImpersonation from "./pages/UserImpersonation";
+import CustomWeeks from "./pages/CustomWeeks";
 import { useState } from "react";
 import { User, UserFormData } from "./types/timesheet";
 import { Button } from "./components/ui/button";
-import { LogOut, Users } from "lucide-react";
+import { LogOut, Users, Calendar } from "lucide-react";
 import { useToast } from "./hooks/use-toast";
 
 const queryClient = new QueryClient();
 
-// Initial users list
 const INITIAL_USERS: User[] = [
   { username: "admin", password: "admin", role: "admin", firstWeek: "2024-01-01" },
   { username: "user", password: "user", role: "user" },
@@ -79,12 +79,20 @@ const App = () => {
                 Logged in as: {user.username} ({user.role})
               </span>
               {user.role === 'admin' && (
-                <Link to="/view-users">
-                  <Button variant="outline" size="sm" className="flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    View Users
-                  </Button>
-                </Link>
+                <>
+                  <Link to="/view-users">
+                    <Button variant="outline" size="sm" className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      View Users
+                    </Button>
+                  </Link>
+                  <Link to="/custom-weeks">
+                    <Button variant="outline" size="sm" className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      Custom Weeks
+                    </Button>
+                  </Link>
+                </>
               )}
               <Button
                 variant="outline"
@@ -113,6 +121,16 @@ const App = () => {
               element={
                 user?.role === 'admin' ? (
                   <UserImpersonation users={users} />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              }
+            />
+            <Route
+              path="/custom-weeks"
+              element={
+                user?.role === 'admin' ? (
+                  <CustomWeeks />
                 ) : (
                   <Navigate to="/" replace />
                 )
