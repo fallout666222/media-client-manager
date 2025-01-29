@@ -13,9 +13,15 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
-import { CustomWeek } from "@/types/timesheet";
 
-export const DEFAULT_WEEKS: CustomWeek[] = [
+interface CustomWeek {
+  id: string;
+  startDate: string;
+  endDate: string;
+  hours: number;
+}
+
+const DEFAULT_WEEKS: CustomWeek[] = [
   { id: "1", startDate: "2025-01-01", endDate: "2025-01-06", hours: 48 },
   { id: "2", startDate: "2025-01-10", endDate: "2025-01-03", hours: 40 },
   { id: "3", startDate: "2025-01-13", endDate: "2025-01-17", hours: 40 },

@@ -1,30 +1,55 @@
-import { TimeSheetGrid } from "./TimeSheetGrid";
-import { TimeSheetStatus, CustomWeek } from "@/types/timesheet";
+import React from 'react';
+import { TimeSheetGrid } from './TimeSheetGrid';
+import { Settings } from './Settings';
+import { TimeEntry, TimeSheetStatus } from '@/types/timesheet';
 
 interface TimeSheetContentProps {
-  currentDate: Date;
+  showSettings: boolean;
+  clients: string[];
+  mediaTypes: string[];
+  timeEntries: Record<string, Record<string, TimeEntry>>;
   status: TimeSheetStatus;
-  readOnly: boolean;
-  isCustomWeek: boolean;
-  customWeeks?: CustomWeek[];
+  onTimeUpdate: (client: string, mediaType: string, hours: number) => void;
+  onAddClient: (client: string) => void;
+  onRemoveClient: (client: string) => void;
+  onAddMediaType: (type: string) => void;
+  onRemoveMediaType: (type: string) => void;
+  readOnly?: boolean;
 }
 
 export const TimeSheetContent = ({
-  currentDate,
+  showSettings,
+  clients,
+  mediaTypes,
+  timeEntries,
   status,
-  readOnly,
-  isCustomWeek,
-  customWeeks,
+  onTimeUpdate,
+  onAddClient,
+  onRemoveClient,
+  onAddMediaType,
+  onRemoveMediaType,
+  readOnly = false,
 }: TimeSheetContentProps) => {
-  return (
-    <div className="space-y-4">
-      <TimeSheetGrid
-        currentDate={currentDate}
-        status={status}
-        readOnly={readOnly}
-        isCustomWeek={isCustomWeek}
-        customWeeks={customWeeks}
+  if (showSettings) {
+    return (
+      <Settings
+        clients={clients}
+        mediaTypes={mediaTypes}
+        onAddClient={onAddClient}
+        onRemoveClient={onRemoveClient}
+        onAddMediaType={onAddMediaType}
+        onRemoveMediaType={onRemoveMediaType}
       />
-    </div>
+    );
+  }
+
+  return (
+    <TimeSheetGrid
+      clients={clients}
+      mediaTypes={mediaTypes}
+      timeEntries={timeEntries}
+      onTimeUpdate={onTimeUpdate}
+      status={status}
+    />
   );
 };

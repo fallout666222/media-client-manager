@@ -1,7 +1,8 @@
-import { WeekPicker } from "./WeekPicker";
-import { ApprovalActions } from "./ApprovalActions";
-import { WeekTypeSwitch } from "./WeekTypeSwitch";
-import { TimeSheetStatus, CustomWeek } from "@/types/timesheet";
+import React from 'react';
+import { WeekPicker } from './WeekPicker';
+import { ApprovalActions } from './ApprovalActions';
+import { TimeSheetStatus } from '@/types/timesheet';
+import { WeekTypeSwitch } from './WeekTypeSwitch';
 
 interface TimeSheetControlsProps {
   currentDate: Date;
@@ -13,7 +14,7 @@ interface TimeSheetControlsProps {
   onReject: () => void;
   isCustomWeek: boolean;
   onWeekTypeChange: (value: boolean) => void;
-  customWeeks?: CustomWeek[];
+  readOnly?: boolean;
 }
 
 export const TimeSheetControls = ({
@@ -26,25 +27,30 @@ export const TimeSheetControls = ({
   onReject,
   isCustomWeek,
   onWeekTypeChange,
-  customWeeks,
+  readOnly = false,
 }: TimeSheetControlsProps) => {
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-4">
-        <WeekPicker currentDate={currentDate} onWeekChange={onWeekChange} />
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <WeekPicker
+          currentDate={currentDate}
+          onWeekChange={onWeekChange}
+        />
         <WeekTypeSwitch
           isCustomWeek={isCustomWeek}
           onToggle={onWeekTypeChange}
-          customWeeks={customWeeks}
         />
       </div>
-      <ApprovalActions
-        status={status}
-        isManager={isManager}
-        onSubmitForReview={onSubmitForReview}
-        onApprove={onApprove}
-        onReject={onReject}
-      />
+      
+      <div className="flex items-center justify-between">
+        <ApprovalActions
+          status={status}
+          isManager={isManager}
+          onSubmitForReview={onSubmitForReview}
+          onApprove={onApprove}
+          onReject={onReject}
+        />
+      </div>
     </div>
   );
 };

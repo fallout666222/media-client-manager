@@ -1,28 +1,14 @@
-export interface User {
-  username: string;
-  password: string;
-  role: string;
-  firstWeek?: string;
-}
-
-export interface UserFormData {
-  username: string;
-  password: string;
-  role: string;
-  firstWeek?: string;
-}
-
-export interface CustomWeek {
-  id: string;
-  startDate: string;
-  endDate: string;
-  hours: number;
-}
-
-export type TimeSheetStatus = 'draft' | 'pending' | 'under-review' | 'needs-revision' | 'accepted' | 'rejected' | 'approved' | 'unconfirmed';
+export type TimeSheetStatus = 'unconfirmed' | 'under-review' | 'accepted' | 'needs-revision';
 
 export interface TimeEntry {
   hours: number;
+  status: TimeSheetStatus;
+}
+
+export interface TimeSheetData {
+  [client: string]: {
+    [mediaType: string]: TimeEntry;
+  };
 }
 
 export interface Department {
@@ -34,4 +20,17 @@ export interface Employee {
   id: string;
   name: string;
   department: string;
+}
+
+export interface User {
+  username: string;
+  password: string;
+  role: 'admin' | 'user' | 'manager';
+  firstWeek?: string;
+}
+
+export interface UserFormData {
+  username: string;
+  password: string;
+  role: 'admin' | 'user' | 'manager';
 }
