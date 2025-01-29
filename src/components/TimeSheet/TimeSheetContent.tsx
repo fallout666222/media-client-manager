@@ -1,14 +1,14 @@
 import React from 'react';
 import { TimeSheetGrid } from './TimeSheetGrid';
 import { Settings } from './Settings';
-import { TimeEntry } from '@/types/timesheet';
+import { TimeEntry, TimeSheetStatus } from '@/types/timesheet';
 
 interface TimeSheetContentProps {
   showSettings: boolean;
   clients: string[];
   mediaTypes: string[];
   timeEntries: Record<string, Record<string, TimeEntry>>;
-  status: string;
+  status: TimeSheetStatus;
   onTimeUpdate: (client: string, mediaType: string, hours: number) => void;
   onAddClient: (client: string) => void;
   onRemoveClient: (client: string) => void;
