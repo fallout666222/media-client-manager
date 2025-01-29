@@ -11,9 +11,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2 } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { Trash2, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface CustomWeek {
   id: string;
@@ -108,7 +107,15 @@ const CustomWeeks = () => {
 
   return (
     <div className="container mx-auto p-4 space-y-6">
-      <h1 className="text-2xl font-bold mb-6">Custom Weeks Management</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Custom Weeks Management</h1>
+        <Link to="/">
+          <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Button>
+        </Link>
+      </div>
       
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -9,6 +9,9 @@ import {
 import TimeSheet from "./TimeSheet";
 import { User } from "@/types/timesheet";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 interface UserImpersonationProps {
   users: User[];
@@ -31,7 +34,15 @@ const UserImpersonation = ({ users }: UserImpersonationProps) => {
 
   return (
     <div className="container mx-auto p-4 space-y-6">
-      <h1 className="text-2xl font-bold mb-6">View User Timesheets</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">View User Timesheets</h1>
+        <Link to="/">
+          <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Button>
+        </Link>
+      </div>
       
       <div className="w-full max-w-md">
         <Select onValueChange={handleUserSelect}>
