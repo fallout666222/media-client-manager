@@ -11,7 +11,6 @@ interface TimeSheetControlsProps {
   onSubmitForReview: () => void;
   onApprove: () => void;
   onReject: () => void;
-  readOnly: boolean;
   isCustomWeek: boolean;
   onWeekTypeChange: (value: boolean) => void;
   customWeeks?: CustomWeek[];
@@ -25,7 +24,6 @@ export const TimeSheetControls = ({
   onSubmitForReview,
   onApprove,
   onReject,
-  readOnly,
   isCustomWeek,
   onWeekTypeChange,
   customWeeks,
@@ -46,7 +44,6 @@ export const TimeSheetControls = ({
         onSubmitForReview={onSubmitForReview}
         onApprove={onApprove}
         onReject={onReject}
-        readOnly={readOnly}
       />
     </div>
   );

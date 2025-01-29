@@ -1,24 +1,32 @@
 import React from 'react';
 import { Input } from "@/components/ui/input";
-import { TimeEntry, TimeSheetStatus } from '@/types/timesheet';
+import { TimeEntry, TimeSheetStatus, CustomWeek } from '@/types/timesheet';
 import { useToast } from "@/hooks/use-toast";
 
 interface TimeSheetGridProps {
-  clients: string[];
-  mediaTypes: string[];
-  timeEntries: Record<string, Record<string, TimeEntry>>;
-  onTimeUpdate: (client: string, mediaType: string, hours: number) => void;
+  currentDate: Date;
   status: TimeSheetStatus;
+  readOnly: boolean;
+  isCustomWeek: boolean;
+  customWeeks?: CustomWeek[];
+  clients?: string[];
+  mediaTypes?: string[];
+  timeEntries?: Record<string, Record<string, TimeEntry>>;
+  onTimeUpdate?: (client: string, mediaType: string, hours: number) => void;
 }
 
 export const TimeSheetGrid = ({ 
-  clients, 
-  mediaTypes, 
-  timeEntries,
-  onTimeUpdate,
-  status
+  currentDate,
+  status,
+  readOnly,
+  isCustomWeek,
+  customWeeks,
+  clients = [],
+  mediaTypes = [],
+  timeEntries = {},
+  onTimeUpdate = () => {}
 }: TimeSheetGridProps) => {
-  const isReadOnly = status === 'under-review' || status === 'accepted';
+  const isReadOnly = status === 'under-review' || status === 'accepted' || readOnly;
   const { toast } = useToast();
 
   const calculateTotalHours = (excludingClient?: string, excludingType?: string): number => {

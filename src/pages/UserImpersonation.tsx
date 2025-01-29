@@ -66,7 +66,6 @@ const UserImpersonation = ({ users }: UserImpersonationProps) => {
           <TimeSheet 
             userRole={selectedUser.role} 
             firstWeek={selectedUser.firstWeek}
-            readOnly={true}
           />
         </div>
       ) : selectedUser && (
