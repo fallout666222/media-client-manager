@@ -19,7 +19,7 @@ export interface CustomWeek {
   hours: number;
 }
 
-export type TimeSheetStatus = 'draft' | 'pending' | 'under-review' | 'needs-revision' | 'accepted' | 'rejected';
+export type TimeSheetStatus = 'draft' | 'pending' | 'under-review' | 'needs-revision' | 'accepted' | 'rejected' | 'approved' | 'unconfirmed';
 
 export interface TimeEntry {
   hours: number;

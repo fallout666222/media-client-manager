@@ -2,7 +2,6 @@ import { useState } from "react";
 import { TimeSheetContent } from "@/components/TimeSheet/TimeSheetContent";
 import { TimeSheetControls } from "@/components/TimeSheet/TimeSheetControls";
 import { TimeSheetStatus } from "@/types/timesheet";
-import { WeekTypeSwitch } from "@/components/TimeSheet/WeekTypeSwitch";
 import { DEFAULT_WEEKS } from "@/pages/CustomWeeks";
 
 interface TimeSheetProps {
@@ -38,7 +37,6 @@ const TimeSheet = ({ userRole, firstWeek }: TimeSheetProps) => {
         onSubmitForReview={handleSubmitForReview}
         onApprove={handleApprove}
         onReject={handleReject}
-        readOnly={status === "approved"}
         isCustomWeek={isCustomWeek}
         onWeekTypeChange={setIsCustomWeek}
         customWeeks={DEFAULT_WEEKS}
