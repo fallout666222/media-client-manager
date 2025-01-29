@@ -18,6 +18,7 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
   const [currentDate, setCurrentDate] = useState<Date>(
     parse(firstWeek, 'yyyy-MM-dd', new Date())
   );
+  const [isCustomWeek, setIsCustomWeek] = useState(false);
   const [clients, setClients] = useState<string[]>([
     'Administrative',
     'Education/Training',
@@ -181,6 +182,8 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
         onSubmitForReview={handleSubmitForReview}
         onApprove={handleApprove}
         onReject={handleReject}
+        isCustomWeek={isCustomWeek}
+        onWeekTypeChange={setIsCustomWeek}
         readOnly={readOnly}
       />
 
