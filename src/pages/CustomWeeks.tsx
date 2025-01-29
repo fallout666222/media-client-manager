@@ -11,26 +11,30 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { Trash2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface CustomWeek {
   id: string;
   startDate: string;
   endDate: string;
-  days: number;
+  hours: number;
 }
 
 const CustomWeeks = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [days, setDays] = useState<number>(0);
+  const [hours, setHours] = useState<number>(0);
   const [weeks, setWeeks] = useState<CustomWeek[]>([]);
   const { toast } = useToast();
 
-  const calculateDays = (start: string, end: string) => {
+  const calculateHours = (start: string, end: string) => {
     try {
       const startDateObj = parse(start, "yyyy-MM-dd", new Date());
       const endDateObj = parse(end, "yyyy-MM-dd", new Date());
-      return differenceInDays(endDateObj, startDateObj) + 1;
+      const days = differenceInDays(endDateObj, startDateObj) + 1;
+      return days * 8; // 8 часов в день по умолчанию
     } catch {
       return 0;
     }
@@ -39,15 +43,28 @@ const CustomWeeks = () => {
   const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setStartDate(e.target.value);
     if (endDate) {
-      setDays(calculateDays(e.target.value, endDate));
+      setHours(calculateHours(e.target.value, endDate));
     }
   };
 
   const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEndDate(e.target.value);
     if (startDate) {
-      setDays(calculateDays(startDate, e.target.value));
+      setHours(calculateHours(startDate, e.target.value));
     }
+  };
+
+  const handleHoursChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    setHours(isNaN(value) ? 0 : value);
+  };
+
+  const handleDelete = (id: string) => {
+    setWeeks(prev => prev.filter(week => week.id !== id));
+    toast({
+      title: "Success",
+      description: "Custom week deleted successfully",
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -62,11 +79,10 @@ const CustomWeeks = () => {
       return;
     }
 
-    const calculatedDays = calculateDays(startDate, endDate);
-    if (calculatedDays <= 0) {
+    if (hours <= 0) {
       toast({
         title: "Error",
-        description: "End date must be after start date",
+        description: "Hours must be greater than 0",
         variant: "destructive",
       });
       return;
@@ -76,13 +92,13 @@ const CustomWeeks = () => {
       id: crypto.randomUUID(),
       startDate,
       endDate,
-      days: calculatedDays,
+      hours,
     };
 
     setWeeks(prev => [...prev, newWeek]);
     setStartDate("");
     setEndDate("");
-    setDays(0);
+    setHours(0);
 
     toast({
       title: "Success",
@@ -123,15 +139,16 @@ const CustomWeeks = () => {
           </div>
           
           <div className="space-y-2">
-            <label htmlFor="days" className="block text-sm font-medium">
-              Days
+            <label htmlFor="hours" className="block text-sm font-medium">
+              Hours
             </label>
             <Input
-              id="days"
+              id="hours"
               type="number"
-              value={days}
-              readOnly
-              className="w-full bg-gray-50"
+              value={hours}
+              onChange={handleHoursChange}
+              className="w-full"
+              min="1"
             />
           </div>
         </div>
@@ -145,7 +162,8 @@ const CustomWeeks = () => {
             <TableRow>
               <TableHead>Start Date</TableHead>
               <TableHead>End Date</TableHead>
-              <TableHead>Days</TableHead>
+              <TableHead>Hours</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -157,7 +175,17 @@ const CustomWeeks = () => {
                 <TableCell>
                   {format(parse(week.endDate, "yyyy-MM-dd", new Date()), "MMM dd, yyyy")}
                 </TableCell>
-                <TableCell>{week.days}</TableCell>
+                <TableCell>{week.hours}</TableCell>
+                <TableCell>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDelete(week.id)}
+                    className="text-destructive hover:text-destructive/90"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
