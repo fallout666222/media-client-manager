@@ -228,7 +228,6 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
           setMediaTypes(prev => prev.filter(t => t !== type));
         }}
         readOnly={readOnly}
-        userRole={userRole}
       />
     </div>
   );

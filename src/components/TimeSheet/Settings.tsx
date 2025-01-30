@@ -11,7 +11,6 @@ interface SettingsProps {
   onRemoveClient: (client: string) => void;
   onAddMediaType: (type: string) => void;
   onRemoveMediaType: (type: string) => void;
-  userRole: string;
 }
 
 export const Settings = ({
@@ -21,12 +20,10 @@ export const Settings = ({
   onRemoveClient,
   onAddMediaType,
   onRemoveMediaType,
-  userRole,
 }: SettingsProps) => {
   const [newClient, setNewClient] = useState('');
   const [newMediaType, setNewMediaType] = useState('');
   const { toast } = useToast();
-  const isAdmin = userRole === 'admin';
 
   const handleAddClient = () => {
     if (!newClient.trim()) {
@@ -58,20 +55,18 @@ export const Settings = ({
     <div className="space-y-8">
       <div>
         <h3 className="text-lg font-medium mb-4">Clients</h3>
-        {isAdmin && (
-          <div className="flex gap-2 mb-4">
-            <Input
-              placeholder="Add new client"
-              value={newClient}
-              onChange={(e) => setNewClient(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleAddClient()}
-            />
-            <Button onClick={handleAddClient}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add
-            </Button>
-          </div>
-        )}
+        <div className="flex gap-2 mb-4">
+          <Input
+            placeholder="Add new client"
+            value={newClient}
+            onChange={(e) => setNewClient(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleAddClient()}
+          />
+          <Button onClick={handleAddClient}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add
+          </Button>
+        </div>
         <div className="flex flex-wrap gap-2">
           {clients.map((client) => (
             <div
@@ -79,14 +74,12 @@ export const Settings = ({
               className="flex items-center gap-2 bg-secondary px-3 py-1 rounded-full"
             >
               <span>{client}</span>
-              {isAdmin && (
-                <button
-                  onClick={() => onRemoveClient(client)}
-                  className="text-muted-foreground hover:text-destructive"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
+              <button
+                onClick={() => onRemoveClient(client)}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
           ))}
         </div>
@@ -94,20 +87,18 @@ export const Settings = ({
 
       <div>
         <h3 className="text-lg font-medium mb-4">Media Types</h3>
-        {isAdmin && (
-          <div className="flex gap-2 mb-4">
-            <Input
-              placeholder="Add new media type"
-              value={newMediaType}
-              onChange={(e) => setNewMediaType(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleAddMediaType()}
-            />
-            <Button onClick={handleAddMediaType}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add
-            </Button>
-          </div>
-        )}
+        <div className="flex gap-2 mb-4">
+          <Input
+            placeholder="Add new media type"
+            value={newMediaType}
+            onChange={(e) => setNewMediaType(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleAddMediaType()}
+          />
+          <Button onClick={handleAddMediaType}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add
+          </Button>
+        </div>
         <div className="flex flex-wrap gap-2">
           {mediaTypes.map((type) => (
             <div
@@ -115,14 +106,12 @@ export const Settings = ({
               className="flex items-center gap-2 bg-secondary px-3 py-1 rounded-full"
             >
               <span>{type}</span>
-              {isAdmin && (
-                <button
-                  onClick={() => onRemoveMediaType(type)}
-                  className="text-muted-foreground hover:text-destructive"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
+              <button
+                onClick={() => onRemoveMediaType(type)}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
           ))}
         </div>

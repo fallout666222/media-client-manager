@@ -1,13 +1,7 @@
-import React, { useState } from 'react';
-import { TimeEntry, TimeSheetStatus } from '@/types/timesheet';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import React from 'react';
 import { Input } from "@/components/ui/input";
+import { TimeEntry, TimeSheetStatus } from '@/types/timesheet';
+import { useToast } from "@/hooks/use-toast";
 
 interface TimeSheetGridProps {
   clients: string[];
@@ -17,91 +11,81 @@ interface TimeSheetGridProps {
   status: TimeSheetStatus;
 }
 
-export const TimeSheetGrid = ({
-  clients,
-  mediaTypes,
+export const TimeSheetGrid = ({ 
+  clients, 
+  mediaTypes, 
   timeEntries,
   onTimeUpdate,
   status
 }: TimeSheetGridProps) => {
-  const [selectedClient, setSelectedClient] = useState<string>('');
-  const [selectedMediaType, setSelectedMediaType] = useState<string>('');
-
   const isReadOnly = status === 'under-review' || status === 'accepted';
+  const { toast } = useToast();
 
-  const handleHoursChange = (hours: string) => {
-    if (selectedClient && selectedMediaType) {
-      const numericHours = parseFloat(hours) || 0;
-      onTimeUpdate(selectedClient, selectedMediaType, numericHours);
-    }
-  };
-
-  const getCurrentHours = () => {
-    if (selectedClient && selectedMediaType && timeEntries[selectedClient]?.[selectedMediaType]) {
-      return timeEntries[selectedClient][selectedMediaType].hours.toString();
-    }
-    return '';
+  const calculateTotalHours = (excludingClient?: string, excludingType?: string): number => {
+    return Object.entries(timeEntries).reduce((clientSum, [client, mediaEntries]) => {
+      if (client === excludingClient) return clientSum;
+      return clientSum + Object.entries(mediaEntries).reduce((mediaSum, [type, entry]) => {
+        if (type === excludingType && client === excludingClient) return mediaSum;
+        return mediaSum + (entry.hours || 0);
+      }, 0);
+    }, 0);
   };
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-2">Client</label>
-          <Select
-            value={selectedClient}
-            onValueChange={setSelectedClient}
-            disabled={isReadOnly}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select client" />
-            </SelectTrigger>
-            <SelectContent>
-              {clients.map((client) => (
-                <SelectItem key={client} value={client}>
-                  {client}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-2">Media Type</label>
-          <Select
-            value={selectedMediaType}
-            onValueChange={setSelectedMediaType}
-            disabled={isReadOnly}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select media type" />
-            </SelectTrigger>
-            <SelectContent>
+    <div className="overflow-x-auto">
+      <table className="w-full border-collapse">
+        <thead>
+          <tr>
+            <th className="timesheet-header text-left">Client/Category</th>
+            {mediaTypes.map((type) => (
+              <th key={type} className="timesheet-header">
+                {type}
+              </th>
+            ))}
+            <th className="timesheet-header">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {clients.map((client) => (
+            <tr key={client}>
+              <td className="timesheet-cell font-medium">{client}</td>
               {mediaTypes.map((type) => (
-                <SelectItem key={type} value={type}>
-                  {type}
-                </SelectItem>
+                <td key={`${client}-${type}`} className="timesheet-cell">
+                  <Input
+                    type="number"
+                    min="0"
+                    max="40"
+                    step="1"
+                    className="timesheet-input"
+                    value={timeEntries[client]?.[type]?.hours || ''}
+                    onChange={(e) => {
+                      const hours = parseInt(e.target.value) || 0;
+                      const currentTotal = calculateTotalHours(client, type);
+                      
+                      if (currentTotal + hours > 40) {
+                        toast({
+                          title: "Cannot Add Hours",
+                          description: "Total hours cannot exceed 40 for the week",
+                          variant: "destructive"
+                        });
+                        return;
+                      }
+                      
+                      onTimeUpdate(client, type, hours);
+                    }}
+                    disabled={isReadOnly}
+                  />
+                </td>
               ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {selectedClient && selectedMediaType && (
-        <div>
-          <label className="block text-sm font-medium mb-2">Hours</label>
-          <Input
-            type="number"
-            min="0"
-            max="40"
-            step="0.5"
-            value={getCurrentHours()}
-            onChange={(e) => handleHoursChange(e.target.value)}
-            disabled={isReadOnly}
-            className="w-full"
-          />
-        </div>
-      )}
+              <td className="timesheet-cell font-medium">
+                {mediaTypes.reduce((sum, type) => 
+                  sum + (timeEntries[client]?.[type]?.hours || 0), 0
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 };
