@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { format, parse } from "date-fns";
 import { TimeSheetGrid } from "@/components/TimeSheet/TimeSheetGrid";
+import { TimeSheetHeader } from "@/components/TimeSheet/TimeSheetHeader";
+import { TimeSheetControls } from "@/components/TimeSheet/TimeSheetControls";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -28,7 +30,10 @@ interface CustomWeeksTimesheetProps {
 
 const CustomWeeksTimesheet = ({ userRole }: CustomWeeksTimesheetProps) => {
   const [selectedWeek, setSelectedWeek] = useState<string>("");
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [timeEntries, setTimeEntries] = useState<Record<string, Record<string, Record<string, TimeEntry>>>>({});
+  const [weekStatuses, setWeekStatuses] = useState<Record<string, TimeSheetStatus>>({});
+  const [submittedWeeks, setSubmittedWeeks] = useState<string[]>([]);
   const { toast } = useToast();
 
   const clients = [
@@ -51,10 +56,82 @@ const CustomWeeksTimesheet = ({ userRole }: CustomWeeksTimesheetProps) => {
         ...prev[weekKey],
         [client]: {
           ...prev[weekKey]?.[client],
-          [mediaType]: { hours, status: 'unconfirmed' as TimeSheetStatus }
+          [mediaType]: { hours, status: weekStatuses[weekKey] || 'unconfirmed' }
         }
       }
     }));
+  };
+
+  const getCurrentWeekStatus = (): TimeSheetStatus => {
+    return weekStatuses[selectedWeek] || 'unconfirmed';
+  };
+
+  const getTotalHoursForWeek = (): number => {
+    if (!selectedWeek || !timeEntries[selectedWeek]) return 0;
+    
+    return Object.values(timeEntries[selectedWeek]).reduce((clientSum, mediaEntries) => {
+      return clientSum + Object.values(mediaEntries).reduce((mediaSum, entries) => {
+        return mediaSum + Object.values(entries).reduce((sum, entry) => sum + (entry.hours || 0), 0);
+      }, 0);
+    }, 0);
+  };
+
+  const findFirstUnsubmittedWeek = (): string | null => {
+    const sortedWeeks = DEFAULT_WEEKS
+      .map(week => week.id)
+      .sort((a, b) => {
+        const dateA = parse(DEFAULT_WEEKS.find(w => w.id === a)?.startDate || '', 'yyyy-MM-dd', new Date());
+        const dateB = parse(DEFAULT_WEEKS.find(w => w.id === b)?.startDate || '', 'yyyy-MM-dd', new Date());
+        return dateA.getTime() - dateB.getTime();
+      });
+
+    return sortedWeeks.find(weekId => !submittedWeeks.includes(weekId)) || null;
+  };
+
+  const handleSubmitForReview = () => {
+    const firstUnsubmittedWeek = findFirstUnsubmittedWeek();
+    const totalHours = getTotalHoursForWeek();
+    
+    if (totalHours !== 40) {
+      toast({
+        title: "Cannot Submit Timesheet",
+        description: `Total hours must be 40. Current total: ${totalHours} hours`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (firstUnsubmittedWeek && firstUnsubmittedWeek !== selectedWeek) {
+      const unsubmittedWeekData = DEFAULT_WEEKS.find(w => w.id === firstUnsubmittedWeek);
+      toast({
+        title: "Cannot Submit This Week",
+        description: `Please submit the week of ${unsubmittedWeekData?.startDate} first`,
+        variant: "destructive"
+      });
+      setSelectedWeek(firstUnsubmittedWeek);
+      return;
+    }
+
+    setSubmittedWeeks(prev => [...prev, selectedWeek]);
+    setWeekStatuses(prev => ({
+      ...prev,
+      [selectedWeek]: 'under-review'
+    }));
+  };
+
+  const handleApprove = () => {
+    setWeekStatuses(prev => ({
+      ...prev,
+      [selectedWeek]: 'accepted'
+    }));
+  };
+
+  const handleReject = () => {
+    setWeekStatuses(prev => ({
+      ...prev,
+      [selectedWeek]: 'needs-revision'
+    }));
+    setSubmittedWeeks(prev => prev.filter(week => week !== selectedWeek));
   };
 
   const formatWeekLabel = (week: typeof DEFAULT_WEEKS[0]) => {
@@ -95,15 +172,46 @@ const CustomWeeksTimesheet = ({ userRole }: CustomWeeksTimesheetProps) => {
         </div>
 
         {selectedWeek && (
-          <div className="mt-6">
+          <>
+            <TimeSheetHeader
+              userRole={userRole}
+              remainingHours={40 - getTotalHoursForWeek()}
+              status={getCurrentWeekStatus()}
+              onReturnToFirstWeek={() => {
+                const firstUnsubmitted = findFirstUnsubmittedWeek();
+                if (firstUnsubmitted) {
+                  setSelectedWeek(firstUnsubmitted);
+                }
+              }}
+              onToggleSettings={() => {}}
+              onExportToExcel={() => {
+                toast({
+                  title: "Export Started",
+                  description: "Your timesheet is being exported to Excel",
+                });
+              }}
+            />
+
+            <TimeSheetControls
+              currentDate={currentDate}
+              onWeekChange={setCurrentDate}
+              status={getCurrentWeekStatus()}
+              isManager={userRole === 'manager' || userRole === 'admin'}
+              onSubmitForReview={handleSubmitForReview}
+              onApprove={handleApprove}
+              onReject={handleReject}
+              isCustomWeek={true}
+              onWeekTypeChange={() => {}}
+            />
+
             <TimeSheetGrid
               clients={clients}
               mediaTypes={mediaTypes}
               timeEntries={timeEntries[selectedWeek] || {}}
               onTimeUpdate={handleTimeUpdate}
-              status="unconfirmed"
+              status={getCurrentWeekStatus()}
             />
-          </div>
+          </>
         )}
       </div>
     </div>
