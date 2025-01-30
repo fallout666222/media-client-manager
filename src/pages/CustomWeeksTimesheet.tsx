@@ -28,7 +28,7 @@ interface CustomWeeksTimesheetProps {
 
 const CustomWeeksTimesheet = ({ userRole }: CustomWeeksTimesheetProps) => {
   const [selectedWeek, setSelectedWeek] = useState<string>("");
-  const [timeEntries, setTimeEntries] = useState<Record<string, Record<string, TimeEntry>>>({});
+  const [timeEntries, setTimeEntries] = useState<Record<string, Record<string, Record<string, TimeEntry>>>>({});
   const { toast } = useToast();
 
   const clients = [
