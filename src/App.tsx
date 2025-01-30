@@ -9,6 +9,7 @@ import { UserManagement } from "./components/Auth/UserManagement";
 import { FirstWeekManagement } from "./components/Auth/FirstWeekManagement";
 import UserImpersonation from "./pages/UserImpersonation";
 import CustomWeeks from "./pages/CustomWeeks";
+import CustomWeeksTimesheet from "./pages/CustomWeeksTimesheet";
 import { useState } from "react";
 import { User, UserFormData } from "./types/timesheet";
 import { Button } from "./components/ui/button";
@@ -94,6 +95,14 @@ const App = () => {
                   </Link>
                 </>
               )}
+              {user.role === 'user' && (
+                <Link to="/custom-weeks-timesheet">
+                  <Button variant="outline" size="sm" className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Custom Weeks Timesheet
+                  </Button>
+                </Link>
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -131,6 +140,16 @@ const App = () => {
               element={
                 user?.role === 'admin' ? (
                   <CustomWeeks />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              }
+            />
+            <Route
+              path="/custom-weeks-timesheet"
+              element={
+                user?.role === 'user' ? (
+                  <CustomWeeksTimesheet userRole={user.role} />
                 ) : (
                   <Navigate to="/" replace />
                 )
