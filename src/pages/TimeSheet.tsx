@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parse, format, isAfter, isBefore, addWeeks, startOfWeek, isEqual } from 'date-fns';
@@ -18,7 +19,6 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
   const [currentDate, setCurrentDate] = useState<Date>(
     parse(firstWeek, 'yyyy-MM-dd', new Date())
   );
-  const [isCustomWeek, setIsCustomWeek] = useState(false);
   const [clients, setClients] = useState<string[]>([
     'Administrative',
     'Education/Training',
@@ -182,8 +182,6 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
         onSubmitForReview={handleSubmitForReview}
         onApprove={handleApprove}
         onReject={handleReject}
-        isCustomWeek={isCustomWeek}
-        onWeekTypeChange={setIsCustomWeek}
         readOnly={readOnly}
       />
 
