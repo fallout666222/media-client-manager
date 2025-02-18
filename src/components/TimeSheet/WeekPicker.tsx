@@ -1,8 +1,5 @@
 
 import React from 'react';
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, parse } from 'date-fns';
 import {
   Select,
   SelectContent,
@@ -10,6 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { format, startOfWeek, parse } from 'date-fns';
 
 interface CustomWeek {
   id: string;
@@ -21,7 +19,6 @@ interface CustomWeek {
 interface WeekPickerProps {
   currentDate: Date;
   onWeekChange: (date: Date) => void;
-  isCustomWeek?: boolean;
 }
 
 const DEFAULT_WEEKS: CustomWeek[] = [
@@ -32,17 +29,8 @@ const DEFAULT_WEEKS: CustomWeek[] = [
   { id: "5", startDate: "2025-01-27", endDate: "2025-01-31", hours: 40 },
 ];
 
-export const WeekPicker = ({ currentDate, onWeekChange, isCustomWeek = false }: WeekPickerProps) => {
+export const WeekPicker = ({ currentDate, onWeekChange }: WeekPickerProps) => {
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
-
-  const handlePreviousWeek = () => {
-    onWeekChange(subWeeks(currentDate, 1));
-  };
-
-  const handleNextWeek = () => {
-    onWeekChange(addWeeks(currentDate, 1));
-  };
 
   const handleCustomWeekSelect = (weekId: string) => {
     const selectedWeek = DEFAULT_WEEKS.find(week => week.id === weekId);
@@ -58,42 +46,26 @@ export const WeekPicker = ({ currentDate, onWeekChange, isCustomWeek = false }: 
     return `${start} - ${end} (${week.hours}h)`;
   };
 
-  if (isCustomWeek) {
-    return (
-      <div className="w-full max-w-md mb-4">
-        <Select
-          value={DEFAULT_WEEKS.find(week => 
-            format(parse(week.startDate, "yyyy-MM-dd", new Date()), 'yyyy-MM-dd') === 
-            format(weekStart, 'yyyy-MM-dd')
-          )?.id}
-          onValueChange={handleCustomWeekSelect}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select a custom week" />
-          </SelectTrigger>
-          <SelectContent>
-            {DEFAULT_WEEKS.map((week) => (
-              <SelectItem key={week.id} value={week.id}>
-                {formatWeekLabel(week)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex items-center gap-4 mb-4">
-      <Button variant="outline" size="icon" onClick={handlePreviousWeek}>
-        <ChevronLeft className="h-4 w-4" />
-      </Button>
-      <span className="font-medium">
-        {format(weekStart, 'MMM d')} - {format(weekEnd, 'MMM d, yyyy')}
-      </span>
-      <Button variant="outline" size="icon" onClick={handleNextWeek}>
-        <ChevronRight className="h-4 w-4" />
-      </Button>
+    <div className="w-full max-w-md mb-4">
+      <Select
+        value={DEFAULT_WEEKS.find(week => 
+          format(parse(week.startDate, "yyyy-MM-dd", new Date()), 'yyyy-MM-dd') === 
+          format(weekStart, 'yyyy-MM-dd')
+        )?.id}
+        onValueChange={handleCustomWeekSelect}
+      >
+        <SelectTrigger>
+          <SelectValue placeholder="Select a custom week" />
+        </SelectTrigger>
+        <SelectContent>
+          {DEFAULT_WEEKS.map((week) => (
+            <SelectItem key={week.id} value={week.id}>
+              {formatWeekLabel(week)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 };
