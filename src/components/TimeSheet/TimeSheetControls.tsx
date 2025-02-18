@@ -1,8 +1,8 @@
+
 import React from 'react';
 import { WeekPicker } from './WeekPicker';
 import { ApprovalActions } from './ApprovalActions';
 import { TimeSheetStatus } from '@/types/timesheet';
-import { WeekTypeSwitch } from './WeekTypeSwitch';
 
 interface TimeSheetControlsProps {
   currentDate: Date;
@@ -12,8 +12,6 @@ interface TimeSheetControlsProps {
   onSubmitForReview: () => void;
   onApprove: () => void;
   onReject: () => void;
-  isCustomWeek: boolean;
-  onWeekTypeChange: (value: boolean) => void;
   readOnly?: boolean;
 }
 
@@ -25,8 +23,6 @@ export const TimeSheetControls = ({
   onSubmitForReview,
   onApprove,
   onReject,
-  isCustomWeek,
-  onWeekTypeChange,
   readOnly = false,
 }: TimeSheetControlsProps) => {
   return (
@@ -35,10 +31,6 @@ export const TimeSheetControls = ({
         <WeekPicker
           currentDate={currentDate}
           onWeekChange={onWeekChange}
-        />
-        <WeekTypeSwitch
-          isCustomWeek={isCustomWeek}
-          onToggle={onWeekTypeChange}
         />
       </div>
       
