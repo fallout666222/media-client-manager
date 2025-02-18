@@ -19,6 +19,7 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
   const [currentDate, setCurrentDate] = useState<Date>(
     parse(firstWeek, 'yyyy-MM-dd', new Date())
   );
+  const [weekHours, setWeekHours] = useState(40);
   const [clients, setClients] = useState<string[]>([
     'Administrative',
     'Education/Training',
@@ -78,19 +79,19 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
     const totalHours = getTotalHoursForWeek();
     
-    if (totalHours > 40) {
+    if (totalHours > weekHours) {
       toast({
         title: "Cannot Submit Timesheet",
-        description: `Total hours cannot exceed 40. Current total: ${totalHours} hours`,
+        description: `Total hours cannot exceed ${weekHours}. Current total: ${totalHours} hours`,
         variant: "destructive"
       });
       return;
     }
     
-    if (totalHours < 40) {
+    if (totalHours < weekHours) {
       toast({
         title: "Cannot Submit Timesheet",
-        description: `Please fill in all 40 hours before submitting. Current total: ${totalHours} hours`,
+        description: `Please fill in all ${weekHours} hours before submitting. Current total: ${totalHours} hours`,
         variant: "destructive"
       });
       return;
@@ -151,7 +152,7 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
     <div className="space-y-6">
       <TimeSheetHeader
         userRole={userRole}
-        remainingHours={40 - getTotalHoursForWeek()}
+        remainingHours={weekHours - getTotalHoursForWeek()}
         status={getCurrentWeekStatus()}
         onReturnToFirstWeek={handleReturnToFirstUnsubmittedWeek}
         onToggleSettings={() => setShowSettings(!showSettings)}
@@ -177,6 +178,7 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
       <TimeSheetControls
         currentDate={currentDate}
         onWeekChange={setCurrentDate}
+        onWeekHoursChange={setWeekHours}
         status={getCurrentWeekStatus()}
         isManager={userRole === 'manager' || userRole === 'admin'}
         onSubmitForReview={handleSubmitForReview}
@@ -194,6 +196,19 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
         onTimeUpdate={(client, mediaType, hours) => {
           if (readOnly) return;
           const weekKey = format(currentDate, 'yyyy-MM-dd');
+          const currentTotal = getTotalHoursForWeek();
+          const existingHours = timeEntries[weekKey]?.[client]?.[mediaType]?.hours || 0;
+          const newTotalHours = currentTotal - existingHours + hours;
+
+          if (newTotalHours > weekHours) {
+            toast({
+              title: "Cannot Add Hours",
+              description: `Total hours cannot exceed ${weekHours} for this week`,
+              variant: "destructive"
+            });
+            return;
+          }
+
           setTimeEntries(prev => ({
             ...prev,
             [weekKey]: {

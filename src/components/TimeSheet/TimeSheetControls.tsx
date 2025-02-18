@@ -7,6 +7,7 @@ import { TimeSheetStatus } from '@/types/timesheet';
 interface TimeSheetControlsProps {
   currentDate: Date;
   onWeekChange: (date: Date) => void;
+  onWeekHoursChange: (hours: number) => void;
   status: TimeSheetStatus;
   isManager: boolean;
   onSubmitForReview: () => void;
@@ -18,6 +19,7 @@ interface TimeSheetControlsProps {
 export const TimeSheetControls = ({
   currentDate,
   onWeekChange,
+  onWeekHoursChange,
   status,
   isManager,
   onSubmitForReview,
@@ -31,6 +33,7 @@ export const TimeSheetControls = ({
         <WeekPicker
           currentDate={currentDate}
           onWeekChange={onWeekChange}
+          onWeekHoursChange={onWeekHoursChange}
         />
       </div>
       
