@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -107,6 +108,35 @@ const App = () => {
           )}
           <Routes>
             <Route
+              path="/"
+              element={
+                user ? (
+                  <div className="container mx-auto p-4 pt-16">
+                    {user.firstWeek ? (
+                      <TimeSheet userRole={user.role} firstWeek={user.firstWeek} />
+                    ) : (
+                      <div className="text-center p-8">
+                        <h2 className="text-xl font-semibold mb-4">
+                          Welcome! Please wait for an admin to set your first working week.
+                        </h2>
+                      </div>
+                    )}
+                    {user.role === "admin" && (
+                      <div className="mt-8 space-y-8">
+                        <UserManagement onCreateUser={handleCreateUser} />
+                        <FirstWeekManagement 
+                          onSetFirstWeek={handleSetFirstWeek}
+                          users={users}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
               path="/login"
               element={
                 !user ? (
@@ -133,35 +163,6 @@ const App = () => {
                   <CustomWeeks />
                 ) : (
                   <Navigate to="/" replace />
-                )
-              }
-            />
-            <Route
-              path="/"
-              element={
-                user ? (
-                  <div className="container mx-auto p-4 pt-16">
-                    {user.firstWeek ? (
-                      <TimeSheet userRole={user.role} firstWeek={user.firstWeek} />
-                    ) : (
-                      <div className="text-center p-8">
-                        <h2 className="text-xl font-semibold mb-4">
-                          Welcome! Please wait for an admin to set your first working week.
-                        </h2>
-                      </div>
-                    )}
-                    {user.role === "admin" && (
-                      <div className="mt-8 space-y-8">
-                        <UserManagement onCreateUser={handleCreateUser} />
-                        <FirstWeekManagement 
-                          onSetFirstWeek={handleSetFirstWeek}
-                          users={users}
-                        />
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <Navigate to="/login" replace />
                 )
               }
             />
