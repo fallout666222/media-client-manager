@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { format, startOfWeek, parse } from 'date-fns';
+import { format, startOfWeek, parse, isSameDay } from 'date-fns';
 
 interface CustomWeek {
   id: string;
@@ -33,11 +33,19 @@ const DEFAULT_WEEKS: CustomWeek[] = [
 ];
 
 export const WeekPicker = ({ currentDate, onWeekChange, onWeekHoursChange }: WeekPickerProps) => {
-  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
-  const currentWeekId = DEFAULT_WEEKS.find(week => 
-    format(parse(week.startDate, "yyyy-MM-dd", new Date()), 'yyyy-MM-dd') === 
-    format(weekStart, 'yyyy-MM-dd')
-  )?.id;
+  // Find the current week based on the currentDate
+  const getCurrentWeek = () => {
+    for (const week of DEFAULT_WEEKS) {
+      const weekStartDate = parse(week.startDate, "yyyy-MM-dd", new Date());
+      if (isSameDay(weekStartDate, currentDate)) {
+        return week;
+      }
+    }
+    return DEFAULT_WEEKS[0]; // Default to the first week if no match
+  };
+
+  const currentWeek = getCurrentWeek();
+  const currentWeekId = currentWeek.id;
 
   const handleCustomWeekSelect = (weekId: string) => {
     const selectedWeek = DEFAULT_WEEKS.find(week => week.id === weekId);

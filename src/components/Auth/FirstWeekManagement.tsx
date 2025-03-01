@@ -1,6 +1,6 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { User } from "@/types/timesheet";
 import {
@@ -17,14 +17,23 @@ interface FirstWeekManagementProps {
   users: User[];
 }
 
+// Use the same custom weeks format as in WeekPicker
+const DEFAULT_WEEKS = [
+  { id: "1", startDate: "2025-01-01", endDate: "2025-01-06", hours: 48 },
+  { id: "2", startDate: "2025-01-10", endDate: "2025-01-03", hours: 40 },
+  { id: "3", startDate: "2025-01-13", endDate: "2025-01-17", hours: 40 },
+  { id: "4", startDate: "2025-01-20", endDate: "2025-01-24", hours: 40 },
+  { id: "5", startDate: "2025-01-27", endDate: "2025-01-31", hours: 40 },
+];
+
 export const FirstWeekManagement = ({ onSetFirstWeek, users }: FirstWeekManagementProps) => {
   const [username, setUsername] = useState("");
-  const [startDate, setStartDate] = useState("");
+  const [selectedWeekId, setSelectedWeekId] = useState("");
   const { toast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username || !startDate) {
+    if (!username || !selectedWeekId) {
       toast({
         title: "Error",
         description: "Please fill in all fields",
@@ -32,9 +41,20 @@ export const FirstWeekManagement = ({ onSetFirstWeek, users }: FirstWeekManageme
       });
       return;
     }
-    onSetFirstWeek(username, startDate);
+    
+    const selectedWeek = DEFAULT_WEEKS.find(week => week.id === selectedWeekId);
+    if (!selectedWeek) {
+      toast({
+        title: "Error",
+        description: "Invalid week selected",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    onSetFirstWeek(username, selectedWeek.startDate);
     setUsername("");
-    setStartDate("");
+    setSelectedWeekId("");
     toast({
       title: "Success",
       description: "First week set successfully",
@@ -43,6 +63,10 @@ export const FirstWeekManagement = ({ onSetFirstWeek, users }: FirstWeekManageme
 
   // Filter out users who already have a first week set
   const usersWithoutFirstWeek = users.filter(user => !user.firstWeek);
+
+  const formatWeekLabel = (week: typeof DEFAULT_WEEKS[0]) => {
+    return `Week ${week.id}: ${week.startDate} - ${week.endDate} (${week.hours}h)`;
+  };
 
   return (
     <div className="space-y-6 p-4 bg-white rounded-lg shadow">
@@ -64,13 +88,19 @@ export const FirstWeekManagement = ({ onSetFirstWeek, users }: FirstWeekManageme
           </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="startDate">First Week Start Date</Label>
-          <Input
-            id="startDate"
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-          />
+          <Label htmlFor="weekSelect">First Week</Label>
+          <Select value={selectedWeekId} onValueChange={setSelectedWeekId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a custom week" />
+            </SelectTrigger>
+            <SelectContent>
+              {DEFAULT_WEEKS.map((week) => (
+                <SelectItem key={week.id} value={week.id}>
+                  {formatWeekLabel(week)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <Button type="submit" className="w-full">
           Set First Week

@@ -1,12 +1,19 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { parse, format, isAfter, isBefore, addWeeks, startOfWeek, isEqual } from 'date-fns';
+import { parse, format, isAfter, isBefore, addWeeks, startOfWeek, isEqual, isSameDay } from 'date-fns';
 import { TimeSheetStatus, TimeSheetData } from '@/types/timesheet';
 import { TimeSheetHeader } from '@/components/TimeSheet/TimeSheetHeader';
 import { TimeSheetControls } from '@/components/TimeSheet/TimeSheetControls';
 import { TimeSheetContent } from '@/components/TimeSheet/TimeSheetContent';
 import { Alert, AlertDescription } from "@/components/ui/alert";
+
+const DEFAULT_WEEKS = [
+  { id: "1", startDate: "2025-01-01", endDate: "2025-01-06", hours: 48 },
+  { id: "2", startDate: "2025-01-10", endDate: "2025-01-03", hours: 40 },
+  { id: "3", startDate: "2025-01-13", endDate: "2025-01-17", hours: 40 },
+  { id: "4", startDate: "2025-01-20", endDate: "2025-01-24", hours: 40 },
+  { id: "5", startDate: "2025-01-27", endDate: "2025-01-31", hours: 40 },
+];
 
 interface TimeSheetProps {
   userRole: 'admin' | 'user' | 'manager';
@@ -19,7 +26,12 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
   const [currentDate, setCurrentDate] = useState<Date>(
     parse(firstWeek, 'yyyy-MM-dd', new Date())
   );
-  const [weekHours, setWeekHours] = useState(40);
+  const [weekHours, setWeekHours] = useState(() => {
+    const initialWeek = DEFAULT_WEEKS.find(week => 
+      isSameDay(parse(week.startDate, 'yyyy-MM-dd', new Date()), parse(firstWeek, 'yyyy-MM-dd', new Date()))
+    );
+    return initialWeek?.hours || 40;
+  });
   const [clients, setClients] = useState<string[]>([
     'Administrative',
     'Education/Training',
@@ -35,24 +47,26 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
   const [weekStatuses, setWeekStatuses] = useState<Record<string, TimeSheetStatus>>({});
   const { toast } = useToast();
 
-  const findFirstUnsubmittedWeek = (currentWeekDate: Date): Date | null => {
-    let weekToCheck = parse(firstWeek, 'yyyy-MM-dd', new Date());
-    const currentWeekStart = startOfWeek(currentWeekDate, { weekStartsOn: 1 });
-
-    while (isBefore(weekToCheck, currentWeekStart) || isEqual(weekToCheck, currentWeekStart)) {
-      const weekKey = format(weekToCheck, 'yyyy-MM-dd');
+  const findFirstUnsubmittedWeek = () => {
+    for (const week of DEFAULT_WEEKS) {
+      const weekKey = week.startDate;
       if (!submittedWeeks.includes(weekKey)) {
-        return weekToCheck;
+        return parse(weekKey, 'yyyy-MM-dd', new Date());
       }
-      weekToCheck = addWeeks(weekToCheck, 1);
     }
     return null;
   };
 
   const handleReturnToFirstUnsubmittedWeek = () => {
-    const firstUnsubmittedWeek = findFirstUnsubmittedWeek(currentDate);
+    const firstUnsubmittedWeek = findFirstUnsubmittedWeek();
     if (firstUnsubmittedWeek) {
+      const unsubmittedWeek = DEFAULT_WEEKS.find(week => 
+        isSameDay(parse(week.startDate, 'yyyy-MM-dd', new Date()), firstUnsubmittedWeek)
+      );
       setCurrentDate(firstUnsubmittedWeek);
+      if (unsubmittedWeek) {
+        setWeekHours(unsubmittedWeek.hours);
+      }
     }
   };
 
@@ -75,7 +89,7 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
   const handleSubmitForReview = () => {
     if (readOnly) return;
     
-    const firstUnsubmittedWeek = findFirstUnsubmittedWeek(currentDate);
+    const firstUnsubmittedWeek = findFirstUnsubmittedWeek();
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
     const totalHours = getTotalHoursForWeek();
     
@@ -97,14 +111,22 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
       return;
     }
     
-    if (firstUnsubmittedWeek && !isEqual(firstUnsubmittedWeek, currentDate)) {
+    if (firstUnsubmittedWeek && !isSameDay(firstUnsubmittedWeek, currentDate)) {
       const unsubmittedWeekKey = format(firstUnsubmittedWeek, 'yyyy-MM-dd');
       toast({
         title: "Cannot Submit This Week",
         description: `Please submit the week of ${format(firstUnsubmittedWeek, 'MMM d, yyyy')} first`,
         variant: "destructive"
       });
+      
+      const unsubmittedWeek = DEFAULT_WEEKS.find(week => 
+        isSameDay(parse(week.startDate, 'yyyy-MM-dd', new Date()), firstUnsubmittedWeek)
+      );
       setCurrentDate(firstUnsubmittedWeek);
+      if (unsubmittedWeek) {
+        setWeekHours(unsubmittedWeek.hours);
+      }
+      
       return;
     }
 
@@ -148,6 +170,11 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
     });
   };
 
+  const hasUnsubmittedEarlierWeek = () => {
+    const firstUnsubmitted = findFirstUnsubmittedWeek();
+    return firstUnsubmitted && !isSameDay(firstUnsubmitted, currentDate);
+  }
+
   return (
     <div className="space-y-6">
       <TimeSheetHeader
@@ -165,9 +192,7 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
         firstWeek={firstWeek}
       />
 
-      {findFirstUnsubmittedWeek(currentDate) && 
-       !isEqual(findFirstUnsubmittedWeek(currentDate), currentDate) && 
-       !readOnly && (
+      {hasUnsubmittedEarlierWeek() && !readOnly && (
         <Alert variant="destructive" className="mb-4">
           <AlertDescription>
             You have unsubmitted timesheets from previous weeks. Please submit them in chronological order.
@@ -177,7 +202,15 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
 
       <TimeSheetControls
         currentDate={currentDate}
-        onWeekChange={setCurrentDate}
+        onWeekChange={(date) => {
+          setCurrentDate(date);
+          const selectedWeek = DEFAULT_WEEKS.find(week => 
+            isSameDay(parse(week.startDate, 'yyyy-MM-dd', new Date()), date)
+          );
+          if (selectedWeek) {
+            setWeekHours(selectedWeek.hours);
+          }
+        }}
         onWeekHoursChange={setWeekHours}
         status={getCurrentWeekStatus()}
         isManager={userRole === 'manager' || userRole === 'admin'}
