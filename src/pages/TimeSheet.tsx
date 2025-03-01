@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parse, format, isAfter, isBefore, addWeeks, startOfWeek, isEqual, isSameDay } from 'date-fns';
@@ -104,7 +105,6 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
     }
     
     if (firstUnsubmittedWeek && !isSameDay(firstUnsubmittedWeek, currentDate)) {
-      const unsubmittedWeekKey = format(firstUnsubmittedWeek, 'yyyy-MM-dd');
       toast({
         title: "Cannot Submit This Week",
         description: `Week not submitted because previous weeks haven't been filled in yet.`,
@@ -134,6 +134,7 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
       [currentWeekKey]: 'under-review'
     }));
     
+    // Only display the success toast if all checks pass
     toast({
       title: "Timesheet Under Review",
       description: `Week of ${format(currentDate, 'MMM d, yyyy')} has been submitted and is now under review`,
