@@ -184,6 +184,14 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
     return firstUnsubmitted && !isSameDay(firstUnsubmitted, currentDate);
   }
 
+  // New function to check if current week is already submitted
+  const isCurrentWeekSubmitted = () => {
+    const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
+    return submittedWeeks.includes(currentWeekKey) || 
+           weekStatuses[currentWeekKey] === 'under-review' || 
+           weekStatuses[currentWeekKey] === 'accepted';
+  }
+
   return (
     <div className="space-y-6">
       <TimeSheetHeader
@@ -201,7 +209,7 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
         firstWeek={firstWeek}
       />
 
-      {hasUnsubmittedEarlierWeek() && !readOnly && (
+      {hasUnsubmittedEarlierWeek() && !readOnly && !isCurrentWeekSubmitted() && (
         <Alert variant="destructive" className="mb-4">
           <AlertDescription>
             You have unsubmitted timesheets from previous weeks. Please submit them in chronological order.
