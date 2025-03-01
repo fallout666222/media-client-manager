@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parse, format, isAfter, isBefore, addWeeks, startOfWeek, isEqual, isSameDay } from 'date-fns';
@@ -93,20 +92,12 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
     const firstUnsubmittedWeek = findFirstUnsubmittedWeek();
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
     const totalHours = getTotalHoursForWeek();
+    const remainingHours = weekHours - totalHours;
     
-    if (totalHours > weekHours) {
+    if (remainingHours !== 0) {
       toast({
         title: "Cannot Submit Timesheet",
-        description: `Total hours cannot exceed ${weekHours}. Current total: ${totalHours} hours`,
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (totalHours < weekHours) {
-      toast({
-        title: "Cannot Submit Timesheet",
-        description: `Please fill in all ${weekHours} hours before submitting. Current total: ${totalHours} hours`,
+        description: `You must fill in exactly ${weekHours} hours for this week. Remaining: ${remainingHours} hours`,
         variant: "destructive"
       });
       return;
@@ -116,7 +107,7 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
       const unsubmittedWeekKey = format(firstUnsubmittedWeek, 'yyyy-MM-dd');
       toast({
         title: "Cannot Submit This Week",
-        description: `Please submit the week of ${format(firstUnsubmittedWeek, 'MMM d, yyyy')} first`,
+        description: `Week not submitted because previous weeks haven't been filled in yet.`,
         variant: "destructive"
       });
       
@@ -131,7 +122,6 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
       return;
     }
 
-    // Update submitted weeks and week statuses for the current week
     setSubmittedWeeks(prev => {
       if (!prev.includes(currentWeekKey)) {
         return [...prev, currentWeekKey];
@@ -184,7 +174,6 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
     return firstUnsubmitted && !isSameDay(firstUnsubmitted, currentDate);
   }
 
-  // New function to check if current week is already submitted
   const isCurrentWeekSubmitted = () => {
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
     return submittedWeeks.includes(currentWeekKey) || 
