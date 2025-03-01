@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { TimeSheetGrid } from './TimeSheetGrid';
 import { Settings } from './Settings';
@@ -15,6 +16,7 @@ interface TimeSheetContentProps {
   onAddMediaType: (type: string) => void;
   onRemoveMediaType: (type: string) => void;
   readOnly?: boolean;
+  weekHours?: number;
 }
 
 export const TimeSheetContent = ({
@@ -29,6 +31,7 @@ export const TimeSheetContent = ({
   onAddMediaType,
   onRemoveMediaType,
   readOnly = false,
+  weekHours = 40,
 }: TimeSheetContentProps) => {
   if (showSettings) {
     return (
@@ -50,6 +53,7 @@ export const TimeSheetContent = ({
       timeEntries={timeEntries}
       onTimeUpdate={onTimeUpdate}
       status={status}
+      weekHours={weekHours}
     />
   );
 };

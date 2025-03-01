@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Input } from "@/components/ui/input";
 import { TimeEntry, TimeSheetStatus } from '@/types/timesheet';
@@ -9,6 +10,7 @@ interface TimeSheetGridProps {
   timeEntries: Record<string, Record<string, TimeEntry>>;
   onTimeUpdate: (client: string, mediaType: string, hours: number) => void;
   status: TimeSheetStatus;
+  weekHours?: number;
 }
 
 export const TimeSheetGrid = ({ 
@@ -16,7 +18,8 @@ export const TimeSheetGrid = ({
   mediaTypes, 
   timeEntries,
   onTimeUpdate,
-  status
+  status,
+  weekHours = 40
 }: TimeSheetGridProps) => {
   const isReadOnly = status === 'under-review' || status === 'accepted';
   const { toast } = useToast();
@@ -54,7 +57,7 @@ export const TimeSheetGrid = ({
                   <Input
                     type="number"
                     min="0"
-                    max="40"
+                    max={weekHours.toString()}
                     step="1"
                     className="timesheet-input"
                     value={timeEntries[client]?.[type]?.hours || ''}
@@ -62,10 +65,10 @@ export const TimeSheetGrid = ({
                       const hours = parseInt(e.target.value) || 0;
                       const currentTotal = calculateTotalHours(client, type);
                       
-                      if (currentTotal + hours > 40) {
+                      if (currentTotal + hours > weekHours) {
                         toast({
                           title: "Cannot Add Hours",
-                          description: "Total hours cannot exceed 40 for the week",
+                          description: `Total hours cannot exceed ${weekHours} for the week`,
                           variant: "destructive"
                         });
                         return;

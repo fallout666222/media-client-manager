@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parse, format, isAfter, isBefore, addWeeks, startOfWeek, isEqual, isSameDay } from 'date-fns';
@@ -130,11 +131,19 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
       return;
     }
 
-    setSubmittedWeeks(prev => [...prev, currentWeekKey]);
+    // Update submitted weeks and week statuses for the current week
+    setSubmittedWeeks(prev => {
+      if (!prev.includes(currentWeekKey)) {
+        return [...prev, currentWeekKey];
+      }
+      return prev;
+    });
+    
     setWeekStatuses(prev => ({
       ...prev,
       [currentWeekKey]: 'under-review'
     }));
+    
     toast({
       title: "Timesheet Under Review",
       description: `Week of ${format(currentDate, 'MMM d, yyyy')} has been submitted and is now under review`,
@@ -274,6 +283,7 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
           setMediaTypes(prev => prev.filter(t => t !== type));
         }}
         readOnly={readOnly}
+        weekHours={weekHours}
       />
     </div>
   );
