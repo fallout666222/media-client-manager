@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Table,
   TableBody,
@@ -61,16 +61,16 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
                 <TableCell>{user.role}</TableCell>
                 <TableCell>
                   <Select
-                    value={user.managerId || ""}
+                    value={user.managerId || "none"}
                     onValueChange={(value) => {
-                      handleManagerChange(user.username, value === "" ? undefined : value);
+                      handleManagerChange(user.username, value === "none" ? undefined : value);
                     }}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select a manager" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No Manager</SelectItem>
+                      <SelectItem value="none">No Manager</SelectItem>
                       <SelectItem value={user.username}>Self-Managed</SelectItem>
                       {users
                         .filter((manager) => manager.role === "manager" && manager.username !== user.username)
