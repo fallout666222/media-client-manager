@@ -6,6 +6,7 @@ import { TimeSheetHeader } from '@/components/TimeSheet/TimeSheetHeader';
 import { TimeSheetControls } from '@/components/TimeSheet/TimeSheetControls';
 import { TimeSheetContent } from '@/components/TimeSheet/TimeSheetContent';
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { TeamMemberSelector } from '@/components/TeamMemberSelector';
 
 const DEFAULT_WEEKS = [
   { id: "1", startDate: "2025-01-01", endDate: "2025-01-06", hours: 48 },
@@ -244,8 +245,32 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, readOnly = false }
   const [viewedUser, setViewedUser] = useState<User>(currentUser);
   const isViewingOwnTimesheet = viewedUser.id === currentUser.id;
 
+  useEffect(() => {
+    if (viewedUser.firstWeek) {
+      setCurrentDate(parse(viewedUser.firstWeek, 'yyyy-MM-dd', new Date()));
+      const initialWeek = DEFAULT_WEEKS.find(week => 
+        isSameDay(parse(week.startDate, 'yyyy-MM-dd', new Date()), parse(viewedUser.firstWeek || firstWeek, 'yyyy-MM-dd', new Date()))
+      );
+      if (initialWeek) {
+        setWeekHours(initialWeek.hours);
+      }
+    }
+  }, [viewedUser, firstWeek]);
+
   return (
     <div className="space-y-6">
+      {userRole === 'manager' && (
+        <div className="mb-4">
+          <h3 className="text-sm font-medium mb-2">View Timesheet For:</h3>
+          <TeamMemberSelector
+            currentUser={currentUser}
+            users={users}
+            onUserSelect={setViewedUser}
+            selectedUser={viewedUser}
+          />
+        </div>
+      )}
+
       <TimeSheetHeader
         userRole={userRole}
         remainingHours={weekHours - getTotalHoursForWeek()}
@@ -258,7 +283,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, readOnly = false }
             description: "Your timesheet is being exported to Excel",
           });
         }}
-        firstWeek={firstWeek}
+        firstWeek={viewedUser.firstWeek || firstWeek}
       />
 
       {hasUnsubmittedEarlierWeek() && !readOnly && !isCurrentWeekSubmitted() && (
@@ -287,7 +312,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, readOnly = false }
         onSubmitForReview={handleSubmitForReview}
         onApprove={handleApprove}
         onReject={handleReject}
-        readOnly={readOnly}
+        readOnly={readOnly || (!isViewingOwnTimesheet && userRole !== 'manager' && userRole !== 'admin')}
       />
 
       <TimeSheetContent
@@ -297,7 +322,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, readOnly = false }
         timeEntries={timeEntries[format(currentDate, 'yyyy-MM-dd')] || {}}
         status={getCurrentWeekStatus()}
         onTimeUpdate={(client, mediaType, hours) => {
-          if (readOnly) return;
+          if (readOnly || !isViewingOwnTimesheet) return;
           const weekKey = format(currentDate, 'yyyy-MM-dd');
           const currentTotal = getTotalHoursForWeek();
           const existingHours = timeEntries[weekKey]?.[client]?.[mediaType]?.hours || 0;
@@ -327,7 +352,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, readOnly = false }
         onRemoveClient={handleRemoveClient}
         onAddMediaType={handleAddMediaType}
         onRemoveMediaType={handleRemoveMediaType}
-        readOnly={readOnly}
+        readOnly={readOnly || !isViewingOwnTimesheet}
         weekHours={weekHours}
         userRole={userRole}
         availableClients={availableClients}
