@@ -11,6 +11,7 @@ interface TimeSheetGridProps {
   onTimeUpdate: (client: string, mediaType: string, hours: number) => void;
   status: TimeSheetStatus;
   weekHours?: number;
+  readOnly?: boolean;
 }
 
 export const TimeSheetGrid = ({ 
@@ -19,9 +20,10 @@ export const TimeSheetGrid = ({
   timeEntries,
   onTimeUpdate,
   status,
-  weekHours = 40
+  weekHours = 40,
+  readOnly = false
 }: TimeSheetGridProps) => {
-  const isReadOnly = status === 'under-review' || status === 'accepted';
+  const isFormDisabled = readOnly || status === 'under-review' || status === 'accepted';
   const { toast } = useToast();
 
   const calculateTotalHours = (excludingClient?: string, excludingType?: string): number => {
@@ -76,7 +78,7 @@ export const TimeSheetGrid = ({
                       
                       onTimeUpdate(client, type, hours);
                     }}
-                    disabled={isReadOnly}
+                    disabled={isFormDisabled}
                   />
                 </td>
               ))}

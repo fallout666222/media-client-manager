@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { TimeSheetStatus } from '@/types/timesheet';
@@ -6,6 +7,7 @@ import { Check, X, Send } from "lucide-react";
 interface ApprovalActionsProps {
   status: TimeSheetStatus;
   isManager: boolean;
+  isViewingOwnTimesheet: boolean;
   onSubmitForReview: () => void;
   onApprove: () => void;
   onReject: () => void;
@@ -14,6 +16,7 @@ interface ApprovalActionsProps {
 export const ApprovalActions = ({
   status,
   isManager,
+  isViewingOwnTimesheet,
   onSubmitForReview,
   onApprove,
   onReject
@@ -22,7 +25,7 @@ export const ApprovalActions = ({
     onReject();
   };
 
-  if (isManager && status === 'under-review') {
+  if (isManager && !isViewingOwnTimesheet && status === 'under-review') {
     return (
       <div className="flex gap-2">
         <Button onClick={onApprove} variant="default">
@@ -37,7 +40,7 @@ export const ApprovalActions = ({
     );
   }
 
-  if (!isManager && (status === 'unconfirmed' || status === 'needs-revision')) {
+  if (isViewingOwnTimesheet && (status === 'unconfirmed' || status === 'needs-revision')) {
     return (
       <Button onClick={onSubmitForReview}>
         <Send className="h-4 w-4 mr-2" />

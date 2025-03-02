@@ -10,18 +10,39 @@ import { UserManagement } from "./components/Auth/UserManagement";
 import { FirstWeekManagement } from "./components/Auth/FirstWeekManagement";
 import UserImpersonation from "./pages/UserImpersonation";
 import CustomWeeks from "./pages/CustomWeeks";
+import UserManagerAssignment from "./pages/UserManagerAssignment";
 import { useState } from "react";
 import { User, UserFormData } from "./types/timesheet";
 import { Button } from "./components/ui/button";
-import { LogOut, Users, Calendar } from "lucide-react";
+import { LogOut, Users, Calendar, UserCog } from "lucide-react";
 import { useToast } from "./hooks/use-toast";
 
 const queryClient = new QueryClient();
 
 const INITIAL_USERS: User[] = [
-  { username: "admin", password: "admin", role: "admin", firstWeek: "2024-01-01" },
-  { username: "user", password: "user", role: "user" },
-  { username: "manager", password: "manager", role: "manager", firstWeek: "2024-01-01" },
+  { 
+    username: "admin", 
+    password: "admin", 
+    role: "admin", 
+    firstWeek: "2024-01-01",
+    selectedClients: ["Client A", "Client B"],
+    selectedMediaTypes: ["TV", "Digital"]
+  },
+  { 
+    username: "user", 
+    password: "user", 
+    role: "user",
+    selectedClients: ["Client A"],
+    selectedMediaTypes: ["TV"] 
+  },
+  { 
+    username: "manager", 
+    password: "manager", 
+    role: "manager", 
+    firstWeek: "2024-01-01",
+    selectedClients: ["Client B"],
+    selectedMediaTypes: ["Digital"]
+  },
 ];
 
 const App = () => {
@@ -44,6 +65,8 @@ const App = () => {
   const handleCreateUser = (userData: UserFormData) => {
     const newUser: User = {
       ...userData,
+      selectedClients: [],
+      selectedMediaTypes: []
     };
     setUsers((prevUsers) => [...prevUsers, newUser]);
     toast({
@@ -66,6 +89,18 @@ const App = () => {
       title: "First Week Set",
       description: `First week set for ${username}: ${date}`,
     });
+  };
+
+  const handleUpdateUserManager = (username: string, managerId: string | undefined) => {
+    setUsers((prevUsers) =>
+      prevUsers.map((u) =>
+        u.username === username ? { ...u, managerId } : u
+      )
+    );
+    // If the current user is being updated, update their state as well
+    if (user && user.username === username) {
+      setUser((prevUser) => prevUser ? { ...prevUser, managerId } : null);
+    }
   };
 
   return (
@@ -93,6 +128,12 @@ const App = () => {
                       Custom Weeks
                     </Button>
                   </Link>
+                  <Link to="/user-manager">
+                    <Button variant="outline" size="sm" className="flex items-center gap-2">
+                      <UserCog className="h-4 w-4" />
+                      User-Manager
+                    </Button>
+                  </Link>
                 </>
               )}
               <Button
@@ -113,7 +154,12 @@ const App = () => {
                 user ? (
                   <div className="container mx-auto p-4 pt-16">
                     {user.firstWeek ? (
-                      <TimeSheet userRole={user.role} firstWeek={user.firstWeek} />
+                      <TimeSheet 
+                        userRole={user.role} 
+                        firstWeek={user.firstWeek} 
+                        currentUser={user} 
+                        users={users}
+                      />
                     ) : (
                       <div className="text-center p-8">
                         <h2 className="text-xl font-semibold mb-4">
@@ -161,6 +207,19 @@ const App = () => {
               element={
                 user?.role === 'admin' ? (
                   <CustomWeeks />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              }
+            />
+            <Route
+              path="/user-manager"
+              element={
+                user?.role === 'admin' ? (
+                  <UserManagerAssignment 
+                    users={users} 
+                    onUpdateUserManager={handleUpdateUserManager} 
+                  />
                 ) : (
                   <Navigate to="/" replace />
                 )

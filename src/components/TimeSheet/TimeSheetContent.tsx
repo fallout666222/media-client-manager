@@ -2,7 +2,7 @@
 import React from 'react';
 import { TimeSheetGrid } from './TimeSheetGrid';
 import { Settings } from './Settings';
-import { TimeEntry, TimeSheetStatus } from '@/types/timesheet';
+import { TimeEntry, TimeSheetStatus, User } from '@/types/timesheet';
 
 interface TimeSheetContentProps {
   showSettings: boolean;
@@ -24,6 +24,7 @@ interface TimeSheetContentProps {
   selectedMediaTypes: string[];
   onSelectClient: (client: string) => void;
   onSelectMediaType: (type: string) => void;
+  isViewingOwnTimesheet: boolean;
 }
 
 export const TimeSheetContent = ({
@@ -46,6 +47,7 @@ export const TimeSheetContent = ({
   selectedMediaTypes,
   onSelectClient,
   onSelectMediaType,
+  isViewingOwnTimesheet,
 }: TimeSheetContentProps) => {
   if (showSettings) {
     return (
@@ -75,6 +77,7 @@ export const TimeSheetContent = ({
       onTimeUpdate={onTimeUpdate}
       status={status}
       weekHours={weekHours}
+      readOnly={readOnly || !isViewingOwnTimesheet || status === 'under-review' || status === 'accepted'}
     />
   );
 };

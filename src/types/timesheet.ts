@@ -1,3 +1,4 @@
+
 export type TimeSheetStatus = 'unconfirmed' | 'under-review' | 'accepted' | 'needs-revision';
 
 export interface TimeEntry {
@@ -27,6 +28,9 @@ export interface User {
   password: string;
   role: 'admin' | 'user' | 'manager';
   firstWeek?: string;
+  managerId?: string;
+  selectedClients?: string[];
+  selectedMediaTypes?: string[];
 }
 
 export interface UserFormData {
