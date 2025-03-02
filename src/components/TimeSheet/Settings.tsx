@@ -1,8 +1,17 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 interface SettingsProps {
   clients: string[];
@@ -11,6 +20,13 @@ interface SettingsProps {
   onRemoveClient: (client: string) => void;
   onAddMediaType: (type: string) => void;
   onRemoveMediaType: (type: string) => void;
+  userRole: 'admin' | 'user' | 'manager';
+  availableClients: string[];
+  availableMediaTypes: string[];
+  selectedClients: string[];
+  selectedMediaTypes: string[];
+  onSelectClient: (client: string) => void;
+  onSelectMediaType: (type: string) => void;
 }
 
 export const Settings = ({
@@ -20,10 +36,21 @@ export const Settings = ({
   onRemoveClient,
   onAddMediaType,
   onRemoveMediaType,
+  userRole,
+  availableClients,
+  availableMediaTypes,
+  selectedClients,
+  selectedMediaTypes,
+  onSelectClient,
+  onSelectMediaType,
 }: SettingsProps) => {
   const [newClient, setNewClient] = useState('');
   const [newMediaType, setNewMediaType] = useState('');
+  const [selectedClientToAdd, setSelectedClientToAdd] = useState('');
+  const [selectedMediaTypeToAdd, setSelectedMediaTypeToAdd] = useState('');
   const { toast } = useToast();
+
+  const isAdmin = userRole === 'admin';
 
   const handleAddClient = () => {
     if (!newClient.trim()) {
@@ -51,24 +78,116 @@ export const Settings = ({
     setNewMediaType('');
   };
 
+  const handleSelectClient = () => {
+    if (selectedClientToAdd && !selectedClients.includes(selectedClientToAdd)) {
+      onSelectClient(selectedClientToAdd);
+      setSelectedClientToAdd('');
+    }
+  };
+
+  const handleSelectMediaType = () => {
+    if (selectedMediaTypeToAdd && !selectedMediaTypes.includes(selectedMediaTypeToAdd)) {
+      onSelectMediaType(selectedMediaTypeToAdd);
+      setSelectedMediaTypeToAdd('');
+    }
+  };
+
   return (
     <div className="space-y-8">
+      {isAdmin && (
+        <>
+          <div>
+            <h3 className="text-lg font-medium mb-4">Manage Clients (Admin)</h3>
+            <div className="flex gap-2 mb-4">
+              <Input
+                placeholder="Add new client"
+                value={newClient}
+                onChange={(e) => setNewClient(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleAddClient()}
+              />
+              <Button onClick={handleAddClient}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {clients.map((client) => (
+                <div
+                  key={client}
+                  className="flex items-center gap-2 bg-secondary px-3 py-1 rounded-full"
+                >
+                  <span>{client}</span>
+                  <button
+                    onClick={() => onRemoveClient(client)}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-medium mb-4">Manage Media Types (Admin)</h3>
+            <div className="flex gap-2 mb-4">
+              <Input
+                placeholder="Add new media type"
+                value={newMediaType}
+                onChange={(e) => setNewMediaType(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleAddMediaType()}
+              />
+              <Button onClick={handleAddMediaType}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {mediaTypes.map((type) => (
+                <div
+                  key={type}
+                  className="flex items-center gap-2 bg-secondary px-3 py-1 rounded-full"
+                >
+                  <span>{type}</span>
+                  <button
+                    onClick={() => onRemoveMediaType(type)}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
       <div>
-        <h3 className="text-lg font-medium mb-4">Clients</h3>
-        <div className="flex gap-2 mb-4">
-          <Input
-            placeholder="Add new client"
-            value={newClient}
-            onChange={(e) => setNewClient(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleAddClient()}
-          />
-          <Button onClick={handleAddClient}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add
-          </Button>
+        <h3 className="text-lg font-medium mb-4">Your Visible Clients</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <Label htmlFor="client-select">Select client to add</Label>
+            <div className="flex gap-2 mt-1">
+              <Select value={selectedClientToAdd} onValueChange={setSelectedClientToAdd}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select client" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableClients
+                    .filter(client => !selectedClients.includes(client))
+                    .map(client => (
+                      <SelectItem key={client} value={client}>{client}</SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              <Button onClick={handleSelectClient} disabled={!selectedClientToAdd}>
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {clients.map((client) => (
+        <div className="flex flex-wrap gap-2 mb-8">
+          {selectedClients.map((client) => (
             <div
               key={client}
               className="flex items-center gap-2 bg-secondary px-3 py-1 rounded-full"
@@ -86,21 +205,31 @@ export const Settings = ({
       </div>
 
       <div>
-        <h3 className="text-lg font-medium mb-4">Media Types</h3>
-        <div className="flex gap-2 mb-4">
-          <Input
-            placeholder="Add new media type"
-            value={newMediaType}
-            onChange={(e) => setNewMediaType(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleAddMediaType()}
-          />
-          <Button onClick={handleAddMediaType}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add
-          </Button>
+        <h3 className="text-lg font-medium mb-4">Your Visible Media Types</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <Label htmlFor="media-select">Select media type to add</Label>
+            <div className="flex gap-2 mt-1">
+              <Select value={selectedMediaTypeToAdd} onValueChange={setSelectedMediaTypeToAdd}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select media type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableMediaTypes
+                    .filter(type => !selectedMediaTypes.includes(type))
+                    .map(type => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              <Button onClick={handleSelectMediaType} disabled={!selectedMediaTypeToAdd}>
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          {mediaTypes.map((type) => (
+          {selectedMediaTypes.map((type) => (
             <div
               key={type}
               className="flex items-center gap-2 bg-secondary px-3 py-1 rounded-full"

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parse, format, isAfter, isBefore, addWeeks, startOfWeek, isEqual, isSameDay } from 'date-fns';
@@ -15,6 +14,18 @@ const DEFAULT_WEEKS = [
   { id: "4", startDate: "2025-01-20", endDate: "2025-01-24", hours: 40 },
   { id: "5", startDate: "2025-01-27", endDate: "2025-01-31", hours: 40 },
 ];
+
+const DEFAULT_AVAILABLE_CLIENTS = [
+  'Administrative',
+  'Education/Training',
+  'General Research',
+  'Network Requests',
+  'New Business',
+  'Sick Leave',
+  'VACATION'
+];
+
+const DEFAULT_AVAILABLE_MEDIA_TYPES = ['TV', 'Radio', 'Print', 'Digital'];
 
 interface TimeSheetProps {
   userRole: 'admin' | 'user' | 'manager';
@@ -33,16 +44,13 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
     );
     return initialWeek?.hours || 40;
   });
-  const [clients, setClients] = useState<string[]>([
-    'Administrative',
-    'Education/Training',
-    'General Research',
-    'Network Requests',
-    'New Business',
-    'Sick Leave',
-    'VACATION'
-  ]);
-  const [mediaTypes, setMediaTypes] = useState<string[]>(['TV', 'Radio', 'Print', 'Digital']);
+  
+  const [availableClients, setAvailableClients] = useState<string[]>(DEFAULT_AVAILABLE_CLIENTS);
+  const [availableMediaTypes, setAvailableMediaTypes] = useState<string[]>(DEFAULT_AVAILABLE_MEDIA_TYPES);
+  
+  const [selectedClients, setSelectedClients] = useState<string[]>(DEFAULT_AVAILABLE_CLIENTS);
+  const [selectedMediaTypes, setSelectedMediaTypes] = useState<string[]>(DEFAULT_AVAILABLE_MEDIA_TYPES);
+  
   const [timeEntries, setTimeEntries] = useState<Record<string, TimeSheetData>>({});
   const [submittedWeeks, setSubmittedWeeks] = useState<string[]>([]);
   const [weekStatuses, setWeekStatuses] = useState<Record<string, TimeSheetStatus>>({});
@@ -134,7 +142,6 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
       [currentWeekKey]: 'under-review'
     }));
     
-    // Only display the success toast if all checks pass
     toast({
       title: "Timesheet Under Review",
       description: `Week of ${format(currentDate, 'MMM d, yyyy')} has been submitted and is now under review`,
@@ -181,6 +188,56 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
            weekStatuses[currentWeekKey] === 'under-review' || 
            weekStatuses[currentWeekKey] === 'accepted';
   }
+
+  const handleSelectClient = (client: string) => {
+    if (!selectedClients.includes(client)) {
+      setSelectedClients(prev => [...prev, client]);
+    }
+  };
+
+  const handleSelectMediaType = (type: string) => {
+    if (!selectedMediaTypes.includes(type)) {
+      setSelectedMediaTypes(prev => [...prev, type]);
+    }
+  };
+
+  const handleAddClient = (client: string) => {
+    if (userRole !== 'admin') return;
+    
+    if (!availableClients.includes(client)) {
+      setAvailableClients(prev => [...prev, client]);
+      setSelectedClients(prev => [...prev, client]);
+    }
+  };
+
+  const handleAddMediaType = (type: string) => {
+    if (userRole !== 'admin') return;
+    
+    if (!availableMediaTypes.includes(type)) {
+      setAvailableMediaTypes(prev => [...prev, type]);
+      setSelectedMediaTypes(prev => [...prev, type]);
+    }
+  };
+
+  const handleRemoveClient = (client: string) => {
+    if (readOnly) return;
+    
+    if (userRole === 'admin') {
+      setAvailableClients(prev => prev.filter(c => c !== client));
+    }
+    
+    setSelectedClients(prev => prev.filter(c => c !== client));
+  };
+
+  const handleRemoveMediaType = (type: string) => {
+    if (readOnly) return;
+    
+    if (userRole === 'admin') {
+      setAvailableMediaTypes(prev => prev.filter(t => t !== type));
+    }
+    
+    setSelectedMediaTypes(prev => prev.filter(t => t !== type));
+  };
 
   return (
     <div className="space-y-6">
@@ -229,8 +286,8 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
 
       <TimeSheetContent
         showSettings={showSettings}
-        clients={clients}
-        mediaTypes={mediaTypes}
+        clients={availableClients}
+        mediaTypes={availableMediaTypes}
         timeEntries={timeEntries[format(currentDate, 'yyyy-MM-dd')] || {}}
         status={getCurrentWeekStatus()}
         onTimeUpdate={(client, mediaType, hours) => {
@@ -260,28 +317,19 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
             }
           }));
         }}
-        onAddClient={(client: string) => {
-          if (readOnly) return;
-          if (!clients.includes(client)) {
-            setClients(prev => [...prev, client]);
-          }
-        }}
-        onRemoveClient={(client: string) => {
-          if (readOnly) return;
-          setClients(prev => prev.filter(c => c !== client));
-        }}
-        onAddMediaType={(type: string) => {
-          if (readOnly) return;
-          if (!mediaTypes.includes(type)) {
-            setMediaTypes(prev => [...prev, type]);
-          }
-        }}
-        onRemoveMediaType={(type: string) => {
-          if (readOnly) return;
-          setMediaTypes(prev => prev.filter(t => t !== type));
-        }}
+        onAddClient={handleAddClient}
+        onRemoveClient={handleRemoveClient}
+        onAddMediaType={handleAddMediaType}
+        onRemoveMediaType={handleRemoveMediaType}
         readOnly={readOnly}
         weekHours={weekHours}
+        userRole={userRole}
+        availableClients={availableClients}
+        availableMediaTypes={availableMediaTypes}
+        selectedClients={selectedClients}
+        selectedMediaTypes={selectedMediaTypes}
+        onSelectClient={handleSelectClient}
+        onSelectMediaType={handleSelectMediaType}
       />
     </div>
   );

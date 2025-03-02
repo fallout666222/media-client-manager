@@ -17,6 +17,13 @@ interface TimeSheetContentProps {
   onRemoveMediaType: (type: string) => void;
   readOnly?: boolean;
   weekHours?: number;
+  userRole: 'admin' | 'user' | 'manager';
+  availableClients: string[];
+  availableMediaTypes: string[];
+  selectedClients: string[];
+  selectedMediaTypes: string[];
+  onSelectClient: (client: string) => void;
+  onSelectMediaType: (type: string) => void;
 }
 
 export const TimeSheetContent = ({
@@ -32,6 +39,13 @@ export const TimeSheetContent = ({
   onRemoveMediaType,
   readOnly = false,
   weekHours = 40,
+  userRole,
+  availableClients,
+  availableMediaTypes,
+  selectedClients,
+  selectedMediaTypes,
+  onSelectClient,
+  onSelectMediaType,
 }: TimeSheetContentProps) => {
   if (showSettings) {
     return (
@@ -42,14 +56,21 @@ export const TimeSheetContent = ({
         onRemoveClient={onRemoveClient}
         onAddMediaType={onAddMediaType}
         onRemoveMediaType={onRemoveMediaType}
+        userRole={userRole}
+        availableClients={availableClients}
+        availableMediaTypes={availableMediaTypes}
+        selectedClients={selectedClients}
+        selectedMediaTypes={selectedMediaTypes}
+        onSelectClient={onSelectClient}
+        onSelectMediaType={onSelectMediaType}
       />
     );
   }
 
   return (
     <TimeSheetGrid
-      clients={clients}
-      mediaTypes={mediaTypes}
+      clients={selectedClients}
+      mediaTypes={selectedMediaTypes}
       timeEntries={timeEntries}
       onTimeUpdate={onTimeUpdate}
       status={status}
