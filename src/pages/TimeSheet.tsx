@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parse, format, isAfter, isBefore, addWeeks, startOfWeek, isEqual, isSameDay } from 'date-fns';
-import { TimeSheetStatus, TimeSheetData } from '@/types/timesheet';
+import { TimeSheetStatus, TimeSheetData, User } from '@/types/timesheet';
 import { TimeSheetHeader } from '@/components/TimeSheet/TimeSheetHeader';
 import { TimeSheetControls } from '@/components/TimeSheet/TimeSheetControls';
 import { TimeSheetContent } from '@/components/TimeSheet/TimeSheetContent';
@@ -30,10 +30,12 @@ const DEFAULT_AVAILABLE_MEDIA_TYPES = ['TV', 'Radio', 'Print', 'Digital'];
 interface TimeSheetProps {
   userRole: 'admin' | 'user' | 'manager';
   firstWeek: string;
+  currentUser: User;
+  users: User[];
   readOnly?: boolean;
 }
 
-const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) => {
+const TimeSheet = ({ userRole, firstWeek, currentUser, users, readOnly = false }: TimeSheetProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [currentDate, setCurrentDate] = useState<Date>(
     parse(firstWeek, 'yyyy-MM-dd', new Date())
@@ -239,6 +241,9 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
     setSelectedMediaTypes(prev => prev.filter(t => t !== type));
   };
 
+  const [viewedUser, setViewedUser] = useState<User>(currentUser);
+  const isViewingOwnTimesheet = viewedUser.id === currentUser.id;
+
   return (
     <div className="space-y-6">
       <TimeSheetHeader
@@ -278,6 +283,7 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
         onWeekHoursChange={setWeekHours}
         status={getCurrentWeekStatus()}
         isManager={userRole === 'manager' || userRole === 'admin'}
+        isViewingOwnTimesheet={isViewingOwnTimesheet}
         onSubmitForReview={handleSubmitForReview}
         onApprove={handleApprove}
         onReject={handleReject}
@@ -330,6 +336,7 @@ const TimeSheet = ({ userRole, firstWeek, readOnly = false }: TimeSheetProps) =>
         selectedMediaTypes={selectedMediaTypes}
         onSelectClient={handleSelectClient}
         onSelectMediaType={handleSelectMediaType}
+        isViewingOwnTimesheet={isViewingOwnTimesheet}
       />
     </div>
   );

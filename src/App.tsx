@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,6 +20,7 @@ const queryClient = new QueryClient();
 
 const INITIAL_USERS: User[] = [
   { 
+    id: "1",
     username: "admin", 
     password: "admin", 
     role: "admin", 
@@ -29,6 +29,7 @@ const INITIAL_USERS: User[] = [
     selectedMediaTypes: ["TV", "Digital"]
   },
   { 
+    id: "2",
     username: "user", 
     password: "user", 
     role: "user",
@@ -36,6 +37,7 @@ const INITIAL_USERS: User[] = [
     selectedMediaTypes: ["TV"] 
   },
   { 
+    id: "3",
     username: "manager", 
     password: "manager", 
     role: "manager", 
@@ -81,7 +83,6 @@ const App = () => {
         u.username === username ? { ...u, firstWeek: date } : u
       )
     );
-    // If the current user is the one being updated, update their state as well
     if (user && user.username === username) {
       setUser((prevUser) => prevUser ? { ...prevUser, firstWeek: date } : null);
     }
@@ -97,7 +98,6 @@ const App = () => {
         u.username === username ? { ...u, managerId } : u
       )
     );
-    // If the current user is being updated, update their state as well
     if (user && user.username === username) {
       setUser((prevUser) => prevUser ? { ...prevUser, managerId } : null);
     }
@@ -157,7 +157,7 @@ const App = () => {
                       <TimeSheet 
                         userRole={user.role} 
                         firstWeek={user.firstWeek} 
-                        currentUser={user} 
+                        currentUser={user}
                         users={users}
                       />
                     ) : (

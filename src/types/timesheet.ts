@@ -24,6 +24,7 @@ export interface Employee {
 }
 
 export interface User {
+  id?: string;         // Add optional id
   username: string;
   password: string;
   role: 'admin' | 'user' | 'manager';
