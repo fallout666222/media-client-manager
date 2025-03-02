@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import {
   Select,
@@ -20,6 +21,9 @@ interface UserImpersonationProps {
 const UserImpersonation = ({ users }: UserImpersonationProps) => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const { toast } = useToast();
+  
+  // Find the admin user to use as the current user for viewing
+  const adminUser = users.find(user => user.role === 'admin') || users[0];
   
   const handleUserSelect = (username: string) => {
     const user = users.find(u => u.username === username);
@@ -66,6 +70,8 @@ const UserImpersonation = ({ users }: UserImpersonationProps) => {
           <TimeSheet 
             userRole={selectedUser.role} 
             firstWeek={selectedUser.firstWeek}
+            currentUser={adminUser} // Pass the admin user as the current user
+            users={users} // Pass all users
             readOnly={true}
           />
         </div>
