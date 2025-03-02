@@ -33,6 +33,7 @@ const INITIAL_USERS: User[] = [
     username: "user", 
     password: "user", 
     role: "user",
+    managerId: "3",
     selectedClients: ["Client A"],
     selectedMediaTypes: ["TV"] 
   },
