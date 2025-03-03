@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { User } from "@/types/timesheet";
 import {
@@ -20,6 +21,13 @@ interface CustomWeek {
   hours: number;
 }
 
+// Renamed the interface to avoid conflict with component name
+interface WeekPercentageEntry {
+  userId: string;
+  weekId: string;
+  percentage: number;
+}
+
 interface UserWeekPercentageProps {
   users: User[];
   initialWeeks?: CustomWeek[]; // Make initialWeeks optional
@@ -35,7 +43,7 @@ const DEFAULT_WEEKS: CustomWeek[] = [
 
 const UserWeekPercentage = ({ users }: UserWeekPercentageProps) => {
   const [selectedUser, setSelectedUser] = useState<string>("");
-  const [weekPercentages, setWeekPercentages] = useState<UserWeekPercentage[]>([
+  const [weekPercentages, setWeekPercentages] = useState<WeekPercentageEntry[]>([
     { userId: "1", weekId: "1", percentage: 100 },
     { userId: "2", weekId: "1", percentage: 100 },
     { userId: "3", weekId: "1", percentage: 100 },
