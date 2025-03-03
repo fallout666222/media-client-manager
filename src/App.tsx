@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,10 +13,11 @@ import CustomWeeks from "./pages/CustomWeeks";
 import UserManagerAssignment from "./pages/UserManagerAssignment";
 import UserFirstWeekManagement from "./pages/UserFirstWeekManagement";
 import UserWeekPercentage from "./pages/UserWeekPercentage";
+import ManagerView from "./pages/ManagerView";
 import { useState } from "react";
 import { User, UserFormData } from "./types/timesheet";
 import { Button } from "./components/ui/button";
-import { LogOut, Users, Calendar, UserCog, CalendarDays, Percent } from "lucide-react";
+import { LogOut, Users, Calendar, UserCog, CalendarDays, Percent, Eye } from "lucide-react";
 import { useToast } from "./hooks/use-toast";
 
 const queryClient = new QueryClient();
@@ -113,7 +115,7 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           {user && (
-            <div className="fixed top-4 right-4 flex items-center gap-4">
+            <div className="fixed top-4 right-4 z-50 flex items-center gap-2 flex-wrap justify-end">
               <span className="text-sm text-gray-600">
                 Logged in as: {user.username} ({user.role})
               </span>
@@ -150,6 +152,14 @@ const App = () => {
                     </Button>
                   </Link>
                 </>
+              )}
+              {user.role === 'manager' && (
+                <Link to="/manager-view">
+                  <Button variant="outline" size="sm" className="flex items-center gap-2">
+                    <Eye className="h-4 w-4" />
+                    View Team
+                  </Button>
+                </Link>
               )}
               <Button
                 variant="outline"
@@ -258,6 +268,19 @@ const App = () => {
               element={
                 user?.role === 'admin' ? (
                   <UserWeekPercentage 
+                    users={users} 
+                  />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              }
+            />
+            <Route
+              path="/manager-view"
+              element={
+                user?.role === 'manager' ? (
+                  <ManagerView 
+                    currentUser={user}
                     users={users} 
                   />
                 ) : (

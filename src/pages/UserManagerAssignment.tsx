@@ -19,6 +19,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { User } from "@/types/timesheet";
+import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 interface UserManagerAssignmentProps {
   users: User[];
@@ -41,7 +43,15 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
 
   return (
     <div className="container mx-auto p-4 pt-16">
-      <h1 className="text-2xl font-bold mb-6">User-Manager Assignments</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">User-Manager Assignments</h1>
+        <Link to="/">
+          <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Button>
+        </Link>
+      </div>
       
       <div className="rounded-md border">
         <Table>

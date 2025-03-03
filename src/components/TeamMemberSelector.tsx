@@ -38,9 +38,9 @@ export function TeamMemberSelector({
       // Admin can see all users
       return users;
     } else if (currentUser.role === "manager") {
-      // Manager can see themselves and their team members
+      // Manager can see themselves and their team members (users who have this manager set as their manager)
       return users.filter(
-        (user) => user.managerId === currentUser.id || user.id === currentUser.id
+        (user) => user.managerId === currentUser.username || user.id === currentUser.id
       );
     } else {
       // Regular users can only see themselves
@@ -49,6 +49,9 @@ export function TeamMemberSelector({
   };
 
   const teamMembers = getTeamMembers();
+  
+  // Disable the dropdown if the user is not an admin and there's only one team member (themselves)
+  const isDisabled = currentUser.role !== "admin" && teamMembers.length === 1;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -58,6 +61,7 @@ export function TeamMemberSelector({
           role="combobox"
           aria-expanded={open}
           className="w-full justify-between md:w-[250px]"
+          disabled={isDisabled}
         >
           {selectedUser.username}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
