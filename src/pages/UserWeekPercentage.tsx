@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { User } from "@/types/timesheet";
 import {
@@ -21,15 +20,9 @@ interface CustomWeek {
   hours: number;
 }
 
-interface UserWeekPercentage {
-  userId: string;
-  weekId: string;
-  percentage: number;
-}
-
 interface UserWeekPercentageProps {
   users: User[];
-  initialWeeks: CustomWeek[];
+  initialWeeks?: CustomWeek[]; // Make initialWeeks optional
 }
 
 const DEFAULT_WEEKS: CustomWeek[] = [

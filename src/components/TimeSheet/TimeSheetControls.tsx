@@ -57,6 +57,10 @@ export const TimeSheetControls = ({
         <ApprovalActions
           onApprove={onApprove}
           onReject={onReject}
+          status={status}
+          isManager={isManager}
+          isViewingOwnTimesheet={isViewingOwnTimesheet}
+          onSubmitForReview={onSubmitForReview}
           disabled={readOnly}
         />
       )}
