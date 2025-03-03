@@ -39,13 +39,6 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
     });
   };
 
-  // Function to get manager's username from ID
-  const getManagerNameById = (managerId: string | undefined): string => {
-    if (!managerId) return "None";
-    const manager = users.find(u => u.id === managerId);
-    return manager ? manager.username : "None";
-  };
-
   return (
     <div className="container mx-auto p-4 pt-16">
       <h1 className="text-2xl font-bold mb-6">User-Manager Assignments</h1>
@@ -67,23 +60,22 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
                 <TableCell className="font-medium">{user.username}</TableCell>
                 <TableCell>{user.role}</TableCell>
                 <TableCell>
-                  {getManagerNameById(user.managerId)}
                   <Select
                     value={user.managerId || "none"}
                     onValueChange={(value) => {
                       handleManagerChange(user.username, value === "none" ? undefined : value);
                     }}
                   >
-                    <SelectTrigger className="w-full mt-1">
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select a manager" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">No Manager</SelectItem>
-                      <SelectItem value={user.id}>Self-Managed</SelectItem>
+                      <SelectItem value={user.username}>Self-Managed</SelectItem>
                       {users
-                        .filter((manager) => manager.role === "manager" && manager.id !== user.id)
+                        .filter((manager) => manager.role === "manager" && manager.username !== user.username)
                         .map((manager) => (
-                          <SelectItem key={manager.id} value={manager.id}>
+                          <SelectItem key={manager.username} value={manager.username}>
                             {manager.username}
                           </SelectItem>
                         ))}

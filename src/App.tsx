@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -34,7 +33,7 @@ const INITIAL_USERS: User[] = [
     username: "user", 
     password: "user", 
     role: "user",
-    managerId: "3", // Explicitly set manager by ID
+    managerId: "3",
     selectedClients: ["Client A"],
     selectedMediaTypes: ["TV"] 
   },

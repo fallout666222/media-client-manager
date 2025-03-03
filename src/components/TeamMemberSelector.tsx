@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -32,19 +32,10 @@ export function TeamMemberSelector({
 }: TeamMemberSelectorProps) {
   const [open, setOpen] = useState(false);
 
-  // Filter team members based on user role
-  const teamMembers = users.filter(user => {
-    if (currentUser.role === "admin") {
-      // Admin sees all users
-      return true;
-    } else if (currentUser.role === "manager") {
-      // Manager sees themselves and their team members
-      return user.id === currentUser.id || user.managerId === currentUser.id;
-    } else {
-      // Regular users only see themselves
-      return user.id === currentUser.id;
-    }
-  });
+  // Filter team members (users who have this manager as their manager)
+  const teamMembers = users.filter(
+    (user) => user.managerId === currentUser.id || user.id === currentUser.id
+  );
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -55,7 +46,7 @@ export function TeamMemberSelector({
           aria-expanded={open}
           className="w-full justify-between md:w-[250px]"
         >
-          {selectedUser.username || "Select team member"}
+          {selectedUser.username}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
