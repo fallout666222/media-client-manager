@@ -22,6 +22,7 @@ interface WeekPickerProps {
   currentDate: Date;
   onWeekChange: (date: Date) => void;
   onWeekHoursChange: (hours: number) => void;
+  weekPercentage?: number;
 }
 
 const DEFAULT_WEEKS: CustomWeek[] = [
@@ -32,7 +33,12 @@ const DEFAULT_WEEKS: CustomWeek[] = [
   { id: "5", startDate: "2025-01-27", endDate: "2025-01-31", hours: 40 },
 ];
 
-export const WeekPicker = ({ currentDate, onWeekChange, onWeekHoursChange }: WeekPickerProps) => {
+export const WeekPicker = ({ 
+  currentDate, 
+  onWeekChange, 
+  onWeekHoursChange,
+  weekPercentage = 100
+}: WeekPickerProps) => {
   // Find the current week based on the currentDate
   const getCurrentWeek = () => {
     for (const week of DEFAULT_WEEKS) {
@@ -52,7 +58,10 @@ export const WeekPicker = ({ currentDate, onWeekChange, onWeekHoursChange }: Wee
     if (selectedWeek) {
       const date = parse(selectedWeek.startDate, "yyyy-MM-dd", new Date());
       onWeekChange(date);
-      onWeekHoursChange(selectedWeek.hours);
+      
+      // Apply percentage to hours
+      const effectiveHours = Math.round(selectedWeek.hours * (weekPercentage / 100));
+      onWeekHoursChange(effectiveHours);
     }
   };
 
@@ -72,13 +81,20 @@ export const WeekPicker = ({ currentDate, onWeekChange, onWeekHoursChange }: Wee
     const newWeek = DEFAULT_WEEKS[newIndex];
     const date = parse(newWeek.startDate, "yyyy-MM-dd", new Date());
     onWeekChange(date);
-    onWeekHoursChange(newWeek.hours);
+    
+    // Apply percentage to hours
+    const effectiveHours = Math.round(newWeek.hours * (weekPercentage / 100));
+    onWeekHoursChange(effectiveHours);
   };
 
   const formatWeekLabel = (week: CustomWeek) => {
     const start = format(parse(week.startDate, "yyyy-MM-dd", new Date()), "MMM dd, yyyy");
     const end = format(parse(week.endDate, "yyyy-MM-dd", new Date()), "MMM dd, yyyy");
-    return `${start} - ${end} (${week.hours}h)`;
+    
+    // Calculate effective hours based on percentage
+    const effectiveHours = Math.round(week.hours * (weekPercentage / 100));
+    
+    return `${start} - ${end} (${effectiveHours}h / ${weekPercentage}%)`;
   };
 
   return (

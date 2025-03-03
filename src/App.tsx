@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,10 +11,11 @@ import UserImpersonation from "./pages/UserImpersonation";
 import CustomWeeks from "./pages/CustomWeeks";
 import UserManagerAssignment from "./pages/UserManagerAssignment";
 import UserFirstWeekManagement from "./pages/UserFirstWeekManagement";
+import UserWeekPercentage from "./pages/UserWeekPercentage";
 import { useState } from "react";
 import { User, UserFormData } from "./types/timesheet";
 import { Button } from "./components/ui/button";
-import { LogOut, Users, Calendar, UserCog, CalendarDays } from "lucide-react";
+import { LogOut, Users, Calendar, UserCog, CalendarDays, Percent } from "lucide-react";
 import { useToast } from "./hooks/use-toast";
 
 const queryClient = new QueryClient();
@@ -143,6 +143,12 @@ const App = () => {
                       First Weeks
                     </Button>
                   </Link>
+                  <Link to="/week-percentage">
+                    <Button variant="outline" size="sm" className="flex items-center gap-2">
+                      <Percent className="h-4 w-4" />
+                      Week Percentage
+                    </Button>
+                  </Link>
                 </>
               )}
               <Button
@@ -241,6 +247,18 @@ const App = () => {
                   <UserFirstWeekManagement 
                     users={users} 
                     onSetFirstWeek={handleSetFirstWeek} 
+                  />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              }
+            />
+            <Route
+              path="/week-percentage"
+              element={
+                user?.role === 'admin' ? (
+                  <UserWeekPercentage 
+                    users={users} 
                   />
                 ) : (
                   <Navigate to="/" replace />

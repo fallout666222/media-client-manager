@@ -32,10 +32,17 @@ export interface User {
   managerId?: string;
   selectedClients?: string[];
   selectedMediaTypes?: string[];
+  weekPercentages?: { weekId: string; percentage: number }[];
 }
 
 export interface UserFormData {
   username: string;
   password: string;
   role: 'admin' | 'user' | 'manager';
+}
+
+export interface WeekPercentage {
+  userId: string;
+  weekId: string;
+  percentage: number;
 }
