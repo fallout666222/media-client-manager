@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { User } from "@/types/timesheet";
 import {
@@ -13,6 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 interface CustomWeek {
   id: string;
@@ -21,7 +22,6 @@ interface CustomWeek {
   hours: number;
 }
 
-// Renamed the interface to avoid conflict with component name
 interface WeekPercentageEntry {
   userId: string;
   weekId: string;
@@ -30,7 +30,7 @@ interface WeekPercentageEntry {
 
 interface UserWeekPercentageProps {
   users: User[];
-  initialWeeks?: CustomWeek[]; // Make initialWeeks optional
+  initialWeeks?: CustomWeek[];
 }
 
 const DEFAULT_WEEKS: CustomWeek[] = [
@@ -59,7 +59,6 @@ const UserWeekPercentage = ({ users }: UserWeekPercentageProps) => {
       return entry.percentage;
     }
     
-    // If no entry exists for this week, look for previous weeks
     const weekIdNum = parseInt(weekId);
     for (let i = weekIdNum - 1; i >= 1; i--) {
       const previousEntry = weekPercentages.find(
@@ -70,7 +69,6 @@ const UserWeekPercentage = ({ users }: UserWeekPercentageProps) => {
       }
     }
     
-    // Default to 100% if no previous settings found
     return 100;
   };
 
@@ -79,7 +77,6 @@ const UserWeekPercentage = ({ users }: UserWeekPercentageProps) => {
     weekId: string,
     percentage: number
   ) => {
-    // Validate percentage is between 0 and 100
     if (percentage < 0 || percentage > 100) {
       toast({
         title: "Invalid Percentage",
@@ -102,10 +99,8 @@ const UserWeekPercentage = ({ users }: UserWeekPercentageProps) => {
 
     setWeekPercentages(updatedPercentages);
 
-    // Apply the same percentage to all subsequent weeks if it's 100%
     if (percentage === 100) {
       const weekIdNum = parseInt(weekId);
-      // Remove any existing settings for subsequent weeks
       setWeekPercentages(prev => 
         prev.filter(wp => !(wp.userId === userId && parseInt(wp.weekId) > weekIdNum))
       );
@@ -120,8 +115,16 @@ const UserWeekPercentage = ({ users }: UserWeekPercentageProps) => {
   const selectedUserData = users.find((user) => user.id === selectedUser);
 
   return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">User Week Percentage Management</h1>
+    <div className="container mx-auto p-6 pt-16">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">User Week Percentage Management</h1>
+        <Link to="/">
+          <Button variant="outline" size="sm" className="flex items-center gap-2 z-10">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Button>
+        </Link>
+      </div>
       
       <div className="mb-6">
         <label className="block text-sm font-medium mb-2">Select a user:</label>

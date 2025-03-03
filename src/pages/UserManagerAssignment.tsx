@@ -46,7 +46,7 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">User-Manager Assignments</h1>
         <Link to="/">
-          <Button variant="outline" size="sm" className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="flex items-center gap-2 z-10">
             <ArrowLeft className="h-4 w-4" />
             Back to Dashboard
           </Button>
@@ -83,10 +83,10 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
                       <SelectItem value="none">No Manager</SelectItem>
                       <SelectItem value={user.username}>Self-Managed</SelectItem>
                       {users
-                        .filter((manager) => manager.role === "manager" && manager.username !== user.username)
+                        .filter((manager) => (manager.role === "manager" || manager.role === "user") && manager.username !== user.username)
                         .map((manager) => (
                           <SelectItem key={manager.username} value={manager.username}>
-                            {manager.username}
+                            {manager.username} ({manager.role})
                           </SelectItem>
                         ))}
                     </SelectContent>

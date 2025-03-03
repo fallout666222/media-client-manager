@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { User } from "@/types/timesheet";
@@ -19,9 +18,9 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { format, parse } from "date-fns";
-import { Calendar, CheckCircle } from "lucide-react";
+import { Calendar, CheckCircle, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 
-// Import the same weeks data used in other components
 const DEFAULT_WEEKS = [
   { id: "1", startDate: "2025-01-01", endDate: "2025-01-06", hours: 48 },
   { id: "2", startDate: "2025-01-10", endDate: "2025-01-03", hours: 40 },
@@ -67,11 +66,19 @@ const UserFirstWeekManagement = ({ users, onSetFirstWeek }: UserFirstWeekManagem
   };
 
   return (
-    <div className="container mx-auto py-10">
-      <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
-        <Calendar className="h-6 w-6" />
-        User First Week Management
-      </h1>
+    <div className="container mx-auto py-10 pt-16">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <Calendar className="h-6 w-6" />
+          User First Week Management
+        </h1>
+        <Link to="/">
+          <Button variant="outline" size="sm" className="flex items-center gap-2 z-10">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Button>
+        </Link>
+      </div>
       
       <div className="rounded-md border">
         <Table>

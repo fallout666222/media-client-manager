@@ -38,11 +38,11 @@ const ManagerView = ({ currentUser, users }: ManagerViewProps) => {
   };
 
   return (
-    <div className="container mx-auto p-4 space-y-6">
+    <div className="container mx-auto p-4 space-y-6 pt-16">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">View Team Timesheets</h1>
         <Link to="/">
-          <Button variant="outline" size="sm" className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="flex items-center gap-2 z-10">
             <ArrowLeft className="h-4 w-4" />
             Back to Dashboard
           </Button>
