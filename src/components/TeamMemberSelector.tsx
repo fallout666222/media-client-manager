@@ -32,10 +32,23 @@ export function TeamMemberSelector({
 }: TeamMemberSelectorProps) {
   const [open, setOpen] = useState(false);
 
-  // Filter team members (users who have this manager as their manager)
-  const teamMembers = users.filter(
-    (user) => user.managerId === currentUser.id || user.id === currentUser.id
-  );
+  // Filter team members based on user role
+  const getTeamMembers = () => {
+    if (currentUser.role === "admin") {
+      // Admin can see all users
+      return users;
+    } else if (currentUser.role === "manager") {
+      // Manager can see themselves and their team members
+      return users.filter(
+        (user) => user.managerId === currentUser.id || user.id === currentUser.id
+      );
+    } else {
+      // Regular users can only see themselves
+      return users.filter((user) => user.id === currentUser.id);
+    }
+  };
+
+  const teamMembers = getTeamMembers();
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

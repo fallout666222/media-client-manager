@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,10 +11,11 @@ import { FirstWeekManagement } from "./components/Auth/FirstWeekManagement";
 import UserImpersonation from "./pages/UserImpersonation";
 import CustomWeeks from "./pages/CustomWeeks";
 import UserManagerAssignment from "./pages/UserManagerAssignment";
+import UserFirstWeekManagement from "./pages/UserFirstWeekManagement";
 import { useState } from "react";
 import { User, UserFormData } from "./types/timesheet";
 import { Button } from "./components/ui/button";
-import { LogOut, Users, Calendar, UserCog } from "lucide-react";
+import { LogOut, Users, Calendar, UserCog, CalendarDays } from "lucide-react";
 import { useToast } from "./hooks/use-toast";
 
 const queryClient = new QueryClient();
@@ -135,6 +137,12 @@ const App = () => {
                       User-Manager
                     </Button>
                   </Link>
+                  <Link to="/first-weeks">
+                    <Button variant="outline" size="sm" className="flex items-center gap-2">
+                      <CalendarDays className="h-4 w-4" />
+                      First Weeks
+                    </Button>
+                  </Link>
                 </>
               )}
               <Button
@@ -220,6 +228,19 @@ const App = () => {
                   <UserManagerAssignment 
                     users={users} 
                     onUpdateUserManager={handleUpdateUserManager} 
+                  />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              }
+            />
+            <Route
+              path="/first-weeks"
+              element={
+                user?.role === 'admin' ? (
+                  <UserFirstWeekManagement 
+                    users={users} 
+                    onSetFirstWeek={handleSetFirstWeek} 
                   />
                 ) : (
                   <Navigate to="/" replace />
