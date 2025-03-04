@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -402,7 +401,7 @@ const App = () => {
               element={
                 user ? (
                   <div className="container mx-auto p-4 pt-16">
-                    {user.firstWeek ? (
+                    {user.role === 'admin' || user.firstWeek ? (
                       <TimeSheet 
                         userRole={user.role} 
                         firstWeek={user.firstWeek} 
