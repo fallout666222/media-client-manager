@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { format, startOfWeek, parse, isSameDay } from 'date-fns';
+import { format, startOfWeek, parse, isSameDay, isBefore } from 'date-fns';
 
 interface CustomWeek {
   id: string;
@@ -23,6 +23,7 @@ interface WeekPickerProps {
   onWeekChange: (date: Date) => void;
   onWeekHoursChange: (hours: number) => void;
   weekPercentage?: number;
+  firstWeek?: string;
 }
 
 const DEFAULT_WEEKS: CustomWeek[] = [
@@ -37,24 +38,40 @@ export const WeekPicker = ({
   currentDate, 
   onWeekChange, 
   onWeekHoursChange,
-  weekPercentage = 100
+  weekPercentage = 100,
+  firstWeek = "2025-01-01" // Default to the earliest week if not specified
 }: WeekPickerProps) => {
+  // Filter weeks to only include those on or after the user's first week
+  const getAvailableWeeks = () => {
+    const firstWeekDate = parse(firstWeek, 'yyyy-MM-dd', new Date());
+    return DEFAULT_WEEKS.filter(week => {
+      const weekStartDate = parse(week.startDate, 'yyyy-MM-dd', new Date());
+      return !isBefore(weekStartDate, firstWeekDate);
+    }).sort((a, b) => {
+      const dateA = parse(a.startDate, 'yyyy-MM-dd', new Date());
+      const dateB = parse(b.startDate, 'yyyy-MM-dd', new Date());
+      return dateA.getTime() - dateB.getTime();
+    });
+  };
+
+  const availableWeeks = getAvailableWeeks();
+
   // Find the current week based on the currentDate
   const getCurrentWeek = () => {
-    for (const week of DEFAULT_WEEKS) {
+    for (const week of availableWeeks) {
       const weekStartDate = parse(week.startDate, "yyyy-MM-dd", new Date());
       if (isSameDay(weekStartDate, currentDate)) {
         return week;
       }
     }
-    return DEFAULT_WEEKS[0]; // Default to the first week if no match
+    return availableWeeks[0]; // Default to the first available week if no match
   };
 
   const currentWeek = getCurrentWeek();
-  const currentWeekId = currentWeek.id;
+  const currentWeekId = currentWeek?.id || availableWeeks[0]?.id;
 
   const handleCustomWeekSelect = (weekId: string) => {
-    const selectedWeek = DEFAULT_WEEKS.find(week => week.id === weekId);
+    const selectedWeek = availableWeeks.find(week => week.id === weekId);
     if (selectedWeek) {
       const date = parse(selectedWeek.startDate, "yyyy-MM-dd", new Date());
       onWeekChange(date);
@@ -66,19 +83,19 @@ export const WeekPicker = ({
   };
 
   const handleNavigateWeek = (direction: 'prev' | 'next') => {
-    const currentIndex = DEFAULT_WEEKS.findIndex(week => week.id === currentWeekId);
+    const currentIndex = availableWeeks.findIndex(week => week.id === currentWeekId);
     if (currentIndex === -1) return;
 
     let newIndex;
     if (direction === 'prev' && currentIndex > 0) {
       newIndex = currentIndex - 1;
-    } else if (direction === 'next' && currentIndex < DEFAULT_WEEKS.length - 1) {
+    } else if (direction === 'next' && currentIndex < availableWeeks.length - 1) {
       newIndex = currentIndex + 1;
     } else {
       return;
     }
 
-    const newWeek = DEFAULT_WEEKS[newIndex];
+    const newWeek = availableWeeks[newIndex];
     const date = parse(newWeek.startDate, "yyyy-MM-dd", new Date());
     onWeekChange(date);
     
@@ -103,7 +120,7 @@ export const WeekPicker = ({
         variant="outline"
         size="icon"
         onClick={() => handleNavigateWeek('prev')}
-        disabled={currentWeekId === DEFAULT_WEEKS[0].id}
+        disabled={!availableWeeks.length || currentWeekId === availableWeeks[0].id}
       >
         <ChevronLeft className="h-4 w-4" />
       </Button>
@@ -116,7 +133,7 @@ export const WeekPicker = ({
           <SelectValue placeholder="Select a custom week" />
         </SelectTrigger>
         <SelectContent>
-          {DEFAULT_WEEKS.map((week) => (
+          {availableWeeks.map((week) => (
             <SelectItem key={week.id} value={week.id}>
               {formatWeekLabel(week)}
             </SelectItem>
@@ -128,7 +145,7 @@ export const WeekPicker = ({
         variant="outline"
         size="icon"
         onClick={() => handleNavigateWeek('next')}
-        disabled={currentWeekId === DEFAULT_WEEKS[DEFAULT_WEEKS.length - 1].id}
+        disabled={!availableWeeks.length || currentWeekId === availableWeeks[availableWeeks.length - 1].id}
       >
         <ChevronRight className="h-4 w-4" />
       </Button>

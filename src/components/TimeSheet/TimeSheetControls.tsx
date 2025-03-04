@@ -1,11 +1,8 @@
 
-import React from "react";
-import { Button } from "@/components/ui/button";
-import { format } from "date-fns";
-import { TimeSheetStatus } from "@/types/timesheet";
-import { WeekPicker } from "@/components/TimeSheet/WeekPicker";
-import { Input } from "@/components/ui/input";
-import { ApprovalActions } from "@/components/TimeSheet/ApprovalActions";
+import React from 'react';
+import { WeekPicker } from './WeekPicker';
+import { TimeSheetStatus } from '@/types/timesheet';
+import { ApprovalActions } from './ApprovalActions';
 
 interface TimeSheetControlsProps {
   currentDate: Date;
@@ -18,13 +15,13 @@ interface TimeSheetControlsProps {
   onApprove: () => void;
   onReject: () => void;
   readOnly?: boolean;
-  weekPercentage?: number;
+  firstWeek?: string;
 }
 
-export const TimeSheetControls = ({
-  currentDate,
-  onWeekChange,
-  onWeekHoursChange,
+export const TimeSheetControls = ({ 
+  currentDate, 
+  onWeekChange, 
+  onWeekHoursChange, 
   status,
   isManager,
   isViewingOwnTimesheet,
@@ -32,56 +29,29 @@ export const TimeSheetControls = ({
   onApprove,
   onReject,
   readOnly = false,
-  weekPercentage = 100,
+  firstWeek = "2025-01-01"
 }: TimeSheetControlsProps) => {
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
-      <div className="w-full sm:w-auto">
+    <div className="mb-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
         <WeekPicker 
           currentDate={currentDate} 
           onWeekChange={onWeekChange} 
           onWeekHoursChange={onWeekHoursChange}
-          weekPercentage={weekPercentage}
+          firstWeek={firstWeek}
         />
+        
+        {!readOnly && (
+          <ApprovalActions 
+            status={status}
+            isManager={isManager}
+            isViewingOwnTimesheet={isViewingOwnTimesheet}
+            onSubmitForReview={onSubmitForReview}
+            onApprove={onApprove}
+            onReject={onReject}
+          />
+        )}
       </div>
-      {isViewingOwnTimesheet && status === "unconfirmed" && !readOnly && (
-        <Button
-          onClick={onSubmitForReview}
-          disabled={status !== "unconfirmed"}
-          className="w-full sm:w-auto"
-        >
-          Submit for review
-        </Button>
-      )}
-      {!isViewingOwnTimesheet && isManager && status === "under-review" && (
-        <ApprovalActions
-          onApprove={onApprove}
-          onReject={onReject}
-          status={status}
-          isManager={isManager}
-          isViewingOwnTimesheet={isViewingOwnTimesheet}
-          onSubmitForReview={onSubmitForReview}
-          disabled={readOnly}
-        />
-      )}
-      {status === "needs-revision" && isViewingOwnTimesheet && !readOnly && (
-        <div className="flex flex-col space-y-2 w-full sm:w-auto">
-          <div className="text-sm text-red-500 font-medium">
-            This timesheet needs revision
-          </div>
-          <Button
-            onClick={onSubmitForReview}
-            className="w-full sm:w-auto"
-          >
-            Re-submit for review
-          </Button>
-        </div>
-      )}
-      {status === "accepted" && (
-        <div className="text-sm text-green-500 font-medium">
-          This timesheet has been approved
-        </div>
-      )}
     </div>
   );
 };

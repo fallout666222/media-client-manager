@@ -59,8 +59,23 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, readOnly = false }
   const [weekStatuses, setWeekStatuses] = useState<Record<string, TimeSheetStatus>>({});
   const { toast } = useToast();
 
+  // Filter weeks that are on or after the user's first week
+  const getUserWeeks = () => {
+    const firstWeekDate = parse(firstWeek, 'yyyy-MM-dd', new Date());
+    return DEFAULT_WEEKS.filter(week => {
+      const weekStartDate = parse(week.startDate, 'yyyy-MM-dd', new Date());
+      return !isBefore(weekStartDate, firstWeekDate);
+    }).sort((a, b) => {
+      const dateA = parse(a.startDate, 'yyyy-MM-dd', new Date());
+      const dateB = parse(b.startDate, 'yyyy-MM-dd', new Date());
+      return dateA.getTime() - dateB.getTime();
+    });
+  };
+
+  const userWeeks = getUserWeeks();
+
   const findFirstUnsubmittedWeek = () => {
-    for (const week of DEFAULT_WEEKS) {
+    for (const week of userWeeks) {
       const weekKey = week.startDate;
       if (!submittedWeeks.includes(weekKey)) {
         return parse(weekKey, 'yyyy-MM-dd', new Date());
@@ -72,7 +87,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, readOnly = false }
   const handleReturnToFirstUnsubmittedWeek = () => {
     const firstUnsubmittedWeek = findFirstUnsubmittedWeek();
     if (firstUnsubmittedWeek) {
-      const unsubmittedWeek = DEFAULT_WEEKS.find(week => 
+      const unsubmittedWeek = userWeeks.find(week => 
         isSameDay(parse(week.startDate, 'yyyy-MM-dd', new Date()), firstUnsubmittedWeek)
       );
       setCurrentDate(firstUnsubmittedWeek);
@@ -122,7 +137,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, readOnly = false }
         variant: "destructive"
       });
       
-      const unsubmittedWeek = DEFAULT_WEEKS.find(week => 
+      const unsubmittedWeek = userWeeks.find(week => 
         isSameDay(parse(week.startDate, 'yyyy-MM-dd', new Date()), firstUnsubmittedWeek)
       );
       setCurrentDate(firstUnsubmittedWeek);
@@ -248,7 +263,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, readOnly = false }
   useEffect(() => {
     if (viewedUser.firstWeek) {
       setCurrentDate(parse(viewedUser.firstWeek, 'yyyy-MM-dd', new Date()));
-      const initialWeek = DEFAULT_WEEKS.find(week => 
+      const initialWeek = userWeeks.find(week => 
         isSameDay(parse(week.startDate, 'yyyy-MM-dd', new Date()), parse(viewedUser.firstWeek || firstWeek, 'yyyy-MM-dd', new Date()))
       );
       if (initialWeek) {
@@ -298,7 +313,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, readOnly = false }
         currentDate={currentDate}
         onWeekChange={(date) => {
           setCurrentDate(date);
-          const selectedWeek = DEFAULT_WEEKS.find(week => 
+          const selectedWeek = userWeeks.find(week => 
             isSameDay(parse(week.startDate, 'yyyy-MM-dd', new Date()), date)
           );
           if (selectedWeek) {
@@ -313,6 +328,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, readOnly = false }
         onApprove={handleApprove}
         onReject={handleReject}
         readOnly={readOnly || (!isViewingOwnTimesheet && userRole !== 'manager' && userRole !== 'admin')}
+        firstWeek={viewedUser.firstWeek || firstWeek}
       />
 
       <TimeSheetContent
