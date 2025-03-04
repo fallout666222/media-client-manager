@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import { User } from "@/types/timesheet";
+
+import React, { useState, useEffect } from "react";
+import { User, CustomWeek, WeekPercentage } from "@/types/timesheet";
 import {
   Table,
   TableBody,
@@ -14,24 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-
-interface CustomWeek {
-  id: string;
-  startDate: string;
-  endDate: string;
-  hours: number;
-}
-
-interface WeekPercentageEntry {
-  userId: string;
-  weekId: string;
-  percentage: number;
-}
-
-interface UserWeekPercentageProps {
-  users: User[];
-  initialWeeks?: CustomWeek[];
-}
+import { getUsers, getCustomWeeks, getWeekPercentages, updateWeekPercentage } from "@/integrations/supabase/database";
 
 const DEFAULT_WEEKS: CustomWeek[] = [
   { id: "1", startDate: "2025-01-01", endDate: "2025-01-06", hours: 48 },
@@ -41,14 +25,80 @@ const DEFAULT_WEEKS: CustomWeek[] = [
   { id: "5", startDate: "2025-01-27", endDate: "2025-01-31", hours: 40 },
 ];
 
-const UserWeekPercentage = ({ users }: UserWeekPercentageProps) => {
+const UserWeekPercentage = () => {
   const [selectedUser, setSelectedUser] = useState<string>("");
-  const [weekPercentages, setWeekPercentages] = useState<WeekPercentageEntry[]>([
-    { userId: "1", weekId: "1", percentage: 100 },
-    { userId: "2", weekId: "1", percentage: 100 },
-    { userId: "3", weekId: "1", percentage: 100 },
-  ]);
+  const [weekPercentages, setWeekPercentages] = useState<WeekPercentageEntry[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [customWeeks, setCustomWeeks] = useState<CustomWeek[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  // Define the structure for week percentage entries
+  interface WeekPercentageEntry {
+    userId: string;
+    weekId: string;
+    percentage: number;
+  }
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // Fetch users from the database
+        const { data: usersData, error: usersError } = await getUsers();
+        if (usersError) throw usersError;
+        setUsers(usersData || []);
+        
+        // Fetch custom weeks
+        const { data: weeksData, error: weeksError } = await getCustomWeeks();
+        if (weeksError) throw weeksError;
+        setCustomWeeks(weeksData || []);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load data",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, [toast]);
+
+  // Fetch week percentages when a user is selected
+  useEffect(() => {
+    const fetchWeekPercentages = async () => {
+      if (!selectedUser) return;
+      
+      try {
+        const { data, error } = await getWeekPercentages(selectedUser);
+        if (error) throw error;
+        
+        if (data) {
+          // Convert to the expected format
+          const formattedData: WeekPercentageEntry[] = data.map(wp => ({
+            userId: wp.user_id,
+            weekId: wp.week_id,
+            percentage: Number(wp.percentage)
+          }));
+          
+          setWeekPercentages(formattedData);
+        }
+      } catch (error) {
+        console.error('Error fetching week percentages:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load week percentages",
+          variant: "destructive"
+        });
+      }
+    };
+    
+    fetchWeekPercentages();
+  }, [selectedUser, toast]);
 
   const getWeekPercentage = (userId: string, weekId: string): number => {
     const entry = weekPercentages.find(
@@ -72,7 +122,7 @@ const UserWeekPercentage = ({ users }: UserWeekPercentageProps) => {
     return 100;
   };
 
-  const handlePercentageChange = (
+  const handlePercentageChange = async (
     userId: string,
     weekId: string,
     percentage: number
@@ -86,6 +136,7 @@ const UserWeekPercentage = ({ users }: UserWeekPercentageProps) => {
       return;
     }
 
+    // Update local state
     const updatedPercentages = [...weekPercentages];
     const existingIndex = updatedPercentages.findIndex(
       (wp) => wp.userId === userId && wp.weekId === weekId
@@ -99,20 +150,41 @@ const UserWeekPercentage = ({ users }: UserWeekPercentageProps) => {
 
     setWeekPercentages(updatedPercentages);
 
-    if (percentage === 100) {
-      const weekIdNum = parseInt(weekId);
-      setWeekPercentages(prev => 
-        prev.filter(wp => !(wp.userId === userId && parseInt(wp.weekId) > weekIdNum))
-      );
-    }
+    // Update in the database
+    try {
+      await updateWeekPercentage(userId, weekId, percentage);
 
-    toast({
-      title: "Percentage Updated",
-      description: `Week ${weekId} updated to ${percentage}% for selected user`,
-    });
+      if (percentage === 100) {
+        const weekIdNum = parseInt(weekId);
+        setWeekPercentages(prev => 
+          prev.filter(wp => !(wp.userId === userId && parseInt(wp.weekId) > weekIdNum))
+        );
+      }
+
+      toast({
+        title: "Percentage Updated",
+        description: `Week ${weekId} updated to ${percentage}% for selected user`,
+      });
+    } catch (error) {
+      console.error('Error updating week percentage:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update week percentage",
+        variant: "destructive",
+      });
+    }
   };
 
   const selectedUserData = users.find((user) => user.id === selectedUser);
+  const weeksToDisplay = customWeeks.length > 0 ? customWeeks : DEFAULT_WEEKS;
+
+  if (loading) {
+    return (
+      <div className="container mx-auto p-6 pt-16 text-center">
+        <p>Loading data...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6 pt-16">
@@ -138,7 +210,7 @@ const UserWeekPercentage = ({ users }: UserWeekPercentageProps) => {
           <SelectContent>
             {users.map((user) => (
               <SelectItem key={user.id} value={user.id || ""}>
-                {user.username} ({user.role})
+                {user.login || user.username} ({user.type || user.role})
               </SelectItem>
             ))}
           </SelectContent>
@@ -148,7 +220,7 @@ const UserWeekPercentage = ({ users }: UserWeekPercentageProps) => {
       {selectedUser && (
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold mb-4">
-            Week Percentages for {selectedUserData?.username}
+            Week Percentages for {selectedUserData?.login || selectedUserData?.username}
           </h2>
           
           <Table>
@@ -162,17 +234,22 @@ const UserWeekPercentage = ({ users }: UserWeekPercentageProps) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {DEFAULT_WEEKS.map((week) => {
-                const percentage = getWeekPercentage(selectedUser, week.id);
-                const effectiveHours = Math.round(week.hours * (percentage / 100));
+              {weeksToDisplay.map((week) => {
+                const weekId = week.id;
+                const startDate = week.period_from || week.startDate || '';
+                const endDate = week.period_to || week.endDate || '';
+                const baseHours = week.required_hours || week.hours || 40;
+                
+                const percentage = getWeekPercentage(selectedUser, weekId);
+                const effectiveHours = Math.round(baseHours * (percentage / 100));
                 
                 return (
-                  <TableRow key={week.id}>
-                    <TableCell>Week {week.id}</TableCell>
+                  <TableRow key={weekId}>
+                    <TableCell>Week {week.name || weekId}</TableCell>
                     <TableCell>
-                      {week.startDate} to {week.endDate}
+                      {startDate} to {endDate}
                     </TableCell>
-                    <TableCell>{week.hours}</TableCell>
+                    <TableCell>{baseHours}</TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
                         <Input
@@ -183,7 +260,7 @@ const UserWeekPercentage = ({ users }: UserWeekPercentageProps) => {
                           onChange={(e) =>
                             handlePercentageChange(
                               selectedUser,
-                              week.id,
+                              weekId,
                               parseInt(e.target.value) || 0
                             )
                           }

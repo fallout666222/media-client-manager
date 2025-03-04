@@ -21,33 +21,46 @@ import { Button } from "@/components/ui/button";
 import { format, parse } from "date-fns";
 import { Calendar, CheckCircle, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
-import { getCustomWeeks, updateUser } from "@/integrations/supabase/database";
+import { getCustomWeeks, updateUser, getUsers } from "@/integrations/supabase/database";
 
 interface UserFirstWeekManagementProps {
-  users: User[];
   onSetFirstWeek: (username: string, date: string, weekId: string) => void;
 }
 
-const UserFirstWeekManagement = ({ users, onSetFirstWeek }: UserFirstWeekManagementProps) => {
+const UserFirstWeekManagement = ({ onSetFirstWeek }: UserFirstWeekManagementProps) => {
   const { toast } = useToast();
   const [selectedWeeks, setSelectedWeeks] = useState<Record<string, string>>({});
   const [customWeeks, setCustomWeeks] = useState<CustomWeek[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
   
-  // Fix: Changed useState to useEffect
   useEffect(() => {
-    const fetchCustomWeeks = async () => {
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        const { data } = await getCustomWeeks();
-        if (data) {
-          setCustomWeeks(data);
-        }
+        // Fetch users from the database
+        const { data: usersData, error: usersError } = await getUsers();
+        if (usersError) throw usersError;
+        setUsers(usersData || []);
+        
+        // Fetch custom weeks
+        const { data: weeksData, error: weeksError } = await getCustomWeeks();
+        if (weeksError) throw weeksError;
+        setCustomWeeks(weeksData || []);
       } catch (error) {
-        console.error('Error fetching custom weeks:', error);
+        console.error('Error fetching data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load data",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
       }
     };
     
-    fetchCustomWeeks();
-  }, []);
+    fetchData();
+  }, [toast]);
 
   const handleWeekChange = (userId: string, weekId: string) => {
     setSelectedWeeks(prev => ({ ...prev, [userId]: weekId }));
@@ -64,11 +77,11 @@ const UserFirstWeekManagement = ({ users, onSetFirstWeek }: UserFirstWeekManagem
           first_week: selectedWeek.period_from
         });
         
-        onSetFirstWeek(user.username, selectedWeek.period_from, weekId);
+        onSetFirstWeek(user.username || user.login || '', selectedWeek.period_from, weekId);
         
         toast({
           title: "First week updated",
-          description: `First week for ${user.username} set to ${formatWeekLabel(selectedWeek)}`,
+          description: `First week for ${user.username || user.login} set to ${formatWeekLabel(selectedWeek)}`,
         });
       } catch (error) {
         console.error('Error updating user first week:', error);
@@ -95,15 +108,24 @@ const UserFirstWeekManagement = ({ users, onSetFirstWeek }: UserFirstWeekManagem
   };
 
   const getCurrentWeekId = (user: User) => {
-    if (user.firstCustomWeekId) return user.firstCustomWeekId;
-    if (!user.firstWeek) return "";
+    if (user.first_custom_week_id || user.firstCustomWeekId) return user.first_custom_week_id || user.firstCustomWeekId;
+    if (!user.first_week && !user.firstWeek) return "";
     
+    const firstWeek = user.first_week || user.firstWeek;
     const matchingWeek = customWeeks.find(week => 
-      (week.period_from === user.firstWeek) || (week.startDate === user.firstWeek)
+      (week.period_from === firstWeek) || (week.startDate === firstWeek)
     );
     
     return matchingWeek ? matchingWeek.id : "";
   };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto py-10 pt-16 text-center">
+        <p>Loading users and week data...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-10 pt-16">
@@ -120,68 +142,74 @@ const UserFirstWeekManagement = ({ users, onSetFirstWeek }: UserFirstWeekManagem
         </Link>
       </div>
       
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Username</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Current First Week</TableHead>
-              <TableHead>New First Week</TableHead>
-              <TableHead>Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.map((user) => {
-              const userId = user.id || user.username;
-              const currentWeekId = getCurrentWeekId(user);
-              const selectedWeekId = selectedWeeks[userId] || "";
-              const currentFirstWeek = customWeeks.find(week => week.id === currentWeekId);
-              
-              return (
-                <TableRow key={userId}>
-                  <TableCell className="font-medium">{user.username}</TableCell>
-                  <TableCell>{user.role}</TableCell>
-                  <TableCell>
-                    {currentFirstWeek 
-                      ? formatWeekLabel(currentFirstWeek)
-                      : <span className="text-muted-foreground italic">Not set</span>}
-                  </TableCell>
-                  <TableCell>
-                    <Select
-                      value={selectedWeekId}
-                      onValueChange={(value) => handleWeekChange(userId, value)}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select a week" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {customWeeks.map((week) => (
-                          <SelectItem key={week.id} value={week.id}>
-                            {formatWeekLabel(week)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-2"
-                      disabled={!selectedWeekId || selectedWeekId === currentWeekId}
-                      onClick={() => handleSaveWeek(user, selectedWeekId)}
-                    >
-                      <CheckCircle className="h-4 w-4" />
-                      Save
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
+      {users.length === 0 ? (
+        <div className="text-center py-8">
+          <p>No users found. Please add users to the system.</p>
+        </div>
+      ) : (
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Username</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Current First Week</TableHead>
+                <TableHead>New First Week</TableHead>
+                <TableHead>Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {users.map((user) => {
+                const userId = user.id || '';
+                const currentWeekId = getCurrentWeekId(user);
+                const selectedWeekId = selectedWeeks[userId] || "";
+                const currentFirstWeek = customWeeks.find(week => week.id === currentWeekId);
+                
+                return (
+                  <TableRow key={userId}>
+                    <TableCell className="font-medium">{user.login || user.username}</TableCell>
+                    <TableCell>{user.type || user.role}</TableCell>
+                    <TableCell>
+                      {currentFirstWeek 
+                        ? formatWeekLabel(currentFirstWeek)
+                        : <span className="text-muted-foreground italic">Not set</span>}
+                    </TableCell>
+                    <TableCell>
+                      <Select
+                        value={selectedWeekId}
+                        onValueChange={(value) => handleWeekChange(userId, value)}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select a week" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {customWeeks.map((week) => (
+                            <SelectItem key={week.id} value={week.id}>
+                              {formatWeekLabel(week)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2"
+                        disabled={!selectedWeekId || selectedWeekId === currentWeekId}
+                        onClick={() => handleSaveWeek(user, selectedWeekId)}
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                        Save
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 };
