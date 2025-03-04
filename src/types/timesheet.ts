@@ -42,6 +42,7 @@ export interface User {
   password?: string;
   role?: 'admin' | 'user' | 'manager';
   firstWeek?: string;
+  firstCustomWeekId?: string;
   managerId?: string;
   selectedClients?: string[];
   selectedMediaTypes?: string[];
@@ -55,6 +56,7 @@ export interface User {
   email?: string;
   job_position?: string;
   first_week?: string;
+  first_custom_week_id?: string;
   description?: string;
   login?: string;
   department_id?: string;

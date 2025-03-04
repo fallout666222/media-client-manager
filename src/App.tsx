@@ -179,15 +179,25 @@ const App = () => {
     });
   };
 
-  const handleSetFirstWeek = (username: string, date: string) => {
+  const handleSetFirstWeek = (username: string, date: string, weekId?: string) => {
     setUsers((prevUsers) =>
       prevUsers.map((u) =>
-        u.username === username ? { ...u, firstWeek: date } : u
+        u.username === username ? { 
+          ...u, 
+          firstWeek: date,
+          firstCustomWeekId: weekId || u.firstCustomWeekId 
+        } : u
       )
     );
+    
     if (user && user.username === username) {
-      setUser((prevUser) => prevUser ? { ...prevUser, firstWeek: date } : null);
+      setUser((prevUser) => prevUser ? { 
+        ...prevUser, 
+        firstWeek: date,
+        firstCustomWeekId: weekId || prevUser.firstCustomWeekId 
+      } : null);
     }
+    
     toast({
       title: "First Week Set",
       description: `First week set for ${username}: ${date}`,
@@ -401,7 +411,7 @@ const App = () => {
               element={
                 user ? (
                   <div className="container mx-auto p-4 pt-16">
-                    {user.role === 'admin' || user.firstWeek ? (
+                    {user.role === 'admin' || user.firstWeek || user.firstCustomWeekId ? (
                       <TimeSheet 
                         userRole={user.role} 
                         firstWeek={user.firstWeek || (user.role === 'admin' ? '2024-01-01' : '')} 

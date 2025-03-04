@@ -1,6 +1,7 @@
+
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { User } from "@/types/timesheet";
+import { User, CustomWeek } from "@/types/timesheet";
 import {
   Table,
   TableBody,
@@ -20,48 +21,87 @@ import { Button } from "@/components/ui/button";
 import { format, parse } from "date-fns";
 import { Calendar, CheckCircle, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
-
-const DEFAULT_WEEKS = [
-  { id: "1", startDate: "2025-01-01", endDate: "2025-01-06", hours: 48 },
-  { id: "2", startDate: "2025-01-10", endDate: "2025-01-03", hours: 40 },
-  { id: "3", startDate: "2025-01-13", endDate: "2025-01-17", hours: 40 },
-  { id: "4", startDate: "2025-01-20", endDate: "2025-01-24", hours: 40 },
-  { id: "5", startDate: "2025-01-27", endDate: "2025-01-31", hours: 40 },
-];
+import { getCustomWeeks, updateUser } from "@/integrations/supabase/database";
 
 interface UserFirstWeekManagementProps {
   users: User[];
-  onSetFirstWeek: (username: string, date: string) => void;
+  onSetFirstWeek: (username: string, date: string, weekId: string) => void;
 }
 
 const UserFirstWeekManagement = ({ users, onSetFirstWeek }: UserFirstWeekManagementProps) => {
   const { toast } = useToast();
   const [selectedWeeks, setSelectedWeeks] = useState<Record<string, string>>({});
+  const [customWeeks, setCustomWeeks] = useState<CustomWeek[]>([]);
+  
+  // Fetch custom weeks from database
+  useState(() => {
+    const fetchCustomWeeks = async () => {
+      try {
+        const { data } = await getCustomWeeks();
+        if (data) {
+          setCustomWeeks(data);
+        }
+      } catch (error) {
+        console.error('Error fetching custom weeks:', error);
+      }
+    };
+    
+    fetchCustomWeeks();
+  }, []);
 
   const handleWeekChange = (userId: string, weekId: string) => {
     setSelectedWeeks(prev => ({ ...prev, [userId]: weekId }));
   };
 
-  const handleSaveWeek = (user: User, weekId: string) => {
-    const selectedWeek = DEFAULT_WEEKS.find(week => week.id === weekId);
+  const handleSaveWeek = async (user: User, weekId: string) => {
+    const selectedWeek = customWeeks.find(week => week.id === weekId);
     if (!selectedWeek) return;
     
-    onSetFirstWeek(user.username, selectedWeek.startDate);
-    toast({
-      title: "First week updated",
-      description: `First week for ${user.username} set to ${formatWeekLabel(selectedWeek)}`,
-    });
+    if (user.id) {
+      try {
+        await updateUser(user.id, {
+          first_custom_week_id: weekId,
+          first_week: selectedWeek.period_from
+        });
+        
+        onSetFirstWeek(user.username, selectedWeek.period_from, weekId);
+        
+        toast({
+          title: "First week updated",
+          description: `First week for ${user.username} set to ${formatWeekLabel(selectedWeek)}`,
+        });
+      } catch (error) {
+        console.error('Error updating user first week:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update first week",
+          variant: "destructive"
+        });
+      }
+    }
   };
 
-  const formatWeekLabel = (week: typeof DEFAULT_WEEKS[0]) => {
-    const start = format(parse(week.startDate, "yyyy-MM-dd", new Date()), "MMM dd, yyyy");
-    const end = format(parse(week.endDate, "yyyy-MM-dd", new Date()), "MMM dd, yyyy");
-    return `${start} - ${end} (${week.hours}h)`;
+  const formatWeekLabel = (week: CustomWeek) => {
+    if (!week) return "Unknown week";
+    const startDateField = week.period_from || week.startDate;
+    const endDateField = week.period_to || week.endDate;
+    const hoursField = week.required_hours || week.hours;
+    
+    if (!startDateField || !endDateField) return week.name || "Unnamed week";
+    
+    const start = format(parse(startDateField, "yyyy-MM-dd", new Date()), "MMM dd, yyyy");
+    const end = format(parse(endDateField, "yyyy-MM-dd", new Date()), "MMM dd, yyyy");
+    return `${week.name}: ${start} - ${end} (${hoursField}h)`;
   };
 
-  const getCurrentWeekId = (firstWeek: string | undefined) => {
-    if (!firstWeek) return "";
-    const matchingWeek = DEFAULT_WEEKS.find(week => week.startDate === firstWeek);
+  const getCurrentWeekId = (user: User) => {
+    if (user.firstCustomWeekId) return user.firstCustomWeekId;
+    if (!user.firstWeek) return "";
+    
+    const matchingWeek = customWeeks.find(week => 
+      (week.period_from === user.firstWeek) || (week.startDate === user.firstWeek)
+    );
+    
     return matchingWeek ? matchingWeek.id : "";
   };
 
@@ -94,11 +134,9 @@ const UserFirstWeekManagement = ({ users, onSetFirstWeek }: UserFirstWeekManagem
           <TableBody>
             {users.map((user) => {
               const userId = user.id || user.username;
-              const currentWeekId = getCurrentWeekId(user.firstWeek);
+              const currentWeekId = getCurrentWeekId(user);
               const selectedWeekId = selectedWeeks[userId] || "";
-              const currentFirstWeek = user.firstWeek 
-                ? DEFAULT_WEEKS.find(week => week.startDate === user.firstWeek)
-                : undefined;
+              const currentFirstWeek = customWeeks.find(week => week.id === currentWeekId);
               
               return (
                 <TableRow key={userId}>
@@ -118,7 +156,7 @@ const UserFirstWeekManagement = ({ users, onSetFirstWeek }: UserFirstWeekManagem
                         <SelectValue placeholder="Select a week" />
                       </SelectTrigger>
                       <SelectContent>
-                        {DEFAULT_WEEKS.map((week) => (
+                        {customWeeks.map((week) => (
                           <SelectItem key={week.id} value={week.id}>
                             {formatWeekLabel(week)}
                           </SelectItem>

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { User, CustomWeek } from "@/types/timesheet";
@@ -11,25 +11,33 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { getCustomWeeks } from "@/integrations/supabase/database";
 
 interface FirstWeekManagementProps {
-  onSetFirstWeek: (username: string, date: string) => void;
+  onSetFirstWeek: (username: string, date: string, weekId?: string) => void;
   users: User[];
 }
-
-// Use the same custom weeks format as in WeekPicker
-const DEFAULT_WEEKS: CustomWeek[] = [
-  { id: "1", name: "Week 1", startDate: "2025-01-01", endDate: "2025-01-06", hours: 48 },
-  { id: "2", name: "Week 2", startDate: "2025-01-10", endDate: "2025-01-03", hours: 40 },
-  { id: "3", name: "Week 3", startDate: "2025-01-13", endDate: "2025-01-17", hours: 40 },
-  { id: "4", name: "Week 4", startDate: "2025-01-20", endDate: "2025-01-24", hours: 40 },
-  { id: "5", name: "Week 5", startDate: "2025-01-27", endDate: "2025-01-31", hours: 40 },
-];
 
 export const FirstWeekManagement = ({ onSetFirstWeek, users }: FirstWeekManagementProps) => {
   const [username, setUsername] = useState("");
   const [selectedWeekId, setSelectedWeekId] = useState("");
   const { toast } = useToast();
+  const [customWeeks, setCustomWeeks] = useState<CustomWeek[]>([]);
+
+  useEffect(() => {
+    const fetchCustomWeeks = async () => {
+      try {
+        const { data } = await getCustomWeeks();
+        if (data) {
+          setCustomWeeks(data);
+        }
+      } catch (error) {
+        console.error('Error fetching custom weeks:', error);
+      }
+    };
+    
+    fetchCustomWeeks();
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +50,7 @@ export const FirstWeekManagement = ({ onSetFirstWeek, users }: FirstWeekManageme
       return;
     }
     
-    const selectedWeek = DEFAULT_WEEKS.find(week => week.id === selectedWeekId);
+    const selectedWeek = customWeeks.find(week => week.id === selectedWeekId);
     if (!selectedWeek) {
       toast({
         title: "Error",
@@ -52,7 +60,17 @@ export const FirstWeekManagement = ({ onSetFirstWeek, users }: FirstWeekManageme
       return;
     }
     
-    onSetFirstWeek(username, selectedWeek.startDate);
+    const startDate = selectedWeek.period_from || selectedWeek.startDate;
+    if (!startDate) {
+      toast({
+        title: "Error",
+        description: "Selected week has no start date",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    onSetFirstWeek(username, startDate, selectedWeekId);
     setUsername("");
     setSelectedWeekId("");
     toast({
@@ -62,10 +80,17 @@ export const FirstWeekManagement = ({ onSetFirstWeek, users }: FirstWeekManageme
   };
 
   // Filter out users who already have a first week set
-  const usersWithoutFirstWeek = users.filter(user => !user.firstWeek);
+  const usersWithoutFirstWeek = users.filter(user => !user.firstWeek && !user.firstCustomWeekId);
 
   const formatWeekLabel = (week: CustomWeek) => {
-    return `${week.name}: ${week.startDate} - ${week.endDate} (${week.hours}h)`;
+    if (!week) return "Unknown week";
+    const startDateField = week.period_from || week.startDate;
+    const endDateField = week.period_to || week.endDate;
+    const hoursField = week.required_hours || week.hours;
+    
+    if (!startDateField || !endDateField) return week.name || "Unnamed week";
+    
+    return `${week.name}: ${startDateField} - ${endDateField} (${hoursField}h)`;
   };
 
   return (
@@ -94,7 +119,7 @@ export const FirstWeekManagement = ({ onSetFirstWeek, users }: FirstWeekManageme
               <SelectValue placeholder="Select a custom week" />
             </SelectTrigger>
             <SelectContent>
-              {DEFAULT_WEEKS.map((week) => (
+              {customWeeks.map((week) => (
                 <SelectItem key={week.id} value={week.id}>
                   {formatWeekLabel(week)}
                 </SelectItem>

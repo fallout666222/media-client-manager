@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,12 +48,14 @@ export const Login = ({ onLogin, users }: LoginProps) => {
           name: data.name,
           role: userRole,
           password: data.password,
-          firstWeek: userRole === 'admin' ? '2024-01-01' : data.first_week, // Set default firstWeek for admin
+          firstWeek: data.first_week,
+          firstCustomWeekId: data.first_custom_week_id,
           login: data.login,
           type: data.type,
           email: data.email,
           job_position: data.job_position,
           first_week: data.first_week,
+          first_custom_week_id: data.first_custom_week_id,
           description: data.description,
           department_id: data.department_id,
           departmentId: data.department_id,

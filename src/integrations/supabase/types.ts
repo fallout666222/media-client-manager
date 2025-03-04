@@ -151,6 +151,7 @@ export type Database = {
           department_id: string | null
           description: string | null
           email: string | null
+          first_custom_week_id: string | null
           first_week: string | null
           id: string
           job_position: string | null
@@ -165,6 +166,7 @@ export type Database = {
           department_id?: string | null
           description?: string | null
           email?: string | null
+          first_custom_week_id?: string | null
           first_week?: string | null
           id?: string
           job_position?: string | null
@@ -179,6 +181,7 @@ export type Database = {
           department_id?: string | null
           description?: string | null
           email?: string | null
+          first_custom_week_id?: string | null
           first_week?: string | null
           id?: string
           job_position?: string | null
@@ -193,6 +196,13 @@ export type Database = {
             columns: ["department_id"]
             isOneToOne: false
             referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "users_first_custom_week_id_fkey"
+            columns: ["first_custom_week_id"]
+            isOneToOne: false
+            referencedRelation: "custom_weeks"
             referencedColumns: ["id"]
           },
         ]
