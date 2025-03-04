@@ -106,7 +106,6 @@ const App = () => {
       if (data) {
         console.log('Setting user state with data:', data);
         
-        // Make sure we're setting ALL user properties correctly
         const fullUserData: User = {
           ...userData,
           id: data.id,
@@ -510,8 +509,6 @@ const App = () => {
               element={
                 user?.role === 'admin' ? (
                   <UserManagerAssignment 
-                    users={users} 
-                    departments={departments}
                     onUpdateUserManager={handleUpdateUserManager}
                     onUpdateUserDepartment={handleUpdateUserDepartment}
                     onToggleUserHidden={handleToggleUserHidden}
@@ -525,10 +522,7 @@ const App = () => {
               path="/first-weeks"
               element={
                 user?.role === 'admin' ? (
-                  <UserFirstWeekManagement 
-                    users={users} 
-                    onSetFirstWeek={handleSetFirstWeek} 
-                  />
+                  <UserFirstWeekManagement />
                 ) : (
                   <Navigate to="/" replace />
                 )
@@ -538,9 +532,7 @@ const App = () => {
               path="/week-percentage"
               element={
                 user?.role === 'admin' ? (
-                  <UserWeekPercentage 
-                    users={users} 
-                  />
+                  <UserWeekPercentage />
                 ) : (
                   <Navigate to="/" replace />
                 )

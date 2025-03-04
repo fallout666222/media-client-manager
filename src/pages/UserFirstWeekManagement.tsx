@@ -23,11 +23,7 @@ import { Calendar, CheckCircle, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { getCustomWeeks, updateUser, getUsers } from "@/integrations/supabase/database";
 
-interface UserFirstWeekManagementProps {
-  onSetFirstWeek: (username: string, date: string, weekId: string) => void;
-}
-
-const UserFirstWeekManagement = ({ onSetFirstWeek }: UserFirstWeekManagementProps) => {
+const UserFirstWeekManagement = () => {
   const { toast } = useToast();
   const [selectedWeeks, setSelectedWeeks] = useState<Record<string, string>>({});
   const [customWeeks, setCustomWeeks] = useState<CustomWeek[]>([]);
@@ -76,8 +72,6 @@ const UserFirstWeekManagement = ({ onSetFirstWeek }: UserFirstWeekManagementProp
           first_custom_week_id: weekId,
           first_week: selectedWeek.period_from
         });
-        
-        onSetFirstWeek(user.username || user.login || '', selectedWeek.period_from, weekId);
         
         toast({
           title: "First week updated",

@@ -18,11 +18,11 @@ import { ArrowLeft } from "lucide-react";
 import { getUsers, getCustomWeeks, getWeekPercentages, updateWeekPercentage } from "@/integrations/supabase/database";
 
 const DEFAULT_WEEKS: CustomWeek[] = [
-  { id: "1", startDate: "2025-01-01", endDate: "2025-01-06", hours: 48 },
-  { id: "2", startDate: "2025-01-10", endDate: "2025-01-03", hours: 40 },
-  { id: "3", startDate: "2025-01-13", endDate: "2025-01-17", hours: 40 },
-  { id: "4", startDate: "2025-01-20", endDate: "2025-01-24", hours: 40 },
-  { id: "5", startDate: "2025-01-27", endDate: "2025-01-31", hours: 40 },
+  { id: "1", name: "Week 1", startDate: "2025-01-01", endDate: "2025-01-06", hours: 48 },
+  { id: "2", name: "Week 2", startDate: "2025-01-10", endDate: "2025-01-03", hours: 40 },
+  { id: "3", name: "Week 3", startDate: "2025-01-13", endDate: "2025-01-17", hours: 40 },
+  { id: "4", name: "Week 4", startDate: "2025-01-20", endDate: "2025-01-24", hours: 40 },
+  { id: "5", name: "Week 5", startDate: "2025-01-27", endDate: "2025-01-31", hours: 40 },
 ];
 
 const UserWeekPercentage = () => {

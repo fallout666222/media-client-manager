@@ -60,6 +60,7 @@ export interface User {
   description?: string;
   login?: string;
   department_id?: string;
+  manager_id?: string;
   deletion_mark?: boolean;
 }
 
