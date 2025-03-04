@@ -8,6 +8,7 @@ import TimeSheet from "./pages/TimeSheet";
 import { Login } from "./components/Auth/Login";
 import { UserManagement } from "./components/Auth/UserManagement";
 import { FirstWeekManagement } from "./components/Auth/FirstWeekManagement";
+import { DepartmentManagement } from "./components/Admin/DepartmentManagement";
 import UserImpersonation from "./pages/UserImpersonation";
 import CustomWeeks from "./pages/CustomWeeks";
 import UserManagerAssignment from "./pages/UserManagerAssignment";
@@ -15,9 +16,9 @@ import UserFirstWeekManagement from "./pages/UserFirstWeekManagement";
 import UserWeekPercentage from "./pages/UserWeekPercentage";
 import ManagerView from "./pages/ManagerView";
 import { useState } from "react";
-import { User, UserFormData } from "./types/timesheet";
+import { User, UserFormData, Department } from "./types/timesheet";
 import { Button } from "./components/ui/button";
-import { LogOut, Users, Calendar, UserCog, CalendarDays, Percent, Eye } from "lucide-react";
+import { LogOut, Users, Calendar, UserCog, CalendarDays, Percent, Eye, Building } from "lucide-react";
 import { useToast } from "./hooks/use-toast";
 
 const queryClient = new QueryClient();
@@ -39,7 +40,8 @@ const INITIAL_USERS: User[] = [
     role: "user",
     managerId: "3",
     selectedClients: ["Client A"],
-    selectedMediaTypes: ["TV"] 
+    selectedMediaTypes: ["TV"],
+    departmentId: "1" 
   },
   { 
     id: "3",
@@ -48,13 +50,21 @@ const INITIAL_USERS: User[] = [
     role: "manager", 
     firstWeek: "2024-01-01",
     selectedClients: ["Client B"],
-    selectedMediaTypes: ["Digital"]
+    selectedMediaTypes: ["Digital"],
+    departmentId: "2"
   },
+];
+
+const INITIAL_DEPARTMENTS: Department[] = [
+  { id: "1", name: "Marketing" },
+  { id: "2", name: "Sales" },
+  { id: "3", name: "Finance" },
 ];
 
 const App = () => {
   const [user, setUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>(INITIAL_USERS);
+  const [departments, setDepartments] = useState<Department[]>(INITIAL_DEPARTMENTS);
   const { toast } = useToast();
 
   const handleLogin = (user: User) => {
@@ -108,6 +118,65 @@ const App = () => {
     }
   };
 
+  const handleUpdateUserDepartment = (username: string, departmentId: string | undefined) => {
+    setUsers((prevUsers) =>
+      prevUsers.map((u) =>
+        u.username === username ? { ...u, departmentId } : u
+      )
+    );
+    if (user && user.username === username) {
+      setUser((prevUser) => prevUser ? { ...prevUser, departmentId } : null);
+    }
+  };
+
+  const handleToggleUserHidden = (username: string, hidden: boolean) => {
+    setUsers((prevUsers) =>
+      prevUsers.map((u) =>
+        u.username === username ? { ...u, hidden } : u
+      )
+    );
+    if (user && user.username === username) {
+      setUser((prevUser) => prevUser ? { ...prevUser, hidden } : null);
+    }
+  };
+
+  const handleAddDepartment = (departmentData: Omit<Department, "id">) => {
+    const newId = `${departments.length + 1}`;
+    const newDepartment: Department = {
+      id: newId,
+      ...departmentData
+    };
+    setDepartments((prevDepartments) => [...prevDepartments, newDepartment]);
+  };
+
+  const handleDeleteDepartment = (id: string) => {
+    // Check if any users are in this department
+    const usersInDepartment = users.filter(u => u.departmentId === id);
+    
+    if (usersInDepartment.length > 0) {
+      toast({
+        title: "Cannot Delete",
+        description: "There are users assigned to this department",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setDepartments((prevDepartments) => 
+      prevDepartments.filter((dept) => dept.id !== id)
+    );
+    
+    toast({
+      title: "Department Deleted",
+      description: "Department has been removed",
+    });
+  };
+
+  // Filter users for manager view to hide those marked as hidden
+  const getVisibleUsers = () => {
+    return users.filter(u => !u.hidden);
+  };
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -149,6 +218,12 @@ const App = () => {
                     <Button variant="outline" size="sm" className="flex items-center gap-2">
                       <Percent className="h-4 w-4" />
                       Week Percentage
+                    </Button>
+                  </Link>
+                  <Link to="/departments">
+                    <Button variant="outline" size="sm" className="flex items-center gap-2">
+                      <Building className="h-4 w-4" />
+                      Departments
                     </Button>
                   </Link>
                 </>
@@ -195,6 +270,11 @@ const App = () => {
                     {user.role === "admin" && (
                       <div className="mt-8 space-y-8">
                         <UserManagement onCreateUser={handleCreateUser} />
+                        <DepartmentManagement 
+                          departments={departments}
+                          onAddDepartment={handleAddDepartment}
+                          onDeleteDepartment={handleDeleteDepartment}
+                        />
                         <FirstWeekManagement 
                           onSetFirstWeek={handleSetFirstWeek}
                           users={users}
@@ -243,7 +323,10 @@ const App = () => {
                 user?.role === 'admin' ? (
                   <UserManagerAssignment 
                     users={users} 
-                    onUpdateUserManager={handleUpdateUserManager} 
+                    departments={departments}
+                    onUpdateUserManager={handleUpdateUserManager}
+                    onUpdateUserDepartment={handleUpdateUserDepartment}
+                    onToggleUserHidden={handleToggleUserHidden}
                   />
                 ) : (
                   <Navigate to="/" replace />
@@ -281,8 +364,33 @@ const App = () => {
                 user?.role === 'manager' ? (
                   <ManagerView 
                     currentUser={user}
-                    users={users} 
+                    users={getVisibleUsers()} 
                   />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              }
+            />
+            <Route
+              path="/departments"
+              element={
+                user?.role === 'admin' ? (
+                  <div className="container mx-auto p-4 pt-16">
+                    <div className="flex items-center justify-between mb-6">
+                      <h1 className="text-2xl font-bold">Department Management</h1>
+                      <Link to="/">
+                        <Button variant="outline" size="sm" className="flex items-center gap-2">
+                          <ArrowLeft className="h-4 w-4" />
+                          Back to Dashboard
+                        </Button>
+                      </Link>
+                    </div>
+                    <DepartmentManagement 
+                      departments={departments}
+                      onAddDepartment={handleAddDepartment}
+                      onDeleteDepartment={handleDeleteDepartment}
+                    />
+                  </div>
                 ) : (
                   <Navigate to="/" replace />
                 )

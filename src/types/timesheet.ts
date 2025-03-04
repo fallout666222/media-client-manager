@@ -24,7 +24,7 @@ export interface Employee {
 }
 
 export interface User {
-  id?: string;         // Add optional id
+  id?: string;
   username: string;
   password: string;
   role: 'admin' | 'user' | 'manager';
@@ -33,6 +33,8 @@ export interface User {
   selectedClients?: string[];
   selectedMediaTypes?: string[];
   weekPercentages?: { weekId: string; percentage: number }[];
+  departmentId?: string;
+  hidden?: boolean; // Flag to hide user from manager views
 }
 
 export interface UserFormData {

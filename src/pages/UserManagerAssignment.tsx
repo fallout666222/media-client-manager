@@ -18,18 +18,25 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { User } from "@/types/timesheet";
+import { User, Department } from "@/types/timesheet";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface UserManagerAssignmentProps {
   users: User[];
+  departments: Department[];
   onUpdateUserManager: (username: string, managerId: string | undefined) => void;
+  onUpdateUserDepartment: (username: string, departmentId: string | undefined) => void;
+  onToggleUserHidden: (username: string, hidden: boolean) => void;
 }
 
 const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
   users,
+  departments,
   onUpdateUserManager,
+  onUpdateUserDepartment,
+  onToggleUserHidden
 }) => {
   const { toast } = useToast();
 
@@ -38,6 +45,22 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
     toast({
       title: "Manager Updated",
       description: `Manager assignment updated for ${username}`,
+    });
+  };
+
+  const handleDepartmentChange = (username: string, departmentId: string | undefined) => {
+    onUpdateUserDepartment(username, departmentId);
+    toast({
+      title: "Department Updated",
+      description: `Department updated for ${username}`,
+    });
+  };
+
+  const handleHiddenChange = (username: string, hidden: boolean) => {
+    onToggleUserHidden(username, hidden);
+    toast({
+      title: "Visibility Updated",
+      description: `${username} is now ${hidden ? "hidden from" : "visible in"} manager views`,
     });
   };
 
@@ -60,7 +83,9 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
             <TableRow>
               <TableHead>User</TableHead>
               <TableHead>Role</TableHead>
+              <TableHead>Department</TableHead>
               <TableHead>Manager</TableHead>
+              <TableHead>Hide from Manager View</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -69,6 +94,26 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
               <TableRow key={user.username}>
                 <TableCell className="font-medium">{user.username}</TableCell>
                 <TableCell>{user.role}</TableCell>
+                <TableCell>
+                  <Select
+                    value={user.departmentId || "none"}
+                    onValueChange={(value) => {
+                      handleDepartmentChange(user.username, value === "none" ? undefined : value);
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No Department</SelectItem>
+                      {departments.map((department) => (
+                        <SelectItem key={department.id} value={department.id}>
+                          {department.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
                 <TableCell>
                   <Select
                     value={user.managerId || "none"}
@@ -91,6 +136,17 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
                         ))}
                     </SelectContent>
                   </Select>
+                </TableCell>
+                <TableCell className="text-center">
+                  <div className="flex items-center justify-center">
+                    <Checkbox 
+                      checked={user.hidden} 
+                      onCheckedChange={(checked) => 
+                        handleHiddenChange(user.username, checked === true)
+                      }
+                      id={`hide-${user.username}`}
+                    />
+                  </div>
                 </TableCell>
                 <TableCell>
                   <Button
