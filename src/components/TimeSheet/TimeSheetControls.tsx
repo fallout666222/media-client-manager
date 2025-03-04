@@ -39,8 +39,9 @@ export const TimeSheetControls = ({
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center justify-between p-4 bg-muted rounded-lg">
       <div>
         <WeekPicker
-          date={currentDate}
-          onDateChange={onWeekChange}
+          currentDate={currentDate}
+          onWeekChange={onWeekChange}
+          onWeekHoursChange={onWeekHoursChange}
           firstWeek={firstWeek}
         />
       </div>
