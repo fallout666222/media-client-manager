@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,7 @@ interface UserImpersonationProps {
   clients: any[];
 }
 
-export const UserImpersonation: React.FC<UserImpersonationProps> = ({ users, clients }) => {
+const UserImpersonation: React.FC<UserImpersonationProps> = ({ users, clients }) => {
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -96,3 +97,5 @@ export const UserImpersonation: React.FC<UserImpersonationProps> = ({ users, cli
     </div>
   );
 };
+
+export default UserImpersonation;
