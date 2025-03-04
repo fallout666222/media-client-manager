@@ -9,7 +9,431 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      clients: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          deletion_mark: boolean | null
+          description: string | null
+          id: string
+          name: string
+          ts_code: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          deletion_mark?: boolean | null
+          description?: string | null
+          id?: string
+          name: string
+          ts_code?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          deletion_mark?: boolean | null
+          description?: string | null
+          id?: string
+          name?: string
+          ts_code?: string | null
+        }
+        Relationships: []
+      }
+      custom_weeks: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          period_from: string
+          period_to: string
+          required_hours: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          period_from: string
+          period_to: string
+          required_hours: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          period_from?: string
+          period_to?: string
+          required_hours?: number
+        }
+        Relationships: []
+      }
+      departments: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      media_types: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      user_managers: {
+        Row: {
+          created_at: string | null
+          id: string
+          manager_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          manager_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          manager_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_managers_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_managers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          created_at: string | null
+          deletion_mark: boolean | null
+          department_id: string | null
+          description: string | null
+          email: string | null
+          first_week: string | null
+          id: string
+          job_position: string | null
+          login: string
+          name: string
+          password: string
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          deletion_mark?: boolean | null
+          department_id?: string | null
+          description?: string | null
+          email?: string | null
+          first_week?: string | null
+          id?: string
+          job_position?: string | null
+          login: string
+          name: string
+          password: string
+          type: string
+        }
+        Update: {
+          created_at?: string | null
+          deletion_mark?: boolean | null
+          department_id?: string | null
+          description?: string | null
+          email?: string | null
+          first_week?: string | null
+          id?: string
+          job_position?: string | null
+          login?: string
+          name?: string
+          password?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "users_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      visible_clients: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visible_clients_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visible_clients_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      visible_types: {
+        Row: {
+          created_at: string | null
+          id: string
+          type_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          type_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          type_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visible_types_type_id_fkey"
+            columns: ["type_id"]
+            isOneToOne: false
+            referencedRelation: "media_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visible_types_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      week_hours: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          hours: number
+          id: string
+          media_type_id: string
+          user_id: string
+          week_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          hours: number
+          id?: string
+          media_type_id: string
+          user_id: string
+          week_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          hours?: number
+          id?: string
+          media_type_id?: string
+          user_id?: string
+          week_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "week_hours_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "week_hours_media_type_id_fkey"
+            columns: ["media_type_id"]
+            isOneToOne: false
+            referencedRelation: "media_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "week_hours_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "week_hours_week_id_fkey"
+            columns: ["week_id"]
+            isOneToOne: false
+            referencedRelation: "custom_weeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      week_percentages: {
+        Row: {
+          created_at: string | null
+          id: string
+          percentage: number
+          user_id: string
+          week_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          percentage: number
+          user_id: string
+          week_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          percentage?: number
+          user_id?: string
+          week_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "week_percentages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "week_percentages_week_id_fkey"
+            columns: ["week_id"]
+            isOneToOne: false
+            referencedRelation: "custom_weeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      week_status_names: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      week_statuses: {
+        Row: {
+          created_at: string | null
+          id: string
+          user_id: string
+          week_id: string
+          week_status_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          user_id: string
+          week_id: string
+          week_status_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          user_id?: string
+          week_id?: string
+          week_status_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "week_statuses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "week_statuses_week_id_fkey"
+            columns: ["week_id"]
+            isOneToOne: false
+            referencedRelation: "custom_weeks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "week_statuses_week_status_id_fkey"
+            columns: ["week_status_id"]
+            isOneToOne: false
+            referencedRelation: "week_status_names"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

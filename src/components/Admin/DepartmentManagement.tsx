@@ -1,18 +1,24 @@
-
-import { useState, useEffect } from "react";
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { Department } from "@/types/timesheet";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
-import { Trash, Plus } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+interface Department {
+  id: string;
+  name: string;
+  description?: string;
+}
 
 interface DepartmentManagementProps {
   departments: Department[];
@@ -20,90 +26,133 @@ interface DepartmentManagementProps {
   onDeleteDepartment: (id: string) => void;
 }
 
-export const DepartmentManagement = ({ 
-  departments, 
-  onAddDepartment, 
-  onDeleteDepartment 
-}: DepartmentManagementProps) => {
-  const [departmentName, setDepartmentName] = useState("");
+const DepartmentManagement: React.FC<DepartmentManagementProps> = ({ departments, onAddDepartment, onDeleteDepartment }) => {
+  const [departmentName, setDepartmentName] = useState('');
+  const [departmentDescription, setDepartmentDescription] = useState('');
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleAddDepartment = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!departmentName.trim()) {
       toast({
         title: "Error",
-        description: "Department name cannot be empty",
+        description: "Department name is required",
         variant: "destructive",
       });
       return;
     }
-
-    // Check if department name already exists
-    if (departments.some(dept => dept.name.toLowerCase() === departmentName.toLowerCase())) {
+    
+    try {
+      const { createDepartment } = await import('@/integrations/supabase/database');
+      const { data, error } = await createDepartment({ 
+        name: departmentName,
+        description: departmentDescription 
+      });
+      
+      if (error) throw error;
+      
+      if (data) {
+        // Add to local state
+        onAddDepartment({
+          id: data.id,
+          name: data.name,
+          description: data.description
+        });
+        
+        // Reset form
+        setDepartmentName('');
+        setDepartmentDescription('');
+        
+        toast({
+          title: "Success",
+          description: "Department added successfully",
+        });
+      }
+    } catch (error) {
+      console.error('Error adding department:', error);
       toast({
         title: "Error",
-        description: "Department with this name already exists",
+        description: "Failed to add department",
         variant: "destructive",
       });
-      return;
     }
+  };
 
-    onAddDepartment({ name: departmentName });
-    setDepartmentName("");
-    toast({
-      title: "Success",
-      description: "Department added successfully",
-    });
+  const handleDeleteDepartment = async (id: string) => {
+    try {
+      const { deleteDepartment } = await import('@/integrations/supabase/database');
+      const { error } = await deleteDepartment(id);
+      
+      if (error) throw error;
+      
+      // Remove from local state
+      onDeleteDepartment(id);
+      
+      toast({
+        title: "Success",
+        description: "Department deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting department:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete department",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
-    <div className="space-y-6 p-4 bg-white rounded-lg shadow">
-      <h2 className="text-2xl font-bold">Department Management</h2>
-      
-      <form onSubmit={handleSubmit} className="flex gap-2 items-end">
-        <div className="flex-1">
+    <div className="space-y-4">
+      <h2 className="text-lg font-medium">Manage Departments</h2>
+      <form onSubmit={handleAddDepartment} className="grid gap-4">
+        <div className="grid gap-2">
+          <Label htmlFor="departmentName">Department Name</Label>
           <Input
-            placeholder="Department Name"
+            type="text"
+            id="departmentName"
             value={departmentName}
             onChange={(e) => setDepartmentName(e.target.value)}
+            placeholder="Enter department name"
           />
         </div>
-        <Button type="submit" className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Add Department
-        </Button>
-      </form>
-      
-      {departments.length > 0 && (
-        <div className="rounded-md border mt-4">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead className="w-24">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {departments.map((department) => (
-                <TableRow key={department.id}>
-                  <TableCell>{department.name}</TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onDeleteDepartment(department.id)}
-                    >
-                      <Trash className="h-4 w-4 text-red-500" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <div className="grid gap-2">
+          <Label htmlFor="departmentDescription">Description</Label>
+          <Textarea
+            id="departmentDescription"
+            value={departmentDescription}
+            onChange={(e) => setDepartmentDescription(e.target.value)}
+            placeholder="Enter department description"
+          />
         </div>
-      )}
+        <Button type="submit">Add Department</Button>
+      </form>
+      <Table>
+        <TableCaption>A list of your departments.</TableCaption>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Description</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {departments.map((department) => (
+            <TableRow key={department.id}>
+              <TableCell className="font-medium">{department.name}</TableCell>
+              <TableCell>{department.description}</TableCell>
+              <TableCell className="text-right">
+                <Button variant="destructive" size="sm" onClick={() => handleDeleteDepartment(department.id)}>
+                  Delete
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 };
+
+export default DepartmentManagement;

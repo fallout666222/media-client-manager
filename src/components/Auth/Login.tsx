@@ -13,28 +13,49 @@ export const Login = ({ onLogin, users }: LoginProps) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleFormSubmit = async (event: React.SyntheticEvent) => {
+    event.preventDefault();
     
-    const user = users.find(
-      (u) => u.username === username && u.password === password
-    );
-
-    if (user) {
-      onLogin(user);
+    try {
+      setLoading(true);
+      
+      const { authenticateUser } = await import('@/integrations/supabase/database');
+      const { data, error } = await authenticateUser(username, password);
+      
+      if (error) {
+        console.error('Authentication error:', error);
+        toast({
+          title: "Authentication Error",
+          description: "Invalid username or password",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (data) {
+        onLogin(data);
+        toast({
+          title: "Welcome back!",
+          description: `You are now logged in as ${data.name}`,
+        });
+      } else {
+        toast({
+          title: "Authentication Failed",
+          description: "Invalid username or password",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Login error:', error);
       toast({
-        title: "Login Successful",
-        description: user.firstWeek 
-          ? `Welcome back, ${username}!`
-          : "Welcome! Please wait for an admin to set your first working week.",
-      });
-    } else {
-      toast({
-        title: "Login Failed",
-        description: "Invalid username or password",
+        title: "Login Error",
+        description: "There was a problem logging in. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -49,7 +70,7 @@ export const Login = ({ onLogin, users }: LoginProps) => {
             Use one of these accounts: admin-admin, user-user, manager-manager
           </p>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <form className="mt-8 space-y-6" onSubmit={handleFormSubmit}>
           <div className="space-y-4">
             <div>
               <Input

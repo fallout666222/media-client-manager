@@ -7,6 +7,7 @@ import { TimeSheetControls } from '@/components/TimeSheet/TimeSheetControls';
 import { TimeSheetContent } from '@/components/TimeSheet/TimeSheetContent';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { TeamMemberSelector } from '@/components/TeamMemberSelector';
+import { updateWeekHours, updateWeekStatus, getWeekHours } from '@/integrations/supabase/database';
 
 const DEFAULT_WEEKS = [
   { id: "1", startDate: "2025-01-01", endDate: "2025-01-06", hours: 48 },
@@ -103,7 +104,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
     }, 0);
   };
 
-  const handleSubmitForReview = () => {
+  const handleSubmitForReview = async () => {
     if (readOnly) return;
     
     const firstUnsubmittedWeek = findFirstUnsubmittedWeek();
@@ -150,10 +151,31 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
       [currentWeekKey]: 'under-review'
     }));
     
-    toast({
-      title: "Timesheet Under Review",
-      description: `Week of ${format(currentDate, 'MMM d, yyyy')} has been submitted and is now under review`,
-    });
+    try {
+      const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
+      const week = userWeeks.find(w => format(parse(w.startDate, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === currentWeekKey);
+      
+      if (week && currentUser.id) {
+        const { data: statusNames } = await import('@/integrations/supabase/database').then(db => db.getWeekStatusNames());
+        const underReviewStatus = statusNames?.find(status => status.name === 'under-review');
+        
+        if (underReviewStatus) {
+          await updateWeekStatus(currentUser.id, week.id, underReviewStatus.id);
+        }
+      }
+      
+      toast({
+        title: "Timesheet Under Review",
+        description: `Week of ${format(currentDate, 'MMM d, yyyy')} has been submitted and is now under review`,
+      });
+    } catch (error) {
+      console.error('Error updating week status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update timesheet status",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleApprove = () => {
@@ -248,16 +270,95 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
   const isViewingOwnTimesheet = viewedUser.id === currentUser.id;
 
   useEffect(() => {
-    if (viewedUser.firstWeek) {
-      setCurrentDate(parse(viewedUser.firstWeek, 'yyyy-MM-dd', new Date()));
-      const initialWeek = userWeeks.find(week => 
-        isSameDay(parse(week.startDate, 'yyyy-MM-dd', new Date()), parse(viewedUser.firstWeek || firstWeek, 'yyyy-MM-dd', new Date()))
-      );
-      if (initialWeek) {
-        setWeekHours(initialWeek.hours);
+    const loadUserData = async () => {
+      if (viewedUser.id) {
+        try {
+          const weekKey = format(currentDate, 'yyyy-MM-dd');
+          const week = userWeeks.find(w => format(parse(w.startDate, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === weekKey);
+          
+          if (week) {
+            const { data } = await getWeekHours(viewedUser.id, week.id);
+            
+            if (data) {
+              const entries: Record<string, Record<string, TimeEntry>> = {};
+              entries[weekKey] = {};
+              
+              data.forEach(entry => {
+                if (!entries[weekKey][entry.client.name]) {
+                  entries[weekKey][entry.client.name] = {};
+                }
+                
+                entries[weekKey][entry.client.name][entry.media_type.name] = {
+                  hours: entry.hours,
+                  status: getCurrentWeekStatus()
+                };
+              });
+              
+              setTimeEntries(entries);
+            }
+          }
+        } catch (error) {
+          console.error('Error loading timesheet data:', error);
+        }
       }
+    };
+    
+    loadUserData();
+  }, [viewedUser, currentDate]);
+
+  const handleTimeUpdate = async (client: string, mediaType: string, hours: number) => {
+    if (readOnly || !isViewingOwnTimesheet) return;
+    
+    const currentTotal = getTotalHoursForWeek();
+    const existingHours = timeEntries[format(currentDate, 'yyyy-MM-dd')]?.[client]?.[mediaType]?.hours || 0;
+    const newTotalHours = currentTotal - existingHours + hours;
+    
+    if (newTotalHours > weekHours) {
+      toast({
+        title: "Cannot Add Hours",
+        description: `Total hours cannot exceed ${weekHours} for this week`,
+        variant: "destructive"
+      });
+      return;
     }
-  }, [viewedUser, firstWeek]);
+    
+    try {
+      if (viewedUser.id) {
+        const weekKey = format(currentDate, 'yyyy-MM-dd');
+        const week = userWeeks.find(w => format(parse(w.startDate, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === weekKey);
+        
+        if (week) {
+          const { data: clientsData } = await import('@/integrations/supabase/database').then(db => db.getClients());
+          const { data: mediaTypesData } = await import('@/integrations/supabase/database').then(db => db.getMediaTypes());
+          
+          const clientObj = clientsData?.find(c => c.name === client);
+          const mediaTypeObj = mediaTypesData?.find(m => m.name === mediaType);
+          
+          if (clientObj && mediaTypeObj) {
+            await updateWeekHours(viewedUser.id, week.id, clientObj.id, mediaTypeObj.id, hours);
+          }
+        }
+      }
+      
+      setTimeEntries(prev => ({
+        ...prev,
+        [weekKey]: {
+          ...prev[weekKey],
+          [client]: {
+            ...prev[weekKey]?.[client],
+            [mediaType]: { hours, status: getCurrentWeekStatus() }
+          }
+        }
+      }));
+    } catch (error) {
+      console.error('Error updating hours:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update hours",
+        variant: "destructive"
+      });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -324,33 +425,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
         mediaTypes={availableMediaTypes}
         timeEntries={timeEntries[format(currentDate, 'yyyy-MM-dd')] || {}}
         status={getCurrentWeekStatus()}
-        onTimeUpdate={(client, mediaType, hours) => {
-          if (readOnly || !isViewingOwnTimesheet) return;
-          const weekKey = format(currentDate, 'yyyy-MM-dd');
-          const currentTotal = getTotalHoursForWeek();
-          const existingHours = timeEntries[weekKey]?.[client]?.[mediaType]?.hours || 0;
-          const newTotalHours = currentTotal - existingHours + hours;
-
-          if (newTotalHours > weekHours) {
-            toast({
-              title: "Cannot Add Hours",
-              description: `Total hours cannot exceed ${weekHours} for this week`,
-              variant: "destructive"
-            });
-            return;
-          }
-
-          setTimeEntries(prev => ({
-            ...prev,
-            [weekKey]: {
-              ...prev[weekKey],
-              [client]: {
-                ...prev[weekKey]?.[client],
-                [mediaType]: { hours, status: getCurrentWeekStatus() }
-              }
-            }
-          }));
-        }}
+        onTimeUpdate={handleTimeUpdate}
         onAddClient={handleAddClient}
         onRemoveClient={handleRemoveClient}
         onAddMediaType={handleAddMediaType}

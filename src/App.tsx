@@ -82,8 +82,83 @@ const App = () => {
   const [clients, setClients] = useState<Client[]>(INITIAL_CLIENTS);
   const { toast } = useToast();
 
-  const handleLogin = (user: User) => {
-    setUser(user);
+  const { authenticateUser, getUsers, getDepartments, getClients, createUser, updateUser, getUserById, getCustomWeeks } = async () => await import('@/integrations/supabase/database');
+
+  const handleLogin = async (userData: User) => {
+    try {
+      const { data, error } = await getUserById(userData.id || '');
+      
+      if (error) throw error;
+      
+      if (data) {
+        setUser(data);
+        fetchInitialData();
+      }
+    } catch (error) {
+      console.error('Error getting user details:', error);
+      toast({
+        title: "Error",
+        description: "Failed to get user details",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchInitialData = async () => {
+    try {
+      const { data: usersData, error: usersError } = await getUsers();
+      if (usersError) throw usersError;
+      setUsers(usersData || []);
+      
+      const { data: departmentsData, error: departmentsError } = await getDepartments();
+      if (departmentsError) throw departmentsError;
+      setDepartments(departmentsData || []);
+      
+      const { data: clientsData, error: clientsError } = await getClients();
+      if (clientsError) throw clientsError;
+      setClients(clientsData || []);
+      
+      const { data: weeksData, error: weeksError } = await getCustomWeeks();
+      if (weeksError) throw weeksError;
+    } catch (error) {
+      console.error('Error fetching initial data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load initial data",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCreateUser = async (userData: UserFormData) => {
+    try {
+      const newUser = {
+        ...userData,
+        name: userData.username,
+        selectedClients: [],
+        selectedMediaTypes: []
+      };
+      
+      const { data, error } = await createUser(newUser);
+      
+      if (error) throw error;
+      
+      if (data) {
+        setUsers((prevUsers) => [...prevUsers, data]);
+        
+        toast({
+          title: "User Created",
+          description: `New ${userData.role} account created: ${userData.username}`,
+        });
+      }
+    } catch (error) {
+      console.error('Error creating user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create user",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleLogout = () => {
@@ -91,19 +166,6 @@ const App = () => {
     toast({
       title: "Logged out",
       description: "You have been successfully logged out",
-    });
-  };
-
-  const handleCreateUser = (userData: UserFormData) => {
-    const newUser: User = {
-      ...userData,
-      selectedClients: [],
-      selectedMediaTypes: []
-    };
-    setUsers((prevUsers) => [...prevUsers, newUser]);
-    toast({
-      title: "User Created",
-      description: `New ${userData.role} account created: ${userData.username}`,
     });
   };
 
