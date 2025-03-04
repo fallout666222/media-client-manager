@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { TimeSheetGrid } from './TimeSheetGrid';
 import { Settings } from './Settings';

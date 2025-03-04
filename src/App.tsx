@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,10 +14,11 @@ import UserManagerAssignment from "./pages/UserManagerAssignment";
 import UserFirstWeekManagement from "./pages/UserFirstWeekManagement";
 import UserWeekPercentage from "./pages/UserWeekPercentage";
 import ManagerView from "./pages/ManagerView";
+import ClientTree from "./pages/ClientTree";
 import { useState } from "react";
-import { User, UserFormData, Department } from "./types/timesheet";
+import { User, UserFormData, Department, Client } from "./types/timesheet";
 import { Button } from "./components/ui/button";
-import { LogOut, Users, Calendar, UserCog, CalendarDays, Percent, Eye, Building, ArrowLeft } from "lucide-react";
+import { LogOut, Users, Calendar, UserCog, CalendarDays, Percent, Eye, Building, ArrowLeft, TreeDeciduous } from "lucide-react";
 import { useToast } from "./hooks/use-toast";
 
 const queryClient = new QueryClient();
@@ -61,10 +61,18 @@ const INITIAL_DEPARTMENTS: Department[] = [
   { id: "3", name: "Finance" },
 ];
 
+const INITIAL_CLIENTS: Client[] = [
+  { id: "1", name: "Client A", parentId: null, hidden: false },
+  { id: "2", name: "Client B", parentId: null, hidden: false },
+  { id: "3", name: "Client A-1", parentId: "1", hidden: false },
+  { id: "4", name: "Client B-1", parentId: "2", hidden: true },
+];
+
 const App = () => {
   const [user, setUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>(INITIAL_USERS);
   const [departments, setDepartments] = useState<Department[]>(INITIAL_DEPARTMENTS);
+  const [clients, setClients] = useState<Client[]>(INITIAL_CLIENTS);
   const { toast } = useToast();
 
   const handleLogin = (user: User) => {
@@ -140,6 +148,39 @@ const App = () => {
     }
   };
 
+  const handleAddClient = (clientData: Omit<Client, "id">) => {
+    const newId = `${clients.length + 1}`;
+    const newClient: Client = {
+      id: newId,
+      ...clientData
+    };
+    setClients((prevClients) => [...prevClients, newClient]);
+  };
+
+  const handleUpdateClient = (id: string, clientData: Partial<Client>) => {
+    setClients((prevClients) =>
+      prevClients.map((client) =>
+        client.id === id ? { ...client, ...clientData } : client
+      )
+    );
+  };
+
+  const handleDeleteClient = (id: string) => {
+    setUsers((prevUsers) => 
+      prevUsers.map((user) => {
+        if (user.selectedClients && user.selectedClients.includes(id)) {
+          return {
+            ...user,
+            selectedClients: user.selectedClients.filter(clientId => clientId !== id)
+          };
+        }
+        return user;
+      })
+    );
+    
+    setClients((prevClients) => prevClients.filter((client) => client.id !== id));
+  };
+
   const handleAddDepartment = (departmentData: Omit<Department, "id">) => {
     const newId = `${departments.length + 1}`;
     const newDepartment: Department = {
@@ -150,7 +191,6 @@ const App = () => {
   };
 
   const handleDeleteDepartment = (id: string) => {
-    // Check if any users are in this department
     const usersInDepartment = users.filter(u => u.departmentId === id);
     
     if (usersInDepartment.length > 0) {
@@ -172,9 +212,12 @@ const App = () => {
     });
   };
 
-  // Filter users for manager view to hide those marked as hidden
   const getVisibleUsers = () => {
     return users.filter(u => !u.hidden);
+  };
+
+  const getVisibleClients = () => {
+    return clients.filter(c => !c.hidden).map(c => c.name);
   };
 
   return (
@@ -224,6 +267,12 @@ const App = () => {
                     <Button variant="outline" size="sm" className="flex items-center gap-2">
                       <Building className="h-4 w-4" />
                       Departments
+                    </Button>
+                  </Link>
+                  <Link to="/client-tree">
+                    <Button variant="outline" size="sm" className="flex items-center gap-2">
+                      <TreeDeciduous className="h-4 w-4" />
+                      Client Tree
                     </Button>
                   </Link>
                 </>
@@ -365,6 +414,21 @@ const App = () => {
                   <ManagerView 
                     currentUser={user}
                     users={getVisibleUsers()} 
+                  />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              }
+            />
+            <Route
+              path="/client-tree"
+              element={
+                user?.role === 'admin' ? (
+                  <ClientTree 
+                    clients={clients}
+                    onAddClient={handleAddClient}
+                    onUpdateClient={handleUpdateClient}
+                    onDeleteClient={handleDeleteClient}
                   />
                 ) : (
                   <Navigate to="/" replace />

@@ -17,6 +17,13 @@ export interface Department {
   name: string;
 }
 
+export interface Client {
+  id: string;
+  name: string;
+  parentId: string | null;
+  hidden: boolean;
+}
+
 export interface Employee {
   id: string;
   name: string;
