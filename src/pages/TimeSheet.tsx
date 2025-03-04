@@ -30,9 +30,12 @@ interface TimeSheetProps {
 
 const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly = false }: TimeSheetProps) => {
   const [showSettings, setShowSettings] = useState(false);
-  const [currentDate, setCurrentDate] = useState<Date>(
-    parse(firstWeek, 'yyyy-MM-dd', new Date())
-  );
+  const [currentDate, setCurrentDate] = useState<Date>(() => {
+    if (userRole === 'admin' && (!firstWeek || firstWeek === 'null')) {
+      return parse("2024-01-01", 'yyyy-MM-dd', new Date());
+    }
+    return parse(firstWeek, 'yyyy-MM-dd', new Date());
+  });
   const [weekHours, setWeekHours] = useState(() => {
     const initialWeek = DEFAULT_WEEKS.find(week => 
       isSameDay(parse(week.startDate, 'yyyy-MM-dd', new Date()), parse(firstWeek, 'yyyy-MM-dd', new Date()))

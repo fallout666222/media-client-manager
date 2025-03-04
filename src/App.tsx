@@ -404,7 +404,7 @@ const App = () => {
                     {user.role === 'admin' || user.firstWeek ? (
                       <TimeSheet 
                         userRole={user.role} 
-                        firstWeek={user.firstWeek} 
+                        firstWeek={user.firstWeek || (user.role === 'admin' ? '2024-01-01' : '')} 
                         currentUser={user}
                         users={users}
                         clients={clients}
