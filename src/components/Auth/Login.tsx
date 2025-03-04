@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,14 +36,16 @@ export const Login = ({ onLogin, users }: LoginProps) => {
       }
       
       if (data) {
+        console.log('Authentication successful:', data);
+        
+        // Create a properly formatted User object
         const appUser: User = {
           id: data.id,
           username: data.login,
           name: data.name,
-          role: data.type as 'admin' | 'user' | 'manager',
+          role: data.type,
           password: data.password,
-          firstWeek: data.first_week,
-          departmentId: data.department_id,
+          firstWeek: data.type === 'admin' ? '2024-01-01' : data.first_week, // Set default firstWeek for admin
           login: data.login,
           type: data.type,
           email: data.email,
@@ -50,6 +53,7 @@ export const Login = ({ onLogin, users }: LoginProps) => {
           first_week: data.first_week,
           description: data.description,
           department_id: data.department_id,
+          departmentId: data.department_id,
           deletion_mark: data.deletion_mark
         };
         
