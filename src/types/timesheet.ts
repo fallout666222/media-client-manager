@@ -1,4 +1,5 @@
 
+
 export type TimeSheetStatus = 'unconfirmed' | 'under-review' | 'accepted' | 'needs-revision';
 
 export interface TimeEntry {
@@ -24,15 +25,17 @@ export interface Employee {
 }
 
 export interface User {
-  id?: string;         // Add optional id
+  id?: string;         
   username: string;
   password: string;
   role: 'admin' | 'user' | 'manager';
   firstWeek?: string;
   managerId?: string;
+  departmentId?: string;
   selectedClients?: string[];
   selectedMediaTypes?: string[];
   weekPercentages?: { weekId: string; percentage: number }[];
+  hideFromManager?: boolean;
 }
 
 export interface UserFormData {
@@ -46,3 +49,4 @@ export interface WeekPercentage {
   weekId: string;
   percentage: number;
 }
+
