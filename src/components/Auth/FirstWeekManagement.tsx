@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { User } from "@/types/timesheet";
+import { User, CustomWeek } from "@/types/timesheet";
 import {
   Select,
   SelectContent,
@@ -18,12 +18,12 @@ interface FirstWeekManagementProps {
 }
 
 // Use the same custom weeks format as in WeekPicker
-const DEFAULT_WEEKS = [
-  { id: "1", startDate: "2025-01-01", endDate: "2025-01-06", hours: 48 },
-  { id: "2", startDate: "2025-01-10", endDate: "2025-01-03", hours: 40 },
-  { id: "3", startDate: "2025-01-13", endDate: "2025-01-17", hours: 40 },
-  { id: "4", startDate: "2025-01-20", endDate: "2025-01-24", hours: 40 },
-  { id: "5", startDate: "2025-01-27", endDate: "2025-01-31", hours: 40 },
+const DEFAULT_WEEKS: CustomWeek[] = [
+  { id: "1", name: "Week 1", startDate: "2025-01-01", endDate: "2025-01-06", hours: 48 },
+  { id: "2", name: "Week 2", startDate: "2025-01-10", endDate: "2025-01-03", hours: 40 },
+  { id: "3", name: "Week 3", startDate: "2025-01-13", endDate: "2025-01-17", hours: 40 },
+  { id: "4", name: "Week 4", startDate: "2025-01-20", endDate: "2025-01-24", hours: 40 },
+  { id: "5", name: "Week 5", startDate: "2025-01-27", endDate: "2025-01-31", hours: 40 },
 ];
 
 export const FirstWeekManagement = ({ onSetFirstWeek, users }: FirstWeekManagementProps) => {
@@ -64,8 +64,8 @@ export const FirstWeekManagement = ({ onSetFirstWeek, users }: FirstWeekManageme
   // Filter out users who already have a first week set
   const usersWithoutFirstWeek = users.filter(user => !user.firstWeek);
 
-  const formatWeekLabel = (week: typeof DEFAULT_WEEKS[0]) => {
-    return `Week ${week.id}: ${week.startDate} - ${week.endDate} (${week.hours}h)`;
+  const formatWeekLabel = (week: CustomWeek) => {
+    return `${week.name}: ${week.startDate} - ${week.endDate} (${week.hours}h)`;
   };
 
   return (

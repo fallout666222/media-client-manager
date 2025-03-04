@@ -189,7 +189,7 @@ const ClientTree: React.FC<ClientTreeProps> = ({
                 <SelectValue placeholder="Select parent client (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="none">None</SelectItem>
                 {clients.map((client) => (
                   <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
                 ))}
@@ -221,14 +221,14 @@ const ClientTree: React.FC<ClientTreeProps> = ({
                 <TableCell className="font-medium">{client.name}</TableCell>
                 <TableCell>
                   <Select 
-                    value={client.parentId || ""} 
-                    onValueChange={(value) => handleUpdateParent(client.id, value || null)}
+                    value={client.parentId || "none"} 
+                    onValueChange={(value) => handleUpdateParent(client.id, value === "none" ? null : value)}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="None" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       {clients
                         .filter(c => c.id !== client.id) // Can't be its own parent
                         .map((parentClient) => (

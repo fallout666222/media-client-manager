@@ -55,3 +55,11 @@ export interface WeekPercentage {
   weekId: string;
   percentage: number;
 }
+
+export interface CustomWeek {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  hours: number;
+}

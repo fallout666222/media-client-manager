@@ -14,23 +14,18 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
-
-interface CustomWeek {
-  id: string;
-  startDate: string;
-  endDate: string;
-  hours: number;
-}
+import { CustomWeek } from "@/types/timesheet";
 
 const DEFAULT_WEEKS: CustomWeek[] = [
-  { id: "1", startDate: "2025-01-01", endDate: "2025-01-06", hours: 48 },
-  { id: "2", startDate: "2025-01-10", endDate: "2025-01-03", hours: 40 },
-  { id: "3", startDate: "2025-01-13", endDate: "2025-01-17", hours: 40 },
-  { id: "4", startDate: "2025-01-20", endDate: "2025-01-24", hours: 40 },
-  { id: "5", startDate: "2025-01-27", endDate: "2025-01-31", hours: 40 },
+  { id: "1", name: "Week 1", startDate: "2025-01-01", endDate: "2025-01-06", hours: 48 },
+  { id: "2", name: "Week 2", startDate: "2025-01-10", endDate: "2025-01-03", hours: 40 },
+  { id: "3", name: "Week 3", startDate: "2025-01-13", endDate: "2025-01-17", hours: 40 },
+  { id: "4", name: "Week 4", startDate: "2025-01-20", endDate: "2025-01-24", hours: 40 },
+  { id: "5", name: "Week 5", startDate: "2025-01-27", endDate: "2025-01-31", hours: 40 },
 ];
 
 const CustomWeeks = () => {
+  const [name, setName] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [hours, setHours] = useState<number>(0);
@@ -78,6 +73,15 @@ const CustomWeeks = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!name.trim()) {
+      toast({
+        title: "Error",
+        description: "Please provide a name for the week",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!startDate || !endDate) {
       toast({
         title: "Error",
@@ -98,12 +102,14 @@ const CustomWeeks = () => {
 
     const newWeek: CustomWeek = {
       id: crypto.randomUUID(),
+      name: name.trim(),
       startDate,
       endDate,
       hours,
     };
 
     setWeeks(prev => [...prev, newWeek]);
+    setName("");
     setStartDate("");
     setEndDate("");
     setHours(0);
@@ -127,7 +133,21 @@ const CustomWeeks = () => {
       </div>
       
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="space-y-2">
+            <label htmlFor="name" className="block text-sm font-medium">
+              Week Name
+            </label>
+            <Input
+              id="name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., Week 1"
+              className="w-full"
+            />
+          </div>
+          
           <div className="space-y-2">
             <label htmlFor="startDate" className="block text-sm font-medium">
               Start Date
@@ -176,6 +196,7 @@ const CustomWeeks = () => {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Name</TableHead>
               <TableHead>Start Date</TableHead>
               <TableHead>End Date</TableHead>
               <TableHead>Hours</TableHead>
@@ -185,6 +206,7 @@ const CustomWeeks = () => {
           <TableBody>
             {weeks.map((week) => (
               <TableRow key={week.id}>
+                <TableCell className="font-medium">{week.name}</TableCell>
                 <TableCell>
                   {format(parse(week.startDate, "yyyy-MM-dd", new Date()), "MMM dd, yyyy")}
                 </TableCell>
