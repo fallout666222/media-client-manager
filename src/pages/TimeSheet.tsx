@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parse, format, isAfter, isBefore, addWeeks, startOfWeek, isEqual, isSameDay } from 'date-fns';
@@ -274,22 +273,22 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
     const loadUserData = async () => {
       if (viewedUser.id) {
         try {
-          const weekKey = format(currentDate, 'yyyy-MM-dd');
-          const week = userWeeks.find(w => format(parse(w.startDate, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === weekKey);
+          const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
+          const week = userWeeks.find(w => format(parse(w.startDate, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === currentWeekKey);
           
           if (week) {
             const { data } = await getWeekHours(viewedUser.id, week.id);
             
             if (data) {
-              const entries: Record<string, Record<string, TimeEntry>> = {};
-              entries[weekKey] = {};
+              const entries: Record<string, TimeSheetData> = {};
+              entries[currentWeekKey] = {};
               
               data.forEach(entry => {
-                if (!entries[weekKey][entry.client.name]) {
-                  entries[weekKey][entry.client.name] = {};
+                if (!entries[currentWeekKey][entry.client.name]) {
+                  entries[currentWeekKey][entry.client.name] = {};
                 }
                 
-                entries[weekKey][entry.client.name][entry.media_type.name] = {
+                entries[currentWeekKey][entry.client.name][entry.media_type.name] = {
                   hours: entry.hours,
                   status: getCurrentWeekStatus()
                 };
@@ -342,16 +341,25 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
       }
       
       const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
-      setTimeEntries(prev => ({
-        ...prev,
-        [currentWeekKey]: {
-          ...prev[currentWeekKey],
-          [client]: {
-            ...prev[currentWeekKey]?.[client],
-            [mediaType]: { hours, status: getCurrentWeekStatus() }
-          }
+      
+      setTimeEntries(prev => {
+        const newEntries = { ...prev };
+        
+        if (!newEntries[currentWeekKey]) {
+          newEntries[currentWeekKey] = {};
         }
-      }));
+        
+        if (!newEntries[currentWeekKey][client]) {
+          newEntries[currentWeekKey][client] = {};
+        }
+        
+        newEntries[currentWeekKey][client][mediaType] = { 
+          hours, 
+          status: getCurrentWeekStatus() 
+        };
+        
+        return newEntries;
+      });
     } catch (error) {
       console.error('Error updating hours:', error);
       toast({
