@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { RotateCcw, Settings2, FileDown } from "lucide-react";
@@ -29,7 +30,7 @@ export const TimeSheetHeader = ({
           Status: <span className="font-medium capitalize">{status.replace('-', ' ')}</span>
         </p>
         <p className="text-sm text-muted-foreground">
-          Logged in as: <span className="font-medium capitalize">{userRole}</span>
+          Logged in as: <span className="font-medium capitalize">{userRole || 'Unknown'}</span>
         </p>
         <p className="text-sm text-muted-foreground">
           Remaining Hours This Week: <span className="font-medium">{remainingHours}</span>

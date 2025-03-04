@@ -94,12 +94,41 @@ const App = () => {
 
   const handleLogin = async (userData: User) => {
     try {
+      console.log('Login received user data:', userData);
+      
       const { data, error } = await db.getUserById(userData.id || '');
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error getting user details:', error);
+        throw error;
+      }
       
       if (data) {
-        setUser(data);
+        console.log('Setting user state with data:', data);
+        
+        // Make sure we're setting ALL user properties correctly
+        const fullUserData: User = {
+          ...userData,
+          id: data.id,
+          name: data.name,
+          role: data.type as 'admin' | 'user' | 'manager',
+          type: data.type,
+          username: data.login,
+          login: data.login,
+          password: data.password,
+          email: data.email,
+          job_position: data.job_position,
+          description: data.description,
+          department_id: data.department_id,
+          departmentId: data.department_id,
+          first_week: data.first_week,
+          firstWeek: data.first_week,
+          first_custom_week_id: data.first_custom_week_id,
+          firstCustomWeekId: data.first_custom_week_id,
+          deletion_mark: data.deletion_mark
+        };
+        
+        setUser(fullUserData);
         fetchInitialData();
       }
     } catch (error) {

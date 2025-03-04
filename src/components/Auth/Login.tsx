@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,7 +40,7 @@ export const Login = ({ onLogin, users }: LoginProps) => {
         // Properly cast the role type to satisfy TypeScript
         const userRole = data.type as 'admin' | 'user' | 'manager';
         
-        // Create a properly formatted User object
+        // Create a properly formatted User object with ALL fields
         const appUser: User = {
           id: data.id,
           username: data.login,
@@ -54,8 +53,6 @@ export const Login = ({ onLogin, users }: LoginProps) => {
           type: data.type,
           email: data.email,
           job_position: data.job_position,
-          first_week: data.first_week,
-          first_custom_week_id: data.first_custom_week_id,
           description: data.description,
           department_id: data.department_id,
           departmentId: data.department_id,
