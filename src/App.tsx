@@ -18,7 +18,7 @@ import ManagerView from "./pages/ManagerView";
 import { useState } from "react";
 import { User, UserFormData, Department } from "./types/timesheet";
 import { Button } from "./components/ui/button";
-import { LogOut, Users, Calendar, UserCog, CalendarDays, Percent, Eye, Building } from "lucide-react";
+import { LogOut, Users, Calendar, UserCog, CalendarDays, Percent, Eye, Building, ArrowLeft } from "lucide-react";
 import { useToast } from "./hooks/use-toast";
 
 const queryClient = new QueryClient();
