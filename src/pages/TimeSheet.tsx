@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parse, format, isAfter, isBefore, addWeeks, startOfWeek, isEqual, isSameDay } from 'date-fns';
-import { TimeSheetStatus, TimeSheetData, User } from '@/types/timesheet';
+import { TimeSheetStatus, TimeSheetData, User, Client } from '@/types/timesheet';
 import { TimeSheetHeader } from '@/components/TimeSheet/TimeSheetHeader';
 import { TimeSheetControls } from '@/components/TimeSheet/TimeSheetControls';
 import { TimeSheetContent } from '@/components/TimeSheet/TimeSheetContent';
@@ -16,16 +16,6 @@ const DEFAULT_WEEKS = [
   { id: "5", startDate: "2025-01-27", endDate: "2025-01-31", hours: 40 },
 ];
 
-const DEFAULT_AVAILABLE_CLIENTS = [
-  'Administrative',
-  'Education/Training',
-  'General Research',
-  'Network Requests',
-  'New Business',
-  'Sick Leave',
-  'VACATION'
-];
-
 const DEFAULT_AVAILABLE_MEDIA_TYPES = ['TV', 'Radio', 'Print', 'Digital'];
 
 interface TimeSheetProps {
@@ -33,10 +23,11 @@ interface TimeSheetProps {
   firstWeek: string;
   currentUser: User;
   users: User[];
+  clients: Client[];
   readOnly?: boolean;
 }
 
-const TimeSheet = ({ userRole, firstWeek, currentUser, users, readOnly = false }: TimeSheetProps) => {
+const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly = false }: TimeSheetProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [currentDate, setCurrentDate] = useState<Date>(
     parse(firstWeek, 'yyyy-MM-dd', new Date())
@@ -48,10 +39,10 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, readOnly = false }
     return initialWeek?.hours || 40;
   });
   
-  const [availableClients, setAvailableClients] = useState<string[]>(DEFAULT_AVAILABLE_CLIENTS);
+  const availableClients = clients.filter(client => !client.hidden).map(client => client.name);
   const [availableMediaTypes, setAvailableMediaTypes] = useState<string[]>(DEFAULT_AVAILABLE_MEDIA_TYPES);
   
-  const [selectedClients, setSelectedClients] = useState<string[]>(DEFAULT_AVAILABLE_CLIENTS);
+  const [selectedClients, setSelectedClients] = useState<string[]>(availableClients);
   const [selectedMediaTypes, setSelectedMediaTypes] = useState<string[]>(DEFAULT_AVAILABLE_MEDIA_TYPES);
   
   const [timeEntries, setTimeEntries] = useState<Record<string, TimeSheetData>>({});
@@ -59,7 +50,6 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, readOnly = false }
   const [weekStatuses, setWeekStatuses] = useState<Record<string, TimeSheetStatus>>({});
   const { toast } = useToast();
 
-  // Filter weeks that are on or after the user's first week
   const getUserWeeks = () => {
     const firstWeekDate = parse(firstWeek, 'yyyy-MM-dd', new Date());
     return DEFAULT_WEEKS.filter(week => {
@@ -223,8 +213,10 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, readOnly = false }
     if (userRole !== 'admin') return;
     
     if (!availableClients.includes(client)) {
-      setAvailableClients(prev => [...prev, client]);
-      setSelectedClients(prev => [...prev, client]);
+      toast({
+        title: "Client Management Moved",
+        description: "Please add new clients from the Client Tree page",
+      });
     }
   };
 
@@ -239,11 +231,6 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, readOnly = false }
 
   const handleRemoveClient = (client: string) => {
     if (readOnly) return;
-    
-    if (userRole === 'admin') {
-      setAvailableClients(prev => prev.filter(c => c !== client));
-    }
-    
     setSelectedClients(prev => prev.filter(c => c !== client));
   };
 

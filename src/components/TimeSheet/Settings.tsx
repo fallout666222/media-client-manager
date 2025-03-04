@@ -98,33 +98,11 @@ export const Settings = ({
         <>
           <div>
             <h3 className="text-lg font-medium mb-4">Manage Clients (Admin)</h3>
-            <div className="flex gap-2 mb-4">
-              <Input
-                placeholder="Add new client"
-                value={newClient}
-                onChange={(e) => setNewClient(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleAddClient()}
-              />
-              <Button onClick={handleAddClient}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {clients.map((client) => (
-                <div
-                  key={client}
-                  className="flex items-center gap-2 bg-secondary px-3 py-1 rounded-full"
-                >
-                  <span>{client}</span>
-                  <button
-                    onClick={() => onRemoveClient(client)}
-                    className="text-muted-foreground hover:text-destructive"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
+            <div className="flex items-center mb-4">
+              <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 w-full">
+                <p className="font-bold">Client Management Moved</p>
+                <p>Client management has been moved to the dedicated Client Tree page. Please use that page to add, edit, or remove clients.</p>
+              </div>
             </div>
           </div>
 

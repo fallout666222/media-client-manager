@@ -184,7 +184,7 @@ const ClientTree: React.FC<ClientTreeProps> = ({
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Parent Client</label>
-            <Select value={newClientParent || ""} onValueChange={(value) => setNewClientParent(value || null)}>
+            <Select value={newClientParent || ""} onValueChange={(value) => setNewClientParent(value === "none" ? null : value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select parent client (optional)" />
               </SelectTrigger>

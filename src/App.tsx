@@ -308,6 +308,7 @@ const App = () => {
                         firstWeek={user.firstWeek} 
                         currentUser={user}
                         users={users}
+                        clients={clients}
                       />
                     ) : (
                       <div className="text-center p-8">
