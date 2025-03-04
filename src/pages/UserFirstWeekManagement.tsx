@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { User, CustomWeek } from "@/types/timesheet";
 import {
@@ -33,8 +33,8 @@ const UserFirstWeekManagement = ({ users, onSetFirstWeek }: UserFirstWeekManagem
   const [selectedWeeks, setSelectedWeeks] = useState<Record<string, string>>({});
   const [customWeeks, setCustomWeeks] = useState<CustomWeek[]>([]);
   
-  // Fetch custom weeks from database
-  useState(() => {
+  // Fix: Changed useState to useEffect
+  useEffect(() => {
     const fetchCustomWeeks = async () => {
       try {
         const { data } = await getCustomWeeks();
