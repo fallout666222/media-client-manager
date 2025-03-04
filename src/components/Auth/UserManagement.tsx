@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,19 +9,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { UserFormData, Department } from "@/types/timesheet";
+import { UserFormData } from "@/types/timesheet";
 
 interface UserManagementProps {
   onCreateUser: (userData: UserFormData) => void;
-  departments?: Department[];
 }
 
-export const UserManagement = ({ onCreateUser, departments = [] }: UserManagementProps) => {
-  const [formData, setFormData] = useState<UserFormData & { departmentId?: string }>({
+export const UserManagement = ({ onCreateUser }: UserManagementProps) => {
+  const [formData, setFormData] = useState<UserFormData>({
     username: "",
     password: "",
     role: "user",
-    departmentId: undefined,
   });
   const { toast } = useToast();
 
@@ -31,13 +28,13 @@ export const UserManagement = ({ onCreateUser, departments = [] }: UserManagemen
     if (!formData.username || !formData.password) {
       toast({
         title: "Error",
-        description: "Please fill in all required fields",
+        description: "Please fill in all fields",
         variant: "destructive",
       });
       return;
     }
     onCreateUser(formData);
-    setFormData({ username: "", password: "", role: "user", departmentId: undefined });
+    setFormData({ username: "", password: "", role: "user" });
     toast({
       title: "Success",
       description: "User created successfully",
@@ -84,28 +81,6 @@ export const UserManagement = ({ onCreateUser, departments = [] }: UserManagemen
             </SelectContent>
           </Select>
         </div>
-        {departments.length > 0 && (
-          <div>
-            <Select
-              value={formData.departmentId || ""}
-              onValueChange={(value) =>
-                setFormData({ ...formData, departmentId: value === "" ? undefined : value })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select department" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">No Department</SelectItem>
-                {departments.map((dept) => (
-                  <SelectItem key={dept.id} value={dept.id}>
-                    {dept.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
         <Button type="submit" className="w-full">
           Create User
         </Button>

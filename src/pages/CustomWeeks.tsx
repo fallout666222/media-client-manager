@@ -12,33 +12,29 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, ArrowLeft, Pencil } from "lucide-react";
+import { Trash2, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface CustomWeek {
   id: string;
-  name: string;
   startDate: string;
   endDate: string;
   hours: number;
 }
 
 const DEFAULT_WEEKS: CustomWeek[] = [
-  { id: "1", name: "Week 1", startDate: "2025-01-01", endDate: "2025-01-06", hours: 48 },
-  { id: "2", name: "Week 2", startDate: "2025-01-10", endDate: "2025-01-03", hours: 40 },
-  { id: "3", name: "Week 3", startDate: "2025-01-13", endDate: "2025-01-17", hours: 40 },
-  { id: "4", name: "Week 4", startDate: "2025-01-20", endDate: "2025-01-24", hours: 40 },
-  { id: "5", name: "Week 5", startDate: "2025-01-27", endDate: "2025-01-31", hours: 40 },
+  { id: "1", startDate: "2025-01-01", endDate: "2025-01-06", hours: 48 },
+  { id: "2", startDate: "2025-01-10", endDate: "2025-01-03", hours: 40 },
+  { id: "3", startDate: "2025-01-13", endDate: "2025-01-17", hours: 40 },
+  { id: "4", startDate: "2025-01-20", endDate: "2025-01-24", hours: 40 },
+  { id: "5", startDate: "2025-01-27", endDate: "2025-01-31", hours: 40 },
 ];
 
 const CustomWeeks = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [name, setName] = useState("");
   const [hours, setHours] = useState<number>(0);
   const [weeks, setWeeks] = useState<CustomWeek[]>(DEFAULT_WEEKS);
-  const [editingWeekId, setEditingWeekId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
   const { toast } = useToast();
 
   const calculateHours = (start: string, end: string) => {
@@ -79,27 +75,6 @@ const CustomWeeks = () => {
     });
   };
 
-  const startEditing = (week: CustomWeek) => {
-    setEditingWeekId(week.id);
-    setEditName(week.name);
-  };
-
-  const saveWeekName = () => {
-    if (!editingWeekId) return;
-    
-    setWeeks(prev => prev.map(week => 
-      week.id === editingWeekId ? { ...week, name: editName } : week
-    ));
-    
-    setEditingWeekId(null);
-    setEditName("");
-    
-    toast({
-      title: "Success",
-      description: "Week name updated successfully",
-    });
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -123,7 +98,6 @@ const CustomWeeks = () => {
 
     const newWeek: CustomWeek = {
       id: crypto.randomUUID(),
-      name: name || `Week ${weeks.length + 1}`,
       startDate,
       endDate,
       hours,
@@ -132,7 +106,6 @@ const CustomWeeks = () => {
     setWeeks(prev => [...prev, newWeek]);
     setStartDate("");
     setEndDate("");
-    setName("");
     setHours(0);
 
     toast({
@@ -154,21 +127,7 @@ const CustomWeeks = () => {
       </div>
       
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="space-y-2">
-            <label htmlFor="name" className="block text-sm font-medium">
-              Week Name
-            </label>
-            <Input
-              id="name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Week name"
-              className="w-full"
-            />
-          </div>
-          
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
             <label htmlFor="startDate" className="block text-sm font-medium">
               Start Date
@@ -217,7 +176,6 @@ const CustomWeeks = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Week Name</TableHead>
               <TableHead>Start Date</TableHead>
               <TableHead>End Date</TableHead>
               <TableHead>Hours</TableHead>
@@ -227,36 +185,6 @@ const CustomWeeks = () => {
           <TableBody>
             {weeks.map((week) => (
               <TableRow key={week.id}>
-                <TableCell>
-                  {editingWeekId === week.id ? (
-                    <div className="flex items-center gap-2">
-                      <Input 
-                        value={editName} 
-                        onChange={(e) => setEditName(e.target.value)}
-                        className="w-full" 
-                      />
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={saveWeekName}
-                      >
-                        Save
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      {week.name}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => startEditing(week)}
-                        className="h-6 w-6"
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  )}
-                </TableCell>
                 <TableCell>
                   {format(parse(week.startDate, "yyyy-MM-dd", new Date()), "MMM dd, yyyy")}
                 </TableCell>

@@ -18,25 +18,18 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { User, Department } from "@/types/timesheet";
+import { User } from "@/types/timesheet";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Folder } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
+import { ArrowLeft } from "lucide-react";
 
 interface UserManagerAssignmentProps {
   users: User[];
-  departments: Department[];
   onUpdateUserManager: (username: string, managerId: string | undefined) => void;
-  onUpdateUserDepartment: (username: string, departmentId: string | undefined) => void;
-  onToggleHideFromManager: (username: string, hide: boolean) => void;
 }
 
 const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
   users,
-  departments,
   onUpdateUserManager,
-  onUpdateUserDepartment,
-  onToggleHideFromManager,
 }) => {
   const { toast } = useToast();
 
@@ -46,28 +39,6 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
       title: "Manager Updated",
       description: `Manager assignment updated for ${username}`,
     });
-  };
-
-  const handleDepartmentChange = (username: string, departmentId: string | undefined) => {
-    onUpdateUserDepartment(username, departmentId);
-    toast({
-      title: "Department Updated",
-      description: `Department assignment updated for ${username}`,
-    });
-  };
-
-  const handleHideToggle = (username: string, checked: boolean) => {
-    onToggleHideFromManager(username, checked);
-    toast({
-      title: checked ? "User Hidden" : "User Visible",
-      description: `User ${username} is now ${checked ? "hidden from" : "visible to"} managers`,
-    });
-  };
-
-  const getDepartmentName = (departmentId: string | undefined) => {
-    if (!departmentId) return "None";
-    const department = departments.find(dept => dept.id === departmentId);
-    return department ? department.name : "Unknown";
   };
 
   return (
@@ -89,9 +60,7 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
             <TableRow>
               <TableHead>User</TableHead>
               <TableHead>Role</TableHead>
-              <TableHead>Department</TableHead>
               <TableHead>Manager</TableHead>
-              <TableHead>Hide from Manager</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -100,39 +69,6 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
               <TableRow key={user.username}>
                 <TableCell className="font-medium">{user.username}</TableCell>
                 <TableCell>{user.role}</TableCell>
-                <TableCell>
-                  <Select
-                    value={user.departmentId || "none"}
-                    onValueChange={(value) => {
-                      handleDepartmentChange(user.username, value === "none" ? undefined : value);
-                    }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select a department">
-                        <div className="flex items-center gap-2">
-                          <Folder className="h-4 w-4" />
-                          {getDepartmentName(user.departmentId)}
-                        </div>
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">
-                        <div className="flex items-center gap-2">
-                          <Folder className="h-4 w-4" />
-                          No Department
-                        </div>
-                      </SelectItem>
-                      {departments.map((department) => (
-                        <SelectItem key={department.id} value={department.id}>
-                          <div className="flex items-center gap-2">
-                            <Folder className="h-4 w-4" />
-                            {department.name}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
                 <TableCell>
                   <Select
                     value={user.managerId || "none"}
@@ -155,14 +91,6 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
                         ))}
                     </SelectContent>
                   </Select>
-                </TableCell>
-                <TableCell>
-                  <Checkbox 
-                    checked={user.hideFromManager || false}
-                    onCheckedChange={(checked) => {
-                      handleHideToggle(user.username, !!checked);
-                    }}
-                  />
                 </TableCell>
                 <TableCell>
                   <Button

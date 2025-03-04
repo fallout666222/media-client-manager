@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,11 +15,10 @@ import UserFirstWeekManagement from "./pages/UserFirstWeekManagement";
 import UserWeekPercentage from "./pages/UserWeekPercentage";
 import ManagerView from "./pages/ManagerView";
 import { useState } from "react";
-import { User, UserFormData, Department } from "./types/timesheet";
+import { User, UserFormData } from "./types/timesheet";
 import { Button } from "./components/ui/button";
 import { LogOut, Users, Calendar, UserCog, CalendarDays, Percent, Eye } from "lucide-react";
 import { useToast } from "./hooks/use-toast";
-import { DepartmentManagement } from "./components/Admin/DepartmentManagement";
 
 const queryClient = new QueryClient();
 
@@ -52,16 +52,9 @@ const INITIAL_USERS: User[] = [
   },
 ];
 
-const INITIAL_DEPARTMENTS: Department[] = [
-  { id: "1", name: "Marketing" },
-  { id: "2", name: "Sales" },
-  { id: "3", name: "IT" },
-];
-
 const App = () => {
   const [user, setUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>(INITIAL_USERS);
-  const [departments, setDepartments] = useState<Department[]>(INITIAL_DEPARTMENTS);
   const { toast } = useToast();
 
   const handleLogin = (user: User) => {
@@ -76,36 +69,16 @@ const App = () => {
     });
   };
 
-  const handleCreateUser = (userData: UserFormData & { departmentId?: string }) => {
+  const handleCreateUser = (userData: UserFormData) => {
     const newUser: User = {
       ...userData,
       selectedClients: [],
-      selectedMediaTypes: [],
-      departmentId: userData.departmentId
+      selectedMediaTypes: []
     };
     setUsers((prevUsers) => [...prevUsers, newUser]);
     toast({
       title: "User Created",
       description: `New ${userData.role} account created: ${userData.username}`,
-    });
-  };
-
-  const handleCreateDepartment = (department: Department) => {
-    setDepartments((prev) => [...prev, department]);
-  };
-
-  const handleDeleteDepartment = (id: string) => {
-    setDepartments((prev) => prev.filter((dept) => dept.id !== id));
-    
-    setUsers((prev) => 
-      prev.map((user) => 
-        user.departmentId === id ? { ...user, departmentId: undefined } : user
-      )
-    );
-    
-    toast({
-      title: "Department Deleted",
-      description: "Department has been removed",
     });
   };
 
@@ -132,28 +105,6 @@ const App = () => {
     );
     if (user && user.username === username) {
       setUser((prevUser) => prevUser ? { ...prevUser, managerId } : null);
-    }
-  };
-
-  const handleUpdateUserDepartment = (username: string, departmentId: string | undefined) => {
-    setUsers((prevUsers) =>
-      prevUsers.map((u) =>
-        u.username === username ? { ...u, departmentId } : u
-      )
-    );
-    if (user && user.username === username) {
-      setUser((prevUser) => prevUser ? { ...prevUser, departmentId } : null);
-    }
-  };
-
-  const handleToggleHideFromManager = (username: string, hide: boolean) => {
-    setUsers((prevUsers) =>
-      prevUsers.map((u) =>
-        u.username === username ? { ...u, hideFromManager: hide } : u
-      )
-    );
-    if (user && user.username === username) {
-      setUser((prevUser) => prevUser ? { ...prevUser, hideFromManager: hide } : null);
     }
   };
 
@@ -243,15 +194,7 @@ const App = () => {
                     )}
                     {user.role === "admin" && (
                       <div className="mt-8 space-y-8">
-                        <UserManagement 
-                          onCreateUser={handleCreateUser} 
-                          departments={departments}
-                        />
-                        <DepartmentManagement 
-                          departments={departments}
-                          onCreateDepartment={handleCreateDepartment}
-                          onDeleteDepartment={handleDeleteDepartment}
-                        />
+                        <UserManagement onCreateUser={handleCreateUser} />
                         <FirstWeekManagement 
                           onSetFirstWeek={handleSetFirstWeek}
                           users={users}
@@ -300,10 +243,7 @@ const App = () => {
                 user?.role === 'admin' ? (
                   <UserManagerAssignment 
                     users={users} 
-                    departments={departments}
-                    onUpdateUserManager={handleUpdateUserManager}
-                    onUpdateUserDepartment={handleUpdateUserDepartment}
-                    onToggleHideFromManager={handleToggleHideFromManager}
+                    onUpdateUserManager={handleUpdateUserManager} 
                   />
                 ) : (
                   <Navigate to="/" replace />
@@ -341,7 +281,7 @@ const App = () => {
                 user?.role === 'manager' ? (
                   <ManagerView 
                     currentUser={user}
-                    users={users.filter(u => !u.hideFromManager)} 
+                    users={users} 
                   />
                 ) : (
                   <Navigate to="/" replace />
