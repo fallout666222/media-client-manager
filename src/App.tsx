@@ -66,6 +66,13 @@ const INITIAL_CLIENTS: Client[] = [
   { id: "2", name: "Client B", parentId: null, hidden: false },
   { id: "3", name: "Client A-1", parentId: "1", hidden: false },
   { id: "4", name: "Client B-1", parentId: "2", hidden: true },
+  { id: "5", name: "Administrative", parentId: null, hidden: false, isDefault: true },
+  { id: "6", name: "Education/Training", parentId: null, hidden: false, isDefault: true },
+  { id: "7", name: "General Research", parentId: null, hidden: false, isDefault: true },
+  { id: "8", name: "Network Requests", parentId: null, hidden: false, isDefault: true },
+  { id: "9", name: "New Business", parentId: null, hidden: false, isDefault: true },
+  { id: "10", name: "Sick Leave", parentId: null, hidden: false, isDefault: true },
+  { id: "11", name: "VACATION", parentId: null, hidden: false, isDefault: true },
 ];
 
 const App = () => {
@@ -166,6 +173,26 @@ const App = () => {
   };
 
   const handleDeleteClient = (id: string) => {
+    const clientToDelete = clients.find(client => client.id === id);
+    if (clientToDelete?.isDefault) {
+      toast({
+        title: "Cannot Delete",
+        description: "Default clients cannot be deleted",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const hasChildren = clients.some(client => client.parentId === id);
+    if (hasChildren) {
+      toast({
+        title: "Cannot Delete",
+        description: "This client has child clients. Please reassign or delete them first.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setUsers((prevUsers) => 
       prevUsers.map((user) => {
         if (user.selectedClients && user.selectedClients.includes(id)) {
@@ -351,7 +378,7 @@ const App = () => {
               path="/view-users"
               element={
                 user?.role === 'admin' ? (
-                  <UserImpersonation users={users} />
+                  <UserImpersonation users={users} clients={clients} />
                 ) : (
                   <Navigate to="/" replace />
                 )
@@ -414,7 +441,8 @@ const App = () => {
                 user?.role === 'manager' ? (
                   <ManagerView 
                     currentUser={user}
-                    users={getVisibleUsers()} 
+                    users={getVisibleUsers()}
+                    clients={clients}
                   />
                 ) : (
                   <Navigate to="/" replace />

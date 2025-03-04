@@ -1,4 +1,3 @@
-
 export type TimeSheetStatus = 'unconfirmed' | 'under-review' | 'accepted' | 'needs-revision';
 
 export interface TimeEntry {
@@ -22,6 +21,7 @@ export interface Client {
   name: string;
   parentId: string | null;
   hidden: boolean;
+  isDefault?: boolean;
 }
 
 export interface Employee {

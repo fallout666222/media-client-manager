@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, X, ArrowLeft } from "lucide-react";
+import { Plus, X, ArrowLeft, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Table,
@@ -132,24 +132,7 @@ const ClientTree: React.FC<ClientTreeProps> = ({
   };
 
   const handleDeleteClient = (id: string) => {
-    // Check if this client has children
-    const hasChildren = clients.some(client => client.parentId === id);
-    
-    if (hasChildren) {
-      toast({
-        title: "Cannot Delete",
-        description: "This client has child clients. Please reassign or delete them first.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     onDeleteClient(id);
-    
-    toast({
-      title: "Client Deleted",
-      description: "Client has been removed",
-    });
   };
 
   const getParentName = (parentId: string | null): string => {
@@ -184,7 +167,7 @@ const ClientTree: React.FC<ClientTreeProps> = ({
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Parent Client</label>
-            <Select value={newClientParent || ""} onValueChange={(value) => setNewClientParent(value === "none" ? null : value)}>
+            <Select value={newClientParent || "none"} onValueChange={(value) => setNewClientParent(value === "none" ? null : value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select parent client (optional)" />
               </SelectTrigger>
@@ -217,12 +200,20 @@ const ClientTree: React.FC<ClientTreeProps> = ({
           </TableHeader>
           <TableBody>
             {clients.map((client) => (
-              <TableRow key={client.id}>
-                <TableCell className="font-medium">{client.name}</TableCell>
+              <TableRow key={client.id} className={client.isDefault ? "bg-muted/30" : ""}>
+                <TableCell className="font-medium">
+                  {client.name}
+                  {client.isDefault && (
+                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                      Default
+                    </span>
+                  )}
+                </TableCell>
                 <TableCell>
                   <Select 
                     value={client.parentId || "none"} 
                     onValueChange={(value) => handleUpdateParent(client.id, value === "none" ? null : value)}
+                    disabled={client.isDefault}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="None" />
@@ -255,14 +246,25 @@ const ClientTree: React.FC<ClientTreeProps> = ({
                   </div>
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleDeleteClient(client.id)}
-                    className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                  {client.isDefault ? (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      disabled
+                      className="text-muted-foreground"
+                    >
+                      <Lock className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleDeleteClient(client.id)}
+                      className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

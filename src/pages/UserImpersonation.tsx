@@ -1,87 +1,98 @@
-
-import { useState } from "react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import TimeSheet from "./TimeSheet";
-import { User } from "@/types/timesheet";
-import { useToast } from "@/hooks/use-toast";
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { ArrowLeft } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { User } from '@/types/timesheet';
+import TimeSheet from './TimeSheet';
 
 interface UserImpersonationProps {
   users: User[];
+  clients: any[];
 }
 
-const UserImpersonation = ({ users }: UserImpersonationProps) => {
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+export const UserImpersonation: React.FC<UserImpersonationProps> = ({ users, clients }) => {
+  const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const { toast } = useToast();
-  
-  // Find the admin user to use as the current user for viewing
-  const adminUser = users.find(user => user.role === 'admin') || users[0];
-  
-  const handleUserSelect = (username: string) => {
-    const user = users.find(u => u.username === username);
-    if (user) {
-      setSelectedUser(user);
-      toast({
-        title: "Viewing User Timesheet",
-        description: `Now viewing timesheet for ${username}`,
-      });
+
+  const renderUserTimesheet = (user: User) => {
+    if (!user.firstWeek) {
+      return (
+        <div className="p-4 border rounded-lg bg-gray-50">
+          <p className="text-center text-gray-500">
+            This user does not have a first week set
+          </p>
+        </div>
+      );
     }
+    
+    return (
+      <TimeSheet
+        userRole={user.role}
+        firstWeek={user.firstWeek}
+        currentUser={user}
+        users={users}
+        readOnly={true}
+        clients={clients}
+      />
+    );
   };
 
   return (
-    <div className="container mx-auto p-4 space-y-6 pt-16">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">View User Timesheets</h1>
+    <div className="container mx-auto p-4 pt-16">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">User Impersonation</h1>
         <Link to="/">
-          <Button variant="outline" size="sm" className="flex items-center gap-2 z-10">
+          <Button variant="outline" size="sm" className="flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
             Back to Dashboard
           </Button>
         </Link>
       </div>
-      
-      <div className="w-full max-w-md">
-        <Select onValueChange={handleUserSelect}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select a user to view" />
-          </SelectTrigger>
-          <SelectContent>
-            {users
-              .filter(user => user.role !== 'admin')
-              .map((user) => (
-                <SelectItem key={user.username} value={user.username}>
-                  {user.username} ({user.role})
-                </SelectItem>
-              ))}
-          </SelectContent>
-        </Select>
+
+      <div className="mb-8">
+        <h2 className="text-lg font-medium mb-4">Select User</h2>
+        <Table>
+          <TableCaption>Select a user to impersonate and view their timesheet</TableCaption>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Username</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {users.map((user) => (
+              <TableRow key={user.username}>
+                <TableCell className="font-medium">{user.username}</TableCell>
+                <TableCell>{user.role}</TableCell>
+                <TableCell>
+                  <Button onClick={() => setSelectedUser(user.id || null)} variant="outline" size="sm">
+                    View Timesheet
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
 
-      {selectedUser && selectedUser.firstWeek ? (
-        <div className="mt-6">
-          <TimeSheet 
-            userRole={selectedUser.role} 
-            firstWeek={selectedUser.firstWeek}
-            currentUser={adminUser} // Pass the admin user as the current user
-            users={users} // Pass all users
-            readOnly={true}
-          />
-        </div>
-      ) : selectedUser && (
-        <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-          <p>This user hasn't had their first week set yet.</p>
+      {selectedUser && (
+        <div className="mt-8">
+          <h2 className="text-lg font-medium mb-4">Timesheet</h2>
+          {users.filter(user => user.id === selectedUser).map(renderUserTimesheet)}
         </div>
       )}
     </div>
   );
 };
-
-export default UserImpersonation;

@@ -1,5 +1,8 @@
-
-import { useState } from "react";
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import {
   Select,
   SelectContent,
@@ -8,85 +11,97 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import TimeSheet from "./TimeSheet";
-import { User } from "@/types/timesheet";
-import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { User } from '@/types/timesheet';
 
 interface ManagerViewProps {
   currentUser: User;
   users: User[];
+  clients: any[];
 }
 
-const ManagerView = ({ currentUser, users }: ManagerViewProps) => {
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+const ManagerView: React.FC<ManagerViewProps> = ({ currentUser, users, clients }) => {
+  const [teamMembers, setTeamMembers] = useState<User[]>([]);
+  const [selectedTeamMember, setSelectedTeamMember] = useState<string | null>(null);
   const { toast } = useToast();
-  
-  // Get users who have the current manager as their manager
-  const managedUsers = users.filter(user => user.managerId === currentUser.username);
-  
-  const handleUserSelect = (username: string) => {
-    const user = managedUsers.find(u => u.username === username);
-    if (user) {
-      setSelectedUser(user);
-      toast({
-        title: "Viewing User Timesheet",
-        description: `Now viewing timesheet for ${username}`,
-      });
+
+  useEffect(() => {
+    // Filter users who report to the current manager
+    const filteredTeamMembers = users.filter(user => user.managerId === currentUser.id);
+    setTeamMembers(filteredTeamMembers);
+  }, [currentUser, users]);
+
+  const handleTeamMemberSelect = (userId: string) => {
+    setSelectedTeamMember(userId);
+  };
+
+  const renderTeamMemberTimesheet = () => {
+    if (!selectedTeamMember) {
+      return null;
     }
+    
+    const teamMember = users.find(u => u.id === selectedTeamMember);
+    if (!teamMember || !teamMember.firstWeek) {
+      return (
+        <div className="p-4 border rounded-lg bg-gray-50">
+          <p className="text-center text-gray-500">
+            This user does not have a first week set
+          </p>
+        </div>
+      );
+    }
+    
+    return (
+      <TimeSheet
+        userRole={teamMember.role}
+        firstWeek={teamMember.firstWeek}
+        currentUser={teamMember}
+        users={users}
+        readOnly={true}
+        clients={clients}
+      />
+    );
   };
 
   return (
-    <div className="container mx-auto p-4 space-y-6 pt-16">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">View Team Timesheets</h1>
+    <div className="container mx-auto p-4 pt-16">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Team Timesheets</h1>
         <Link to="/">
-          <Button variant="outline" size="sm" className="flex items-center gap-2 z-10">
+          <Button variant="outline" size="sm" className="flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
             Back to Dashboard
           </Button>
         </Link>
       </div>
-      
-      {managedUsers.length > 0 ? (
-        <>
-          <div className="w-full max-w-md">
-            <Select onValueChange={handleUserSelect}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a team member to view" />
-              </SelectTrigger>
-              <SelectContent>
-                {managedUsers.map((user) => (
-                  <SelectItem key={user.username} value={user.username}>
-                    {user.username} ({user.role})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
 
-          {selectedUser && selectedUser.firstWeek ? (
-            <div className="mt-6">
-              <TimeSheet 
-                userRole={selectedUser.role} 
-                firstWeek={selectedUser.firstWeek}
-                currentUser={currentUser}
-                users={users}
-                readOnly={true}
-              />
-            </div>
-          ) : selectedUser && (
-            <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-              <p>This user hasn't had their first week set yet.</p>
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-          <p>You currently don't have any team members assigned to you.</p>
-        </div>
-      )}
+      <div className="mb-8">
+        <h2 className="text-lg font-medium mb-4">Select Team Member</h2>
+        <Select onValueChange={handleTeamMemberSelect}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select team member" />
+          </SelectTrigger>
+          <SelectContent>
+            {teamMembers.map((member) => (
+              <SelectItem key={member.id} value={member.id}>
+                {member.username}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div>
+        {selectedTeamMember ? (
+          <>
+            <h2 className="text-lg font-medium mb-4">
+              Timesheet for {users.find(u => u.id === selectedTeamMember)?.username}
+            </h2>
+            {renderTeamMemberTimesheet()}
+          </>
+        ) : (
+          <p>Select a team member to view their timesheet.</p>
+        )}
+      </div>
     </div>
   );
 };
