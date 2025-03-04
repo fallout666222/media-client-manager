@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,14 +37,17 @@ export const Login = ({ onLogin, users }: LoginProps) => {
       if (data) {
         console.log('Authentication successful:', data);
         
+        // Properly cast the role type to satisfy TypeScript
+        const userRole = data.type as 'admin' | 'user' | 'manager';
+        
         // Create a properly formatted User object
         const appUser: User = {
           id: data.id,
           username: data.login,
           name: data.name,
-          role: data.type,
+          role: userRole,
           password: data.password,
-          firstWeek: data.type === 'admin' ? '2024-01-01' : data.first_week, // Set default firstWeek for admin
+          firstWeek: userRole === 'admin' ? '2024-01-01' : data.first_week, // Set default firstWeek for admin
           login: data.login,
           type: data.type,
           email: data.email,
