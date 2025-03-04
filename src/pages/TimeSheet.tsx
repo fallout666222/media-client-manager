@@ -7,7 +7,21 @@ import { TimeSheetControls } from '@/components/TimeSheet/TimeSheetControls';
 import { TimeSheetContent } from '@/components/TimeSheet/TimeSheetContent';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { TeamMemberSelector } from '@/components/TeamMemberSelector';
-import { updateWeekHours, updateWeekStatus, getWeekHours, getCustomWeeks } from '@/integrations/supabase/database';
+import { 
+  updateWeekHours, 
+  updateWeekStatus, 
+  getWeekHours, 
+  getCustomWeeks, 
+  getClients, 
+  getMediaTypes, 
+  getWeekStatusNames,
+  getUserVisibleClients,
+  getUserVisibleTypes,
+  addUserVisibleClient,
+  addUserVisibleType,
+  removeUserVisibleClient,
+  removeUserVisibleType
+} from '@/integrations/supabase/database';
 
 const DEFAULT_WEEKS = [
   { id: "1", startDate: "2025-01-01", endDate: "2025-01-06", hours: 48 },
@@ -31,25 +45,17 @@ interface TimeSheetProps {
 const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly = false }: TimeSheetProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [customWeeks, setCustomWeeks] = useState([]);
-  
-  // Initialize currentDate based on firstWeek or firstCustomWeekId
   const [currentDate, setCurrentDate] = useState<Date>(() => {
-    // If user is admin and has no first week specified, use default
     if (userRole === 'admin' && (!firstWeek || firstWeek === 'null') && !currentUser.firstCustomWeekId) {
       return parse("2024-01-01", 'yyyy-MM-dd', new Date());
     }
-    
-    // If user has firstCustomWeekId, we need to get the corresponding week's start date
     if (currentUser.firstCustomWeekId) {
-      // We'll fetch the custom week in useEffect and update currentDate there
-      return new Date(); // Temporary value, will be updated
+      return new Date();
     }
-    
-    // Otherwise, use the firstWeek date string
     return parse(firstWeek, 'yyyy-MM-dd', new Date());
   });
-  
-  // Fetch custom weeks and update currentDate if firstCustomWeekId is set
+  const [currentCustomWeek, setCurrentCustomWeek] = useState<any>(null);
+
   useEffect(() => {
     const fetchCustomWeeks = async () => {
       try {
@@ -57,11 +63,11 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
         if (data) {
           setCustomWeeks(data);
           
-          // If user has firstCustomWeekId, find the corresponding week and use its start date
           if (currentUser.firstCustomWeekId) {
             const userFirstWeek = data.find(week => week.id === currentUser.firstCustomWeekId);
             if (userFirstWeek) {
               setCurrentDate(parse(userFirstWeek.period_from, 'yyyy-MM-dd', new Date()));
+              setCurrentCustomWeek(userFirstWeek);
             }
           }
         }
@@ -72,20 +78,44 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
     
     fetchCustomWeeks();
   }, [currentUser.firstCustomWeekId]);
-  
+
+  useEffect(() => {
+    const fetchUserVisibles = async () => {
+      if (currentUser.id) {
+        try {
+          const { data: visibleClientsData } = await getUserVisibleClients(currentUser.id);
+          if (visibleClientsData) {
+            const clientNames = visibleClientsData.map(vc => vc.client.name);
+            setSelectedClients(clientNames);
+          }
+          
+          const { data: visibleTypesData } = await getUserVisibleTypes(currentUser.id);
+          if (visibleTypesData) {
+            const typeNames = visibleTypesData.map(vt => vt.type.name);
+            setSelectedMediaTypes(typeNames);
+          }
+        } catch (error) {
+          console.error('Error fetching user visibles:', error);
+        }
+      }
+    };
+    
+    fetchUserVisibles();
+  }, [currentUser.id]);
+
   const [weekHours, setWeekHours] = useState(() => {
     const initialWeek = DEFAULT_WEEKS.find(week => 
       isSameDay(parse(week.startDate, 'yyyy-MM-dd', new Date()), parse(firstWeek, 'yyyy-MM-dd', new Date()))
     );
     return initialWeek?.hours || 40;
   });
-  
+
   const availableClients = clients.filter(client => !client.hidden).map(client => client.name);
   const [availableMediaTypes, setAvailableMediaTypes] = useState<string[]>(DEFAULT_AVAILABLE_MEDIA_TYPES);
-  
+
   const [selectedClients, setSelectedClients] = useState<string[]>(availableClients);
   const [selectedMediaTypes, setSelectedMediaTypes] = useState<string[]>(DEFAULT_AVAILABLE_MEDIA_TYPES);
-  
+
   const [timeEntries, setTimeEntries] = useState<Record<string, TimeSheetData>>({});
   const [submittedWeeks, setSubmittedWeeks] = useState<string[]>([]);
   const [weekStatuses, setWeekStatuses] = useState<Record<string, TimeSheetStatus>>({});
@@ -192,15 +222,41 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
     }));
     
     try {
-      const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
-      const week = userWeeks.find(w => format(parse(w.startDate, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === currentWeekKey);
+      const currentWeekData = currentCustomWeek || 
+        userWeeks.find(w => format(parse(w.startDate, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === currentWeekKey);
       
-      if (week && currentUser.id) {
-        const { data: statusNames } = await import('@/integrations/supabase/database').then(db => db.getWeekStatusNames());
+      if (currentWeekData && currentUser.id) {
+        const { data: statusNames } = await getWeekStatusNames();
         const underReviewStatus = statusNames?.find(status => status.name === 'under-review');
         
         if (underReviewStatus) {
-          await updateWeekStatus(currentUser.id, week.id, underReviewStatus.id);
+          await updateWeekStatus(currentUser.id, currentWeekData.id, underReviewStatus.id);
+          
+          const weekEntries = timeEntries[currentWeekKey] || {};
+          const { data: clientsData } = await getClients();
+          const { data: mediaTypesData } = await getMediaTypes();
+          
+          for (const clientName in weekEntries) {
+            const mediaEntries = weekEntries[clientName];
+            const clientObj = clientsData?.find(c => c.name === clientName);
+            
+            if (clientObj) {
+              for (const mediaTypeName in mediaEntries) {
+                const entry = mediaEntries[mediaTypeName];
+                const mediaTypeObj = mediaTypesData?.find(m => m.name === mediaTypeName);
+                
+                if (mediaTypeObj && entry.hours > 0) {
+                  await updateWeekHours(
+                    currentUser.id, 
+                    currentWeekData.id, 
+                    clientObj.id, 
+                    mediaTypeObj.id, 
+                    entry.hours
+                  );
+                }
+              }
+            }
+          }
         }
       }
       
@@ -410,6 +466,92 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
     }
   };
 
+  const handleSaveVisibleClients = async (clients: string[]) => {
+    if (!currentUser.id || readOnly) return;
+    
+    try {
+      const { data: clientsData } = await getClients();
+      if (!clientsData) return;
+      
+      const { data: currentVisible } = await getUserVisibleClients(currentUser.id);
+      
+      const clientMap = new Map(clientsData.map(c => [c.name, c.id]));
+      
+      for (const clientName of clients) {
+        const clientId = clientMap.get(clientName);
+        
+        if (clientId && !currentVisible?.some(v => v.client_id === clientId)) {
+          await addUserVisibleClient(currentUser.id, clientId);
+        }
+      }
+      
+      if (currentVisible) {
+        for (const visible of currentVisible) {
+          const client = clientsData.find(c => c.id === visible.client_id);
+          
+          if (client && !clients.includes(client.name)) {
+            await removeUserVisibleClient(visible.id);
+          }
+        }
+      }
+      
+      toast({
+        title: "Visible Clients Updated",
+        description: "Your visible clients have been updated",
+      });
+    } catch (error) {
+      console.error('Error updating visible clients:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update visible clients",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSaveVisibleMediaTypes = async (types: string[]) => {
+    if (!currentUser.id || readOnly) return;
+    
+    try {
+      const { data: mediaTypesData } = await getMediaTypes();
+      if (!mediaTypesData) return;
+      
+      const { data: currentVisible } = await getUserVisibleTypes(currentUser.id);
+      
+      const typeMap = new Map(mediaTypesData.map(t => [t.name, t.id]));
+      
+      for (const typeName of types) {
+        const typeId = typeMap.get(typeName);
+        
+        if (typeId && !currentVisible?.some(v => v.type_id === typeId)) {
+          await addUserVisibleType(currentUser.id, typeId);
+        }
+      }
+      
+      if (currentVisible) {
+        for (const visible of currentVisible) {
+          const type = mediaTypesData.find(t => t.id === visible.type_id);
+          
+          if (type && !types.includes(type.name)) {
+            await removeUserVisibleType(visible.id);
+          }
+        }
+      }
+      
+      toast({
+        title: "Visible Media Types Updated",
+        description: "Your visible media types have been updated",
+      });
+    } catch (error) {
+      console.error('Error updating visible media types:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update visible media types",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {userRole === 'manager' && (
@@ -451,11 +593,21 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
         currentDate={currentDate}
         onWeekChange={(date) => {
           setCurrentDate(date);
-          const selectedWeek = userWeeks.find(week => 
-            isSameDay(parse(week.startDate, 'yyyy-MM-dd', new Date()), date)
+          const selectedWeek = customWeeks.find(week => 
+            isSameDay(parse(week.period_from, 'yyyy-MM-dd', new Date()), date)
           );
+          
           if (selectedWeek) {
-            setWeekHours(selectedWeek.hours);
+            setWeekHours(selectedWeek.required_hours);
+            setCurrentCustomWeek(selectedWeek);
+          } else {
+            const defaultWeek = userWeeks.find(week => 
+              isSameDay(parse(week.startDate, 'yyyy-MM-dd', new Date()), date)
+            );
+            if (defaultWeek) {
+              setWeekHours(defaultWeek.hours);
+              setCurrentCustomWeek(null);
+            }
           }
         }}
         onWeekHoursChange={setWeekHours}
@@ -467,6 +619,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
         onReject={handleReject}
         readOnly={readOnly || (!isViewingOwnTimesheet && userRole !== 'manager' && userRole !== 'admin')}
         firstWeek={viewedUser.firstWeek || firstWeek}
+        weekId={currentCustomWeek?.id}
       />
 
       <TimeSheetContent
@@ -480,6 +633,8 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
         onRemoveClient={handleRemoveClient}
         onAddMediaType={handleAddMediaType}
         onRemoveMediaType={handleRemoveMediaType}
+        onSaveVisibleClients={handleSaveVisibleClients}
+        onSaveVisibleMediaTypes={handleSaveVisibleMediaTypes}
         readOnly={readOnly || !isViewingOwnTimesheet}
         weekHours={weekHours}
         userRole={userRole}

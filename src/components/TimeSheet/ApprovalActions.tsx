@@ -11,7 +11,8 @@ interface ApprovalActionsProps {
   onSubmitForReview?: () => void;
   onApprove: () => void;
   onReject: () => void;
-  disabled?: boolean; // Add disabled prop
+  disabled?: boolean;
+  weekId?: string;
 }
 
 export const ApprovalActions = ({
@@ -21,7 +22,8 @@ export const ApprovalActions = ({
   onSubmitForReview,
   onApprove,
   onReject,
-  disabled = false // Default to false
+  disabled = false,
+  weekId
 }: ApprovalActionsProps) => {
   const handleReject = () => {
     onReject();

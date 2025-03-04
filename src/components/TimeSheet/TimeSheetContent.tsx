@@ -15,6 +15,8 @@ interface TimeSheetContentProps {
   onRemoveClient: (client: string) => void;
   onAddMediaType: (type: string) => void;
   onRemoveMediaType: (type: string) => void;
+  onSaveVisibleClients?: (clients: string[]) => void;
+  onSaveVisibleMediaTypes?: (types: string[]) => void;
   readOnly?: boolean;
   weekHours?: number;
   userRole: 'admin' | 'user' | 'manager';
@@ -38,6 +40,8 @@ export const TimeSheetContent = ({
   onRemoveClient,
   onAddMediaType,
   onRemoveMediaType,
+  onSaveVisibleClients,
+  onSaveVisibleMediaTypes,
   readOnly = false,
   weekHours = 40,
   userRole,
@@ -93,16 +97,38 @@ export const TimeSheetContent = ({
         clients={clients}
         mediaTypes={mediaTypes}
         onAddClient={onAddClient}
-        onRemoveClient={onRemoveClient}
+        onRemoveClient={(client) => {
+          onRemoveClient(client);
+          if (onSaveVisibleClients) {
+            const newClients = selectedClients.filter(c => c !== client);
+            onSaveVisibleClients(newClients);
+          }
+        }}
         onAddMediaType={onAddMediaType}
-        onRemoveMediaType={onRemoveMediaType}
+        onRemoveMediaType={(type) => {
+          onRemoveMediaType(type);
+          if (onSaveVisibleMediaTypes) {
+            const newTypes = selectedMediaTypes.filter(t => t !== type);
+            onSaveVisibleMediaTypes(newTypes);
+          }
+        }}
         userRole={userRole}
         availableClients={availableClients}
         availableMediaTypes={availableMediaTypes}
         selectedClients={selectedClients}
         selectedMediaTypes={selectedMediaTypes}
-        onSelectClient={onSelectClient}
-        onSelectMediaType={onSelectMediaType}
+        onSelectClient={(client) => {
+          onSelectClient(client);
+          if (onSaveVisibleClients) {
+            onSaveVisibleClients([...selectedClients, client]);
+          }
+        }}
+        onSelectMediaType={(type) => {
+          onSelectMediaType(type);
+          if (onSaveVisibleMediaTypes) {
+            onSaveVisibleMediaTypes([...selectedMediaTypes, type]);
+          }
+        }}
       />
     );
   }
