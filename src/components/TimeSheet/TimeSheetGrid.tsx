@@ -3,6 +3,7 @@ import React from 'react';
 import { Input } from "@/components/ui/input";
 import { TimeEntry, TimeSheetStatus } from '@/types/timesheet';
 import { useToast } from "@/hooks/use-toast";
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 
 interface TimeSheetGridProps {
   clients: string[];
@@ -38,30 +39,30 @@ export const TimeSheetGrid = ({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-collapse">
-        <thead>
-          <tr>
-            <th className="timesheet-header text-left">Client/Category</th>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="text-left">Client/Category</TableHead>
             {mediaTypes.map((type) => (
-              <th key={type} className="timesheet-header">
+              <TableHead key={type} className="text-center">
                 {type}
-              </th>
+              </TableHead>
             ))}
-            <th className="timesheet-header">Total</th>
-          </tr>
-        </thead>
-        <tbody>
+            <TableHead className="text-center">Total</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {clients.map((client) => (
-            <tr key={client}>
-              <td className="timesheet-cell font-medium">{client}</td>
+            <TableRow key={client}>
+              <TableCell className="font-medium">{client}</TableCell>
               {mediaTypes.map((type) => (
-                <td key={`${client}-${type}`} className="timesheet-cell">
+                <TableCell key={`${client}-${type}`} className="p-2">
                   <Input
                     type="number"
                     min="0"
                     max={weekHours.toString()}
                     step="1"
-                    className="timesheet-input"
+                    className="text-center"
                     value={timeEntries[client]?.[type]?.hours || ''}
                     onChange={(e) => {
                       const hours = parseInt(e.target.value) || 0;
@@ -80,17 +81,30 @@ export const TimeSheetGrid = ({
                     }}
                     disabled={isFormDisabled}
                   />
-                </td>
+                </TableCell>
               ))}
-              <td className="timesheet-cell font-medium">
+              <TableCell className="font-medium text-center">
                 {mediaTypes.reduce((sum, type) => 
                   sum + (timeEntries[client]?.[type]?.hours || 0), 0
                 )}
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+          <TableRow className="bg-muted/20">
+            <TableCell className="font-bold">Total</TableCell>
+            {mediaTypes.map((type) => (
+              <TableCell key={`total-${type}`} className="font-bold text-center">
+                {clients.reduce((sum, client) => 
+                  sum + (timeEntries[client]?.[type]?.hours || 0), 0
+                )}
+              </TableCell>
+            ))}
+            <TableCell className="font-bold text-center">
+              {calculateTotalHours()}
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
     </div>
   );
 };

@@ -1,8 +1,8 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { TimeSheetGrid } from './TimeSheetGrid';
 import { Settings } from './Settings';
-import { TimeEntry, TimeSheetStatus, User } from '@/types/timesheet';
+import { TimeEntry, TimeSheetStatus } from '@/types/timesheet';
 
 interface TimeSheetContentProps {
   showSettings: boolean;
@@ -49,6 +49,44 @@ export const TimeSheetContent = ({
   onSelectMediaType,
   isViewingOwnTimesheet,
 }: TimeSheetContentProps) => {
+  // Get all clients and media types that have entries with hours > 0
+  const clientsWithEntries = useMemo(() => {
+    const result = new Set<string>();
+    
+    Object.entries(timeEntries).forEach(([client, mediaEntries]) => {
+      Object.values(mediaEntries).forEach(entry => {
+        if (entry.hours && entry.hours > 0) {
+          result.add(client);
+        }
+      });
+    });
+    
+    return Array.from(result);
+  }, [timeEntries]);
+  
+  const mediaTypesWithEntries = useMemo(() => {
+    const result = new Set<string>();
+    
+    Object.entries(timeEntries).forEach(([_, mediaEntries]) => {
+      Object.entries(mediaEntries).forEach(([mediaType, entry]) => {
+        if (entry.hours && entry.hours > 0) {
+          result.add(mediaType);
+        }
+      });
+    });
+    
+    return Array.from(result);
+  }, [timeEntries]);
+  
+  // Combine selected clients/media types with those that have entries
+  const effectiveClients = useMemo(() => {
+    return [...new Set([...selectedClients, ...clientsWithEntries])];
+  }, [selectedClients, clientsWithEntries]);
+  
+  const effectiveMediaTypes = useMemo(() => {
+    return [...new Set([...selectedMediaTypes, ...mediaTypesWithEntries])];
+  }, [selectedMediaTypes, mediaTypesWithEntries]);
+
   if (showSettings) {
     return (
       <Settings
@@ -71,8 +109,8 @@ export const TimeSheetContent = ({
 
   return (
     <TimeSheetGrid
-      clients={selectedClients}
-      mediaTypes={selectedMediaTypes}
+      clients={effectiveClients}
+      mediaTypes={effectiveMediaTypes}
       timeEntries={timeEntries}
       onTimeUpdate={onTimeUpdate}
       status={status}

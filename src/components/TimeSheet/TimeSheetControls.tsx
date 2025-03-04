@@ -32,7 +32,7 @@ export const TimeSheetControls = ({
   firstWeek = "2025-01-01"
 }: TimeSheetControlsProps) => {
   return (
-    <div className="mb-4">
+    <div className="mb-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
         <WeekPicker 
           currentDate={currentDate} 
