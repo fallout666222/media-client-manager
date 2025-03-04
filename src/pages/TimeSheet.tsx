@@ -7,7 +7,7 @@ import { TimeSheetControls } from '@/components/TimeSheet/TimeSheetControls';
 import { TimeSheetContent } from '@/components/TimeSheet/TimeSheetContent';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { TeamMemberSelector } from '@/components/TeamMemberSelector';
-import { updateWeekHours, updateWeekStatus, getWeekHours } from '@/integrations/supabase/database';
+import { updateWeekHours, updateWeekStatus, getWeekHours, getCustomWeeks } from '@/integrations/supabase/database';
 
 const DEFAULT_WEEKS = [
   { id: "1", startDate: "2025-01-01", endDate: "2025-01-06", hours: 48 },
@@ -30,12 +30,49 @@ interface TimeSheetProps {
 
 const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly = false }: TimeSheetProps) => {
   const [showSettings, setShowSettings] = useState(false);
+  const [customWeeks, setCustomWeeks] = useState([]);
+  
+  // Initialize currentDate based on firstWeek or firstCustomWeekId
   const [currentDate, setCurrentDate] = useState<Date>(() => {
-    if (userRole === 'admin' && (!firstWeek || firstWeek === 'null')) {
+    // If user is admin and has no first week specified, use default
+    if (userRole === 'admin' && (!firstWeek || firstWeek === 'null') && !currentUser.firstCustomWeekId) {
       return parse("2024-01-01", 'yyyy-MM-dd', new Date());
     }
+    
+    // If user has firstCustomWeekId, we need to get the corresponding week's start date
+    if (currentUser.firstCustomWeekId) {
+      // We'll fetch the custom week in useEffect and update currentDate there
+      return new Date(); // Temporary value, will be updated
+    }
+    
+    // Otherwise, use the firstWeek date string
     return parse(firstWeek, 'yyyy-MM-dd', new Date());
   });
+  
+  // Fetch custom weeks and update currentDate if firstCustomWeekId is set
+  useEffect(() => {
+    const fetchCustomWeeks = async () => {
+      try {
+        const { data } = await getCustomWeeks();
+        if (data) {
+          setCustomWeeks(data);
+          
+          // If user has firstCustomWeekId, find the corresponding week and use its start date
+          if (currentUser.firstCustomWeekId) {
+            const userFirstWeek = data.find(week => week.id === currentUser.firstCustomWeekId);
+            if (userFirstWeek) {
+              setCurrentDate(parse(userFirstWeek.period_from, 'yyyy-MM-dd', new Date()));
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching custom weeks:', error);
+      }
+    };
+    
+    fetchCustomWeeks();
+  }, [currentUser.firstCustomWeekId]);
+  
   const [weekHours, setWeekHours] = useState(() => {
     const initialWeek = DEFAULT_WEEKS.find(week => 
       isSameDay(parse(week.startDate, 'yyyy-MM-dd', new Date()), parse(firstWeek, 'yyyy-MM-dd', new Date()))
