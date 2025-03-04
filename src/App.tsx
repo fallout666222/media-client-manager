@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,7 +8,7 @@ import TimeSheet from "./pages/TimeSheet";
 import { Login } from "./components/Auth/Login";
 import { UserManagement } from "./components/Auth/UserManagement";
 import { FirstWeekManagement } from "./components/Auth/FirstWeekManagement";
-import { DepartmentManagement } from "./components/Admin/DepartmentManagement";
+import DepartmentManagement from "./components/Admin/DepartmentManagement";
 import UserImpersonation from "./pages/UserImpersonation";
 import CustomWeeks from "./pages/CustomWeeks";
 import UserManagerAssignment from "./pages/UserManagerAssignment";
@@ -20,6 +21,7 @@ import { User, UserFormData, Department, Client } from "./types/timesheet";
 import { Button } from "./components/ui/button";
 import { LogOut, Users, Calendar, UserCog, CalendarDays, Percent, Eye, Building, ArrowLeft, TreeDeciduous } from "lucide-react";
 import { useToast } from "./hooks/use-toast";
+import * as db from "./integrations/supabase/database";
 
 const queryClient = new QueryClient();
 
@@ -31,7 +33,10 @@ const INITIAL_USERS: User[] = [
     role: "admin", 
     firstWeek: "2024-01-01",
     selectedClients: ["Client A", "Client B"],
-    selectedMediaTypes: ["TV", "Digital"]
+    selectedMediaTypes: ["TV", "Digital"],
+    login: "admin",
+    name: "Administrator",
+    type: "admin"
   },
   { 
     id: "2",
@@ -41,7 +46,10 @@ const INITIAL_USERS: User[] = [
     managerId: "3",
     selectedClients: ["Client A"],
     selectedMediaTypes: ["TV"],
-    departmentId: "1" 
+    departmentId: "1",
+    login: "user",
+    name: "Regular User",
+    type: "user"
   },
   { 
     id: "3",
@@ -51,7 +59,10 @@ const INITIAL_USERS: User[] = [
     firstWeek: "2024-01-01",
     selectedClients: ["Client B"],
     selectedMediaTypes: ["Digital"],
-    departmentId: "2"
+    departmentId: "2",
+    login: "manager",
+    name: "Team Manager",
+    type: "manager"
   },
 ];
 
@@ -82,11 +93,9 @@ const App = () => {
   const [clients, setClients] = useState<Client[]>(INITIAL_CLIENTS);
   const { toast } = useToast();
 
-  const { authenticateUser, getUsers, getDepartments, getClients, createUser, updateUser, getUserById, getCustomWeeks } = async () => await import('@/integrations/supabase/database');
-
   const handleLogin = async (userData: User) => {
     try {
-      const { data, error } = await getUserById(userData.id || '');
+      const { data, error } = await db.getUserById(userData.id || '');
       
       if (error) throw error;
       
@@ -106,19 +115,19 @@ const App = () => {
 
   const fetchInitialData = async () => {
     try {
-      const { data: usersData, error: usersError } = await getUsers();
+      const { data: usersData, error: usersError } = await db.getUsers();
       if (usersError) throw usersError;
       setUsers(usersData || []);
       
-      const { data: departmentsData, error: departmentsError } = await getDepartments();
+      const { data: departmentsData, error: departmentsError } = await db.getDepartments();
       if (departmentsError) throw departmentsError;
       setDepartments(departmentsData || []);
       
-      const { data: clientsData, error: clientsError } = await getClients();
+      const { data: clientsData, error: clientsError } = await db.getClients();
       if (clientsError) throw clientsError;
       setClients(clientsData || []);
       
-      const { data: weeksData, error: weeksError } = await getCustomWeeks();
+      const { data: weeksData, error: weeksError } = await db.getCustomWeeks();
       if (weeksError) throw weeksError;
     } catch (error) {
       console.error('Error fetching initial data:', error);
@@ -134,12 +143,14 @@ const App = () => {
     try {
       const newUser = {
         ...userData,
-        name: userData.username,
+        name: userData.username || userData.name,
+        login: userData.username || userData.login,
+        type: userData.role || userData.type,
         selectedClients: [],
         selectedMediaTypes: []
       };
       
-      const { data, error } = await createUser(newUser);
+      const { data, error } = await db.createUser(newUser);
       
       if (error) throw error;
       

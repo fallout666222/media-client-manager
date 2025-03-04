@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,7 +56,6 @@ const DepartmentManagement: React.FC<DepartmentManagementProps> = ({ departments
       if (data) {
         // Add to local state
         onAddDepartment({
-          id: data.id,
           name: data.name,
           description: data.description
         });

@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parse, format, isAfter, isBefore, addWeeks, startOfWeek, isEqual, isSameDay } from 'date-fns';
-import { TimeSheetStatus, TimeSheetData, User, Client } from '@/types/timesheet';
+import { TimeSheetStatus, TimeSheetData, User, Client, TimeEntry } from '@/types/timesheet';
 import { TimeSheetHeader } from '@/components/TimeSheet/TimeSheetHeader';
 import { TimeSheetControls } from '@/components/TimeSheet/TimeSheetControls';
 import { TimeSheetContent } from '@/components/TimeSheet/TimeSheetContent';
@@ -324,8 +325,8 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
     
     try {
       if (viewedUser.id) {
-        const weekKey = format(currentDate, 'yyyy-MM-dd');
-        const week = userWeeks.find(w => format(parse(w.startDate, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === weekKey);
+        const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
+        const week = userWeeks.find(w => format(parse(w.startDate, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === currentWeekKey);
         
         if (week) {
           const { data: clientsData } = await import('@/integrations/supabase/database').then(db => db.getClients());
@@ -340,12 +341,13 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
         }
       }
       
+      const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
       setTimeEntries(prev => ({
         ...prev,
-        [weekKey]: {
-          ...prev[weekKey],
+        [currentWeekKey]: {
+          ...prev[currentWeekKey],
           [client]: {
-            ...prev[weekKey]?.[client],
+            ...prev[currentWeekKey]?.[client],
             [mediaType]: { hours, status: getCurrentWeekStatus() }
           }
         }

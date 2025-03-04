@@ -35,7 +35,25 @@ export const Login = ({ onLogin, users }: LoginProps) => {
       }
       
       if (data) {
-        onLogin(data);
+        const appUser: User = {
+          id: data.id,
+          username: data.login,
+          name: data.name,
+          role: data.type as 'admin' | 'user' | 'manager',
+          password: data.password,
+          firstWeek: data.first_week,
+          departmentId: data.department_id,
+          login: data.login,
+          type: data.type,
+          email: data.email,
+          job_position: data.job_position,
+          first_week: data.first_week,
+          description: data.description,
+          department_id: data.department_id,
+          deletion_mark: data.deletion_mark
+        };
+        
+        onLogin(appUser);
         toast({
           title: "Welcome back!",
           description: `You are now logged in as ${data.name}`,
@@ -89,8 +107,8 @@ export const Login = ({ onLogin, users }: LoginProps) => {
               />
             </div>
           </div>
-          <Button type="submit" className="w-full">
-            Sign in
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Signing in..." : "Sign in"}
           </Button>
         </form>
       </div>

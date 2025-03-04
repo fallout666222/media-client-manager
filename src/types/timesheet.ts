@@ -1,3 +1,4 @@
+
 export type TimeSheetStatus = 'unconfirmed' | 'under-review' | 'accepted' | 'needs-revision';
 
 export interface TimeEntry {
@@ -14,14 +15,19 @@ export interface TimeSheetData {
 export interface Department {
   id: string;
   name: string;
+  description?: string;
 }
 
 export interface Client {
   id: string;
   name: string;
-  parentId: string | null;
-  hidden: boolean;
+  parentId?: string | null;
+  hidden?: boolean;
   isDefault?: boolean;
+  client_id?: string;
+  ts_code?: string;
+  description?: string;
+  deletion_mark?: boolean;
 }
 
 export interface Employee {
@@ -32,22 +38,36 @@ export interface Employee {
 
 export interface User {
   id?: string;
-  username: string;
-  password: string;
-  role: 'admin' | 'user' | 'manager';
+  username?: string;
+  password?: string;
+  role?: 'admin' | 'user' | 'manager';
   firstWeek?: string;
   managerId?: string;
   selectedClients?: string[];
   selectedMediaTypes?: string[];
   weekPercentages?: { weekId: string; percentage: number }[];
   departmentId?: string;
-  hidden?: boolean; // Flag to hide user from manager views
+  hidden?: boolean;
+  
+  // Database fields
+  name?: string;
+  type?: string;
+  email?: string;
+  job_position?: string;
+  first_week?: string;
+  description?: string;
+  login?: string;
+  department_id?: string;
+  deletion_mark?: boolean;
 }
 
 export interface UserFormData {
   username: string;
   password: string;
   role: 'admin' | 'user' | 'manager';
+  name?: string;
+  login?: string;
+  type?: string;
 }
 
 export interface WeekPercentage {
@@ -59,7 +79,10 @@ export interface WeekPercentage {
 export interface CustomWeek {
   id: string;
   name: string;
-  startDate: string;
-  endDate: string;
-  hours: number;
+  startDate?: string;
+  endDate?: string;
+  hours?: number;
+  period_from?: string;
+  period_to?: string;
+  required_hours?: number;
 }
