@@ -11,11 +11,32 @@ export const createCustomWeek = async (week: { name: string, period_from: string
 
 // Users
 export const getUsers = async () => {
-  return await supabase.from('users').select(`
-    *,
-    department:departments(name),
-    manager:users!manager_id(id, name, login)
-  `).eq('deletion_mark', false);
+  const { data: users, error } = await supabase.from('users')
+    .select(`
+      *,
+      department:departments(name)
+    `)
+    .eq('deletion_mark', false);
+  
+  if (error) throw error;
+  
+  if (users && users.length > 0) {
+    for (const user of users) {
+      if (user.manager_id) {
+        const { data: manager, error: managerError } = await supabase
+          .from('users')
+          .select('id, name, login, type')
+          .eq('id', user.manager_id)
+          .single();
+        
+        if (!managerError && manager) {
+          user.manager = manager;
+        }
+      }
+    }
+  }
+  
+  return { data: users, error: null };
 };
 
 export const getUserById = async (id: string) => {
@@ -102,7 +123,6 @@ export const getWeekStatuses = async (userId: string) => {
 };
 
 export const updateWeekStatus = async (userId: string, weekId: string, statusId: string) => {
-  // Check if status already exists
   const { data } = await supabase.from('week_statuses')
     .select('*')
     .eq('user_id', userId)
@@ -132,7 +152,6 @@ export const getWeekPercentages = async (userId: string) => {
 };
 
 export const updateWeekPercentage = async (userId: string, weekId: string, percentage: number) => {
-  // Check if percentage already exists
   const { data } = await supabase.from('week_percentages')
     .select('*')
     .eq('user_id', userId)
@@ -169,7 +188,6 @@ export const updateWeekHours = async (
   mediaTypeId: string, 
   hours: number
 ) => {
-  // Check if hours entry already exists
   const { data } = await supabase.from('week_hours')
     .select('*')
     .eq('user_id', userId)

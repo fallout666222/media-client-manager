@@ -22,7 +22,13 @@ import { User, Department } from "@/types/timesheet";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { getUsers, getDepartments, updateUser, getManagers } from "@/integrations/supabase/database";
+import { 
+  getUsers, 
+  getDepartments, 
+  updateUser, 
+  getManagers 
+} from "@/integrations/supabase/database";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 interface UserManagerAssignmentProps {
   onUpdateUserManager: (username: string, managerId: string | undefined) => void;
@@ -40,13 +46,15 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
   const [managers, setManagers] = useState<User[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
-  }, [toast]);
+  }, []);
 
   const fetchData = async () => {
     setLoading(true);
+    setError(null);
     try {
       // Fetch users from the database
       const { data: usersData, error: usersError } = await getUsers();
@@ -64,6 +72,7 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
       setDepartments(deptsData || []);
     } catch (error) {
       console.error('Error fetching data:', error);
+      setError('Failed to load data. Please try again later.');
       toast({
         title: "Error",
         description: "Failed to load data",
@@ -91,9 +100,28 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
       
       // Update the users state to reflect the changes immediately
       setUsers(prevUsers => 
-        prevUsers.map(u => 
-          u.id === user.id ? { ...u, manager_id: managerId } : u
-        )
+        prevUsers.map(u => {
+          if (u.id === user.id) {
+            const updatedUser = { ...u, manager_id: managerId };
+            
+            // If manager was selected, add manager data
+            if (managerId) {
+              const selectedManager = managers.find(m => m.id === managerId);
+              if (selectedManager) {
+                updatedUser.manager = {
+                  id: selectedManager.id,
+                  name: selectedManager.name,
+                  login: selectedManager.login
+                };
+              }
+            } else {
+              updatedUser.manager = undefined;
+            }
+            
+            return updatedUser;
+          }
+          return u;
+        })
       );
       
       toast({
@@ -134,7 +162,12 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
       setUsers(prevUsers => 
         prevUsers.map(u => 
           u.id === user.id 
-            ? { ...u, department_id: departmentId, departmentId: departmentId, departmentName: departmentName } 
+            ? { 
+                ...u, 
+                department_id: departmentId, 
+                departmentId: departmentId, 
+                department: departmentName ? { name: departmentName } : null
+              } 
             : u
         )
       );
@@ -209,93 +242,114 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
         </Link>
       </div>
       
-      <div className="rounded-md border">
-        <Table>
-          <TableCaption>Manage user and manager relationships</TableCaption>
-          <TableHeader>
-            <TableRow>
-              <TableHead>User</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Department</TableHead>
-              <TableHead>Manager</TableHead>
-              <TableHead>Hide from Manager View</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.login || user.username}</TableCell>
-                <TableCell>{user.type || user.role}</TableCell>
-                <TableCell>
-                  <Select
-                    value={user.department_id || user.departmentId || "none"}
-                    onValueChange={(value) => {
-                      handleDepartmentChange(user, value === "none" ? undefined : value);
-                    }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select a department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No Department</SelectItem>
-                      {departments.map((department) => (
-                        <SelectItem key={department.id} value={department.id}>
-                          {department.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <Select
-                    value={user.manager_id || user.managerId || "none"}
-                    onValueChange={(value) => {
-                      handleManagerChange(user, value === "none" ? undefined : value);
-                    }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select a manager" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No Manager</SelectItem>
-                      {/* Only allow users with manager role or the user themselves (self-managed) */}
-                      <SelectItem value={user.id}>Self-Managed</SelectItem>
-                      {managers
-                        .filter((manager) => manager.id !== user.id)
-                        .map((manager) => (
-                          <SelectItem key={manager.id} value={manager.id}>
-                            {manager.login || manager.username} ({manager.type || manager.role})
+      {error && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="mt-2" 
+            onClick={fetchData}
+          >
+            Try Again
+          </Button>
+        </Alert>
+      )}
+      
+      {users.length === 0 && !loading && !error ? (
+        <div className="text-center p-10">
+          <p>No users found. Please add users to the system.</p>
+        </div>
+      ) : (
+        <div className="rounded-md border">
+          <Table>
+            <TableCaption>Manage user and manager relationships</TableCaption>
+            <TableHeader>
+              <TableRow>
+                <TableHead>User</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Department</TableHead>
+                <TableHead>Manager</TableHead>
+                <TableHead>Hide from Manager View</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {users.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell className="font-medium">{user.login || user.username}</TableCell>
+                  <TableCell>{user.type || user.role}</TableCell>
+                  <TableCell>
+                    <Select
+                      value={user.department_id || user.departmentId || "none"}
+                      onValueChange={(value) => {
+                        handleDepartmentChange(user, value === "none" ? undefined : value);
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select a department" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No Department</SelectItem>
+                        {departments.map((department) => (
+                          <SelectItem key={department.id} value={department.id}>
+                            {department.name}
                           </SelectItem>
                         ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell className="text-center">
-                  <div className="flex items-center justify-center">
-                    <Checkbox 
-                      checked={user.hidden} 
-                      onCheckedChange={(checked) => 
-                        handleHiddenChange(user, checked === true)
-                      }
-                      id={`hide-${user.id}`}
-                    />
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleManagerChange(user, undefined)}
-                  >
-                    Clear Manager
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell>
+                    <Select
+                      value={user.manager_id || user.managerId || "none"}
+                      onValueChange={(value) => {
+                        handleManagerChange(user, value === "none" ? undefined : value);
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select a manager" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No Manager</SelectItem>
+                        {/* Only allow users with manager role or the user themselves (self-managed) */}
+                        <SelectItem value={user.id}>Self-Managed</SelectItem>
+                        {managers
+                          .filter((manager) => manager.id !== user.id)
+                          .map((manager) => (
+                            <SelectItem key={manager.id} value={manager.id}>
+                              {manager.login || manager.username} ({manager.type || manager.role})
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center">
+                      <Checkbox 
+                        checked={user.hidden} 
+                        onCheckedChange={(checked) => 
+                          handleHiddenChange(user, checked === true)
+                        }
+                        id={`hide-${user.id}`}
+                      />
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleManagerChange(user, undefined)}
+                    >
+                      Clear Manager
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 };
