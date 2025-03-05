@@ -27,7 +27,6 @@ interface TimeSheetContentProps {
   onSelectClient: (client: string) => void;
   onSelectMediaType: (type: string) => void;
   isViewingOwnTimesheet: boolean;
-  isSubmitted?: boolean;
 }
 
 export const TimeSheetContent = ({
@@ -53,7 +52,6 @@ export const TimeSheetContent = ({
   onSelectClient,
   onSelectMediaType,
   isViewingOwnTimesheet,
-  isSubmitted,
 }: TimeSheetContentProps) => {
   // Get all clients and media types that have entries with hours > 0
   const clientsWithEntries = useMemo(() => {

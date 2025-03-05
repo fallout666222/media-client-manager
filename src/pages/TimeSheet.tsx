@@ -21,8 +21,7 @@ import {
   addUserVisibleType,
   removeUserVisibleClient,
   removeUserVisibleType,
-  getWeekStatuses,
-  getWeekPercentages
+  getWeekStatuses
 } from '@/integrations/supabase/database';
 
 const DEFAULT_WEEKS = [
@@ -59,8 +58,6 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
   const [currentCustomWeek, setCurrentCustomWeek] = useState<any>(null);
   const [viewedUser, setViewedUser] = useState<User>(currentUser);
   const isViewingOwnTimesheet = viewedUser.id === currentUser.id;
-
-  const [weekPercentage, setWeekPercentage] = useState<number>(100);
 
   useEffect(() => {
     const fetchCustomWeeks = async () => {
@@ -159,51 +156,6 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
     
     loadWeekStatuses();
   }, [viewedUser.id, customWeeks]);
-
-  useEffect(() => {
-    const fetchWeekPercentages = async () => {
-      if (viewedUser.id && currentCustomWeek) {
-        try {
-          const { data } = await getWeekPercentages(viewedUser.id);
-          if (data && data.length > 0) {
-            let currentPercentage = 100;
-            let lastSetPercentage = null;
-            
-            const sortedWeeks = [...customWeeks].sort((a, b) => {
-              const dateA = parse(a.period_from, 'yyyy-MM-dd', new Date());
-              const dateB = parse(b.period_from, 'yyyy-MM-dd', new Date());
-              return dateA.getTime() - dateB.getTime();
-            });
-            
-            const currentWeekIndex = sortedWeeks.findIndex(week => week.id === currentCustomWeek.id);
-            if (currentWeekIndex === -1) {
-              setWeekPercentage(100);
-              return;
-            }
-            
-            const exactMatch = data.find(wp => wp.week_id === currentCustomWeek.id);
-            if (exactMatch) {
-              currentPercentage = Number(exactMatch.percentage);
-            } else {
-              for (let i = currentWeekIndex - 1; i >= 0; i--) {
-                const prevWeekData = data.find(wp => wp.week_id === sortedWeeks[i].id);
-                if (prevWeekData) {
-                  currentPercentage = Number(prevWeekData.percentage);
-                  break;
-                }
-              }
-            }
-            
-            setWeekPercentage(currentPercentage);
-          }
-        } catch (error) {
-          console.error('Error fetching week percentages:', error);
-        }
-      }
-    };
-    
-    fetchWeekPercentages();
-  }, [viewedUser.id, currentCustomWeek, customWeeks]);
 
   const getUserWeeks = () => {
     const firstWeekDate = parse(firstWeek, 'yyyy-MM-dd', new Date());
@@ -310,11 +262,6 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
         return mediaSum + (entry.hours || 0);
       }, 0);
     }, 0);
-  };
-
-  const getRemainingHours = (): number => {
-    const totalUsed = getTotalHoursForWeek();
-    return weekHours - totalUsed;
   };
 
   const handleSubmitForReview = async () => {
@@ -838,13 +785,17 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
 
       <TimeSheetHeader
         userRole={userRole}
-        remainingHours={getRemainingHours()}
+        remainingHours={weekHours - getTotalHoursForWeek()}
         status={getCurrentWeekStatus()}
         onReturnToFirstUnsubmittedWeek={handleReturnToFirstUnsubmittedWeek}
         onToggleSettings={() => setShowSettings(!showSettings)}
+        onExportToExcel={() => {
+          toast({
+            title: "Export Started",
+            description: "Your timesheet is being exported to Excel",
+          });
+        }}
         firstWeek={viewedUser.firstWeek || firstWeek}
-        weekPercentage={weekPercentage}
-        totalWeekHours={weekHours}
       />
 
       {hasUnsubmittedEarlierWeek() && !readOnly && !isCurrentWeekSubmitted() && (
@@ -876,39 +827,41 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
             }
           }
         }}
-        customWeeks={customWeeks}
-        onSubmitForReview={handleSubmitForReview}
+        onWeekHoursChange={setWeekHours}
         status={getCurrentWeekStatus()}
-        userRole={userRole}
-        isSubmitted={isCurrentWeekSubmitted()}
+        isManager={userRole === 'manager' || userRole === 'admin'}
+        isViewingOwnTimesheet={isViewingOwnTimesheet}
+        onSubmitForReview={handleSubmitForReview}
         onApprove={handleApprove}
         onReject={handleReject}
-        isViewingOwnTimesheet={isViewingOwnTimesheet}
-        readOnly={readOnly}
-        weekPercentage={weekPercentage}
+        readOnly={readOnly || (!isViewingOwnTimesheet && userRole !== 'manager' && userRole !== 'admin')}
+        firstWeek={viewedUser.firstWeek || firstWeek}
+        weekId={currentCustomWeek?.id}
       />
 
       <TimeSheetContent
-        clients={selectedClients}
-        mediaTypes={selectedMediaTypes}
+        showSettings={showSettings}
+        clients={availableClients}
+        mediaTypes={availableMediaTypes}
         timeEntries={timeEntries[format(currentDate, 'yyyy-MM-dd')] || {}}
         status={getCurrentWeekStatus()}
         onTimeUpdate={handleTimeUpdate}
         onAddClient={handleAddClient}
-        onAddMediaType={handleAddMediaType}
-        onSelectClient={handleSelectClient}
-        onSelectMediaType={handleSelectMediaType}
         onRemoveClient={handleRemoveClient}
+        onAddMediaType={handleAddMediaType}
         onRemoveMediaType={handleRemoveMediaType}
-        availableClients={availableClients}
-        availableMediaTypes={availableMediaTypes}
-        userRole={userRole}
-        isViewingOwnTimesheet={isViewingOwnTimesheet}
-        isSubmitted={isCurrentWeekSubmitted()}
-        showSettings={showSettings}
         onSaveVisibleClients={handleSaveVisibleClients}
         onSaveVisibleMediaTypes={handleSaveVisibleMediaTypes}
-        readOnly={readOnly}
+        readOnly={readOnly || !isViewingOwnTimesheet}
+        weekHours={weekHours}
+        userRole={userRole}
+        availableClients={availableClients}
+        availableMediaTypes={availableMediaTypes}
+        selectedClients={selectedClients}
+        selectedMediaTypes={selectedMediaTypes}
+        onSelectClient={handleSelectClient}
+        onSelectMediaType={handleSelectMediaType}
+        isViewingOwnTimesheet={isViewingOwnTimesheet}
       />
     </div>
   );
