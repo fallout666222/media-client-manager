@@ -20,7 +20,8 @@ import {
   addUserVisibleClient,
   addUserVisibleType,
   removeUserVisibleClient,
-  removeUserVisibleType
+  removeUserVisibleType,
+  getWeekStatuses
 } from '@/integrations/supabase/database';
 
 const DEFAULT_WEEKS = [
@@ -120,6 +121,39 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
   const [submittedWeeks, setSubmittedWeeks] = useState<string[]>([]);
   const [weekStatuses, setWeekStatuses] = useState<Record<string, TimeSheetStatus>>({});
   const { toast } = useToast();
+
+  useEffect(() => {
+    const loadWeekStatuses = async () => {
+      if (viewedUser.id && customWeeks.length > 0) {
+        try {
+          const { data } = await getWeekStatuses(viewedUser.id);
+          
+          if (data && data.length > 0) {
+            const statuses: Record<string, TimeSheetStatus> = {};
+            const submitted: string[] = [];
+            
+            data.forEach(statusEntry => {
+              if (statusEntry.week && statusEntry.status) {
+                const weekKey = statusEntry.week.period_from;
+                statuses[weekKey] = statusEntry.status.name as TimeSheetStatus;
+                
+                if (statusEntry.status.name === 'under-review' || statusEntry.status.name === 'accepted') {
+                  submitted.push(weekKey);
+                }
+              }
+            });
+            
+            setWeekStatuses(statuses);
+            setSubmittedWeeks(submitted);
+          }
+        } catch (error) {
+          console.error('Error loading week statuses:', error);
+        }
+      }
+    };
+    
+    loadWeekStatuses();
+  }, [viewedUser.id, customWeeks]);
 
   const getUserWeeks = () => {
     const firstWeekDate = parse(firstWeek, 'yyyy-MM-dd', new Date());
@@ -236,6 +270,8 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
           const { data: clientsData } = await getClients();
           const { data: mediaTypesData } = await getMediaTypes();
           
+          console.log("Saving time entries for week:", currentWeekData.id);
+          
           for (const clientName in weekEntries) {
             const mediaEntries = weekEntries[clientName];
             const clientObj = clientsData?.find(c => c.name === clientName);
@@ -246,6 +282,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
                 const mediaTypeObj = mediaTypesData?.find(m => m.name === mediaTypeName);
                 
                 if (mediaTypeObj && entry.hours > 0) {
+                  console.log(`Saving hours for ${clientName}/${mediaTypeName}: ${entry.hours}`);
                   await updateWeekHours(
                     currentUser.id, 
                     currentWeekData.id, 
@@ -274,33 +311,80 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
     }
   };
 
-  const handleApprove = () => {
+  const handleApprove = async () => {
     if (readOnly) return;
     
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
-    setWeekStatuses(prev => ({
-      ...prev,
-      [currentWeekKey]: 'accepted'
-    }));
-    toast({
-      title: "Timesheet Approved",
-      description: `Week of ${format(currentDate, 'MMM d, yyyy')} has been approved`,
-    });
+    
+    try {
+      const currentWeekData = currentCustomWeek || 
+        userWeeks.find(w => format(parse(w.startDate, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === currentWeekKey);
+      
+      if (currentWeekData && viewedUser.id) {
+        const { data: statusNames } = await getWeekStatusNames();
+        const acceptedStatus = statusNames?.find(status => status.name === 'accepted');
+        
+        if (acceptedStatus) {
+          await updateWeekStatus(viewedUser.id, currentWeekData.id, acceptedStatus.id);
+          
+          setWeekStatuses(prev => ({
+            ...prev,
+            [currentWeekKey]: 'accepted'
+          }));
+          
+          toast({
+            title: "Timesheet Approved",
+            description: `Week of ${format(currentDate, 'MMM d, yyyy')} has been approved`,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error approving timesheet:', error);
+      toast({
+        title: "Error",
+        description: "Failed to approve timesheet",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleReject = () => {
+  const handleReject = async () => {
     if (readOnly) return;
     
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
-    setWeekStatuses(prev => ({
-      ...prev,
-      [currentWeekKey]: 'needs-revision'
-    }));
-    setSubmittedWeeks(prev => prev.filter(week => week !== currentWeekKey));
-    toast({
-      title: "Timesheet Rejected",
-      description: `Week of ${format(currentDate, 'MMM d, yyyy')} needs revision`,
-    });
+    
+    try {
+      const currentWeekData = currentCustomWeek || 
+        userWeeks.find(w => format(parse(w.startDate, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === currentWeekKey);
+      
+      if (currentWeekData && viewedUser.id) {
+        const { data: statusNames } = await getWeekStatusNames();
+        const needsRevisionStatus = statusNames?.find(status => status.name === 'needs-revision');
+        
+        if (needsRevisionStatus) {
+          await updateWeekStatus(viewedUser.id, currentWeekData.id, needsRevisionStatus.id);
+          
+          setWeekStatuses(prev => ({
+            ...prev,
+            [currentWeekKey]: 'needs-revision'
+          }));
+          
+          setSubmittedWeeks(prev => prev.filter(week => week !== currentWeekKey));
+          
+          toast({
+            title: "Timesheet Rejected",
+            description: `Week of ${format(currentDate, 'MMM d, yyyy')} needs revision`,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error rejecting timesheet:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reject timesheet",
+        variant: "destructive"
+      });
+    }
   };
 
   const hasUnsubmittedEarlierWeek = () => {
@@ -370,27 +454,51 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
       if (viewedUser.id) {
         try {
           const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
-          const week = userWeeks.find(w => format(parse(w.startDate, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === currentWeekKey);
           
-          if (week) {
-            const { data } = await getWeekHours(viewedUser.id, week.id);
+          let weekId = null;
+          const customWeek = customWeeks.find(week => 
+            format(parse(week.period_from, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === currentWeekKey
+          );
+          
+          if (customWeek) {
+            weekId = customWeek.id;
+          } else {
+            const defaultWeek = userWeeks.find(w => 
+              format(parse(w.startDate, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === currentWeekKey
+            );
+            if (defaultWeek) {
+              weekId = defaultWeek.id;
+            }
+          }
+          
+          if (weekId) {
+            console.log(`Loading time entries for user ${viewedUser.id}, week ${weekId}`);
+            const { data: hourEntries } = await getWeekHours(viewedUser.id, weekId);
             
-            if (data) {
+            if (hourEntries && hourEntries.length > 0) {
+              console.log(`Found ${hourEntries.length} time entries`);
               const entries: Record<string, TimeSheetData> = {};
               entries[currentWeekKey] = {};
               
-              data.forEach(entry => {
-                if (!entries[currentWeekKey][entry.client.name]) {
-                  entries[currentWeekKey][entry.client.name] = {};
+              hourEntries.forEach(entry => {
+                if (entry.client && entry.media_type) {
+                  if (!entries[currentWeekKey][entry.client.name]) {
+                    entries[currentWeekKey][entry.client.name] = {};
+                  }
+                  
+                  entries[currentWeekKey][entry.client.name][entry.media_type.name] = {
+                    hours: entry.hours,
+                    status: getCurrentWeekStatus()
+                  };
                 }
-                
-                entries[currentWeekKey][entry.client.name][entry.media_type.name] = {
-                  hours: entry.hours,
-                  status: getCurrentWeekStatus()
-                };
               });
               
               setTimeEntries(entries);
+            } else {
+              console.log('No time entries found for this week');
+              setTimeEntries({
+                [currentWeekKey]: {}
+              });
             }
           }
         } catch (error) {
@@ -421,17 +529,36 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
     try {
       if (viewedUser.id) {
         const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
-        const week = userWeeks.find(w => format(parse(w.startDate, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === currentWeekKey);
+        let weekId = null;
         
-        if (week) {
-          const { data: clientsData } = await import('@/integrations/supabase/database').then(db => db.getClients());
-          const { data: mediaTypesData } = await import('@/integrations/supabase/database').then(db => db.getMediaTypes());
+        const customWeek = customWeeks.find(week => 
+          format(parse(week.period_from, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === currentWeekKey
+        );
+        
+        if (customWeek) {
+          weekId = customWeek.id;
+        } else {
+          const defaultWeek = userWeeks.find(w => 
+            format(parse(w.startDate, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === currentWeekKey
+          );
+          if (defaultWeek) {
+            weekId = defaultWeek.id;
+          }
+        }
+        
+        if (weekId) {
+          console.log(`Updating hours for week ${weekId}, client ${client}, media ${mediaType}: ${hours}`);
+          const { data: clientsData } = await getClients();
+          const { data: mediaTypesData } = await getMediaTypes();
           
           const clientObj = clientsData?.find(c => c.name === client);
           const mediaTypeObj = mediaTypesData?.find(m => m.name === mediaType);
           
           if (clientObj && mediaTypeObj) {
-            await updateWeekHours(viewedUser.id, week.id, clientObj.id, mediaTypeObj.id, hours);
+            await updateWeekHours(viewedUser.id, weekId, clientObj.id, mediaTypeObj.id, hours);
+            console.log('Hours updated successfully');
+          } else {
+            console.error('Client or media type not found', { client, mediaType, clientObj, mediaTypeObj });
           }
         }
       }
