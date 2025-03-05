@@ -55,7 +55,8 @@ const UserImpersonation: React.FC<UserImpersonationProps> = ({ clients }) => {
             first_custom_week_id: user.first_custom_week_id,
             firstCustomWeekId: user.first_custom_week_id,
             deletion_mark: user.deletion_mark,
-            department: user.department
+            // Store the department data if it exists
+            departmentName: user.department ? user.department.name : null
           }));
           setUsers(mappedUsers);
         }
@@ -111,7 +112,7 @@ const UserImpersonation: React.FC<UserImpersonationProps> = ({ clients }) => {
                 <TableCell>{user.login}</TableCell>
                 <TableCell>{user.type}</TableCell>
                 <TableCell>
-                  {user.department ? user.department.name : "Not assigned"}
+                  {user.departmentName || "Not assigned"}
                 </TableCell>
                 <TableCell>{user.first_week || "Not set"}</TableCell>
                 <TableCell>
