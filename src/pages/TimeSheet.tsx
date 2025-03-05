@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parse, format, isAfter, isBefore, addWeeks, startOfWeek, isEqual, isSameDay } from 'date-fns';
@@ -254,6 +255,9 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
         const underReviewStatus = statusNames?.find(status => status.name === 'under-review');
         
         if (underReviewStatus) {
+          // Store the current week data so we can use it after the submission
+          const submittedWeekData = { ...currentWeekData };
+          
           await updateWeekStatus(currentUser.id, currentWeekData.id, underReviewStatus.id);
           
           const weekEntries = timeEntries[currentWeekKey] || {};
@@ -308,6 +312,9 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
             }
             setTimeEntries(updatedEntries);
           }
+          
+          // Important: Don't change the current week after submission
+          // We're staying on the same week to show the updated status
           
           toast({
             title: "Timesheet Under Review",
