@@ -101,6 +101,7 @@ const UserWeekPercentage = () => {
   }, [selectedUser, toast]);
 
   const getWeekPercentage = (userId: string, weekId: string): number => {
+    // First, look for an explicit entry for this week
     const entry = weekPercentages.find(
       (wp) => wp.userId === userId && wp.weekId === weekId
     );
@@ -109,17 +110,21 @@ const UserWeekPercentage = () => {
       return entry.percentage;
     }
     
+    // If no explicit entry, find the most recent entry before this week
     const weekIdNum = parseInt(weekId);
-    for (let i = weekIdNum - 1; i >= 1; i--) {
-      const previousEntry = weekPercentages.find(
-        (wp) => wp.userId === userId && wp.weekId === i.toString()
-      );
-      if (previousEntry) {
-        return previousEntry.percentage;
-      }
+    let latestPercentage = 100; // Default to 100% if no entries found
+    
+    // Sort weeks to find the latest one before the current week
+    const previousEntries = weekPercentages
+      .filter(wp => wp.userId === userId && parseInt(wp.weekId) < weekIdNum)
+      .sort((a, b) => parseInt(b.weekId) - parseInt(a.weekId));
+    
+    if (previousEntries.length > 0) {
+      // Get the percentage from the most recent previous week
+      latestPercentage = previousEntries[0].percentage;
     }
     
-    return 100;
+    return latestPercentage;
   };
 
   const handlePercentageChange = async (
@@ -148,22 +153,21 @@ const UserWeekPercentage = () => {
       updatedPercentages.push({ userId, weekId, percentage });
     }
 
-    setWeekPercentages(updatedPercentages);
+    // Remove any future week percentages since they will now inherit from this week
+    const weekIdNum = parseInt(weekId);
+    const filteredPercentages = updatedPercentages.filter(
+      wp => !(wp.userId === userId && parseInt(wp.weekId) > weekIdNum)
+    );
+
+    setWeekPercentages(filteredPercentages);
 
     // Update in the database
     try {
       await updateWeekPercentage(userId, weekId, percentage);
 
-      if (percentage === 100) {
-        const weekIdNum = parseInt(weekId);
-        setWeekPercentages(prev => 
-          prev.filter(wp => !(wp.userId === userId && parseInt(wp.weekId) > weekIdNum))
-        );
-      }
-
       toast({
         title: "Percentage Updated",
-        description: `Week ${weekId} updated to ${percentage}% for selected user`,
+        description: `Week ${weekId} and all following weeks updated to ${percentage}%`,
       });
     } catch (error) {
       console.error('Error updating week percentage:', error);
