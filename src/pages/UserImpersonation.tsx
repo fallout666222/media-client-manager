@@ -1,58 +1,83 @@
 
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
   TableHeader,
+  TableBody,
+  TableHead,
   TableRow,
+  TableCell,
 } from "@/components/ui/table";
 import { ArrowLeft } from "lucide-react";
+import { User, Client } from "@/types/timesheet";
+import * as db from "@/integrations/supabase/database";
 import { useToast } from "@/hooks/use-toast";
-import { User } from '@/types/timesheet';
-import TimeSheet from './TimeSheet';
 
 interface UserImpersonationProps {
-  users: User[];
-  clients: any[];
+  users?: User[];
+  clients?: Client[];
 }
 
-const UserImpersonation: React.FC<UserImpersonationProps> = ({ users, clients }) => {
-  const [selectedUser, setSelectedUser] = useState<string | null>(null);
+const UserImpersonation: React.FC<UserImpersonationProps> = ({ clients }) => {
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const renderUserTimesheet = (user: User) => {
-    if (!user.firstWeek) {
-      return (
-        <div className="p-4 border rounded-lg bg-gray-50">
-          <p className="text-center text-gray-500">
-            This user does not have a first week set
-          </p>
-        </div>
-      );
-    }
-    
-    return (
-      <TimeSheet
-        userRole={user.role}
-        firstWeek={user.firstWeek}
-        currentUser={user}
-        users={users}
-        readOnly={true}
-        clients={clients}
-      />
-    );
-  };
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await db.getUsers();
+        
+        if (error) {
+          throw error;
+        }
+        
+        if (data) {
+          console.log("Fetched users:", data);
+          const mappedUsers = data.map(user => ({
+            id: user.id,
+            username: user.login,
+            name: user.name,
+            password: user.password,
+            role: user.type as 'admin' | 'user' | 'manager',
+            type: user.type,
+            login: user.login,
+            email: user.email,
+            job_position: user.job_position,
+            description: user.description,
+            department_id: user.department_id,
+            departmentId: user.department_id,
+            first_week: user.first_week,
+            firstWeek: user.first_week,
+            first_custom_week_id: user.first_custom_week_id,
+            firstCustomWeekId: user.first_custom_week_id,
+            deletion_mark: user.deletion_mark,
+            department: user.department
+          }));
+          setUsers(mappedUsers);
+        }
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch users",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, [toast]);
 
   return (
     <div className="container mx-auto p-4 pt-16">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">User Impersonation</h1>
+        <h1 className="text-2xl font-bold">User Management</h1>
         <Link to="/">
           <Button variant="outline" size="sm" className="flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
@@ -61,38 +86,53 @@ const UserImpersonation: React.FC<UserImpersonationProps> = ({ users, clients })
         </Link>
       </div>
 
-      <div className="mb-8">
-        <h2 className="text-lg font-medium mb-4">Select User</h2>
+      {loading ? (
+        <div className="text-center py-8">Loading users...</div>
+      ) : users.length === 0 ? (
+        <div className="text-center py-8">No users found</div>
+      ) : (
         <Table>
-          <TableCaption>Select a user to impersonate and view their timesheet</TableCaption>
           <TableHeader>
             <TableRow>
-              <TableHead>Username</TableHead>
+              <TableHead>ID</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Login</TableHead>
               <TableHead>Role</TableHead>
+              <TableHead>Department</TableHead>
+              <TableHead>First Week</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {users.map((user) => (
-              <TableRow key={user.username}>
-                <TableCell className="font-medium">{user.username}</TableCell>
-                <TableCell>{user.role}</TableCell>
+              <TableRow key={user.id}>
+                <TableCell>{user.id}</TableCell>
+                <TableCell>{user.name}</TableCell>
+                <TableCell>{user.login}</TableCell>
+                <TableCell>{user.type}</TableCell>
                 <TableCell>
-                  <Button onClick={() => setSelectedUser(user.id || null)} variant="outline" size="sm">
-                    View Timesheet
+                  {user.department ? user.department.name : "Not assigned"}
+                </TableCell>
+                <TableCell>{user.first_week || "Not set"}</TableCell>
+                <TableCell>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Implement impersonation logic if needed
+                      toast({
+                        title: "Impersonation",
+                        description: `Impersonating ${user.name} (${user.login})`,
+                      });
+                    }}
+                  >
+                    Impersonate
                   </Button>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
-      </div>
-
-      {selectedUser && (
-        <div className="mt-8">
-          <h2 className="text-lg font-medium mb-4">Timesheet</h2>
-          {users.filter(user => user.id === selectedUser).map(renderUserTimesheet)}
-        </div>
       )}
     </div>
   );

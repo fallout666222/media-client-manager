@@ -488,7 +488,7 @@ const App = () => {
               path="/view-users"
               element={
                 user?.role === 'admin' ? (
-                  <UserImpersonation users={users} clients={clients} />
+                  <UserImpersonation clients={clients} />
                 ) : (
                   <Navigate to="/" replace />
                 )
