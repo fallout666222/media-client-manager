@@ -153,6 +153,7 @@ export type Database = {
           email: string | null
           first_custom_week_id: string | null
           first_week: string | null
+          hidden: boolean | null
           id: string
           job_position: string | null
           login: string
@@ -168,6 +169,7 @@ export type Database = {
           email?: string | null
           first_custom_week_id?: string | null
           first_week?: string | null
+          hidden?: boolean | null
           id?: string
           job_position?: string | null
           login: string
@@ -183,6 +185,7 @@ export type Database = {
           email?: string | null
           first_custom_week_id?: string | null
           first_week?: string | null
+          hidden?: boolean | null
           id?: string
           job_position?: string | null
           login?: string
