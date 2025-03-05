@@ -18,6 +18,9 @@ interface TimeSheetControlsProps {
   firstWeek: string;
   weekId?: string;
   weekPercentage?: number;
+  customWeeks?: any[];
+  userRole?: 'admin' | 'user' | 'manager';
+  isSubmitted?: boolean;
 }
 
 export const TimeSheetControls = ({
@@ -33,7 +36,10 @@ export const TimeSheetControls = ({
   readOnly = false,
   firstWeek,
   weekId,
-  weekPercentage = 100
+  weekPercentage = 100,
+  customWeeks = [],
+  userRole,
+  isSubmitted
 }: TimeSheetControlsProps) => {
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center justify-between p-4 bg-muted rounded-lg">
