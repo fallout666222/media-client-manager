@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, Link } from "react-router-dom";
 import TimeSheet from "./pages/TimeSheet";
 import { Login } from "./components/Auth/Login";
-import { UserManagement } from "./components/Auth/UserManagement";
 import { FirstWeekManagement } from "./components/Auth/FirstWeekManagement";
 import DepartmentManagement from "./components/Admin/DepartmentManagement";
 import UserImpersonation from "./pages/UserImpersonation";
@@ -16,7 +15,7 @@ import UserWeekPercentage from "./pages/UserWeekPercentage";
 import ManagerView from "./pages/ManagerView";
 import ClientTree from "./pages/ClientTree";
 import { useState } from "react";
-import { User, UserFormData, Department, Client } from "./types/timesheet";
+import { User, Department, Client } from "./types/timesheet";
 import { Button } from "./components/ui/button";
 import { LogOut, Users, Calendar, UserCog, CalendarDays, Percent, Eye, Building, ArrowLeft, TreeDeciduous } from "lucide-react";
 import { useToast } from "./hooks/use-toast";
@@ -92,7 +91,7 @@ const App = () => {
   const [clients, setClients] = useState<Client[]>(INITIAL_CLIENTS);
   const { toast } = useToast();
 
-  const handleLogin = async (userData: User) => {
+  const handleLogin = async (userData: any) => {
     try {
       console.log('Login received user data:', userData);
       
@@ -166,29 +165,13 @@ const App = () => {
     }
   };
 
-  const handleCreateUser = async (userData: UserFormData) => {
+  const handleCreateUser = async (userData: any) => {
     try {
-      const newUser = {
-        ...userData,
-        name: userData.username || userData.name,
-        login: userData.username || userData.login,
-        type: userData.role || userData.type,
-        selectedClients: [],
-        selectedMediaTypes: []
-      };
-      
-      const { data, error } = await db.createUser(newUser);
-      
-      if (error) throw error;
-      
-      if (data) {
-        setUsers((prevUsers) => [...prevUsers, data]);
-        
-        toast({
-          title: "User Created",
-          description: `New ${userData.role} account created: ${userData.username}`,
-        });
-      }
+      toast({
+        title: "User Creation Moved",
+        description: "Please use the User Management page to create users",
+        variant: "destructive",
+      });
     } catch (error) {
       console.error('Error creating user:', error);
       toast({
@@ -456,7 +439,6 @@ const App = () => {
                     )}
                     {user.role === "admin" && (
                       <div className="mt-8 space-y-8">
-                        <UserManagement onCreateUser={handleCreateUser} />
                         <DepartmentManagement 
                           departments={departments}
                           onAddDepartment={handleAddDepartment}
