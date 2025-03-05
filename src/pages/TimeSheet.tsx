@@ -325,12 +325,15 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
     const firstUnsubmittedWeek = findFirstUnsubmittedWeek();
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
     const totalHours = getTotalHoursForWeek();
-    const remainingHours = weekHours - totalHours;
+    
+    // Calculate effective hours based on week percentage
+    const effectiveHours = Math.round(weekHours * (weekPercentage / 100));
+    const remainingHours = effectiveHours - totalHours;
     
     if (remainingHours !== 0) {
       toast({
         title: "Cannot Submit Timesheet",
-        description: `You must fill in exactly ${weekHours} hours for this week. Remaining: ${remainingHours} hours`,
+        description: `You must fill in exactly ${effectiveHours} hours for this week (${weekPercentage}% of ${weekHours}). Remaining: ${remainingHours} hours`,
         variant: "destructive"
       });
       return;
@@ -844,11 +847,13 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
 
       <TimeSheetHeader
         userRole={userRole}
-        remainingHours={weekHours - getTotalHoursForWeek()}
+        remainingHours={Math.round(weekHours * (weekPercentage / 100)) - getTotalHoursForWeek()}
         status={getCurrentWeekStatus()}
         onReturnToFirstUnsubmittedWeek={handleReturnToFirstUnsubmittedWeek}
         onToggleSettings={() => setShowSettings(!showSettings)}
         firstWeek={viewedUser.firstWeek || firstWeek}
+        weekPercentage={weekPercentage}
+        weekHours={weekHours}
       />
 
       {hasUnsubmittedEarlierWeek() && !readOnly && !isCurrentWeekSubmitted() && (
@@ -868,16 +873,14 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
           );
           
           if (selectedWeek) {
-            const effectiveHours = Math.round(selectedWeek.required_hours * (weekPercentage / 100));
-            setWeekHours(effectiveHours);
+            setWeekHours(selectedWeek.required_hours);
             setCurrentCustomWeek(selectedWeek);
           } else {
             const defaultWeek = userWeeks.find(w => 
               isSameDay(parse(w.startDate, 'yyyy-MM-dd', new Date()), date)
             );
             if (defaultWeek) {
-              const effectiveHours = Math.round(defaultWeek.hours * (weekPercentage / 100));
-              setWeekHours(effectiveHours);
+              setWeekHours(defaultWeek.hours);
               setCurrentCustomWeek(null);
             }
           }
@@ -911,6 +914,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
         onSaveVisibleMediaTypes={handleSaveVisibleMediaTypes}
         readOnly={readOnly || !isViewingOwnTimesheet}
         weekHours={weekHours}
+        weekPercentage={weekPercentage}
         userRole={userRole}
         availableClients={availableClients}
         availableMediaTypes={availableMediaTypes}

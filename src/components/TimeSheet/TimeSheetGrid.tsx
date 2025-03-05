@@ -13,6 +13,7 @@ interface TimeSheetGridProps {
   status: TimeSheetStatus;
   weekHours?: number;
   readOnly?: boolean;
+  weekPercentage?: number;
 }
 
 export const TimeSheetGrid = ({ 
@@ -22,10 +23,14 @@ export const TimeSheetGrid = ({
   onTimeUpdate,
   status,
   weekHours = 40,
-  readOnly = false
+  readOnly = false,
+  weekPercentage = 100
 }: TimeSheetGridProps) => {
   const isFormDisabled = readOnly || status === 'under-review' || status === 'accepted';
   const { toast } = useToast();
+  
+  // Calculate effective hours based on week percentage
+  const effectiveWeekHours = Math.round(weekHours * (weekPercentage / 100));
 
   const calculateTotalHours = (excludingClient?: string, excludingType?: string): number => {
     return Object.entries(timeEntries).reduce((clientSum, [client, mediaEntries]) => {
@@ -60,7 +65,7 @@ export const TimeSheetGrid = ({
                   <Input
                     type="number"
                     min="0"
-                    max={weekHours.toString()}
+                    max={effectiveWeekHours.toString()}
                     step="1"
                     className="text-center"
                     value={timeEntries[client]?.[type]?.hours || ''}
@@ -68,10 +73,10 @@ export const TimeSheetGrid = ({
                       const hours = parseInt(e.target.value) || 0;
                       const currentTotal = calculateTotalHours(client, type);
                       
-                      if (currentTotal + hours > weekHours) {
+                      if (currentTotal + hours > effectiveWeekHours) {
                         toast({
                           title: "Cannot Add Hours",
-                          description: `Total hours cannot exceed ${weekHours} for the week`,
+                          description: `Total hours cannot exceed ${effectiveWeekHours} for the week (${weekPercentage}% of ${weekHours})`,
                           variant: "destructive"
                         });
                         return;
@@ -100,7 +105,7 @@ export const TimeSheetGrid = ({
               </TableCell>
             ))}
             <TableCell className="font-bold text-center">
-              {calculateTotalHours()}
+              {calculateTotalHours()} / {effectiveWeekHours}
             </TableCell>
           </TableRow>
         </TableBody>
