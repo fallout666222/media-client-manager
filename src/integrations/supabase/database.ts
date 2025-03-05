@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 
 // Custom Weeks
@@ -14,7 +13,8 @@ export const createCustomWeek = async (week: { name: string, period_from: string
 export const getUsers = async () => {
   return await supabase.from('users').select(`
     *,
-    department:departments(name)
+    department:departments(name),
+    manager:users!manager_id(id, name, login)
   `).eq('deletion_mark', false);
 };
 
@@ -35,6 +35,13 @@ export const updateUser = async (id: string, user: any) => {
 
 export const authenticateUser = async (login: string, password: string) => {
   return await supabase.from('users').select('*').eq('login', login).eq('password', password).single();
+};
+
+// Get all users with manager role
+export const getManagers = async () => {
+  return await supabase.from('users').select('*')
+    .eq('deletion_mark', false)
+    .eq('type', 'manager');
 };
 
 // Media Types

@@ -22,7 +22,7 @@ import { User, Department } from "@/types/timesheet";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { getUsers, getDepartments, updateUser } from "@/integrations/supabase/database";
+import { getUsers, getDepartments, updateUser, getManagers } from "@/integrations/supabase/database";
 
 interface UserManagerAssignmentProps {
   onUpdateUserManager: (username: string, managerId: string | undefined) => void;
@@ -37,6 +37,7 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
 }) => {
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
+  const [managers, setManagers] = useState<User[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -51,6 +52,11 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
       const { data: usersData, error: usersError } = await getUsers();
       if (usersError) throw usersError;
       setUsers(usersData || []);
+      
+      // Fetch managers
+      const { data: managersData, error: managersError } = await getManagers();
+      if (managersError) throw managersError;
+      setManagers(managersData || []);
       
       // Fetch departments
       const { data: deptsData, error: deptsError } = await getDepartments();
@@ -158,7 +164,6 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
     }
     
     try {
-      // We may need to add a 'hidden' column to the users table if it doesn't exist
       await updateUser(user.id, { hidden });
       
       onToggleUserHidden(user.login || user.username || '', hidden);
@@ -254,9 +259,10 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">No Manager</SelectItem>
+                      {/* Only allow users with manager role or the user themselves (self-managed) */}
                       <SelectItem value={user.id}>Self-Managed</SelectItem>
-                      {users
-                        .filter((manager) => (manager.type === "manager" || manager.role === "manager") && manager.id !== user.id)
+                      {managers
+                        .filter((manager) => manager.id !== user.id)
                         .map((manager) => (
                           <SelectItem key={manager.id} value={manager.id}>
                             {manager.login || manager.username} ({manager.type || manager.role})
