@@ -18,6 +18,7 @@ interface TimeSheetControlsProps {
   firstWeek: string;
   weekId?: string;
   weekPercentage?: number;
+  customWeeks?: any[];
 }
 
 export const TimeSheetControls = ({
@@ -33,7 +34,8 @@ export const TimeSheetControls = ({
   readOnly = false,
   firstWeek,
   weekId,
-  weekPercentage = 100
+  weekPercentage = 100,
+  customWeeks = []
 }: TimeSheetControlsProps) => {
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center justify-between p-4 bg-muted rounded-lg">
@@ -44,6 +46,7 @@ export const TimeSheetControls = ({
           onWeekHoursChange={onWeekHoursChange}
           firstWeek={firstWeek}
           weekPercentage={weekPercentage}
+          customWeeks={customWeeks}
         />
       </div>
       

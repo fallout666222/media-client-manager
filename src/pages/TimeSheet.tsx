@@ -21,7 +21,8 @@ import {
   addUserVisibleType,
   removeUserVisibleClient,
   removeUserVisibleType,
-  getWeekStatuses
+  getWeekStatuses,
+  getWeekPercentages
 } from '@/integrations/supabase/database';
 
 const DEFAULT_WEEKS = [
@@ -57,6 +58,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
   });
   const [currentCustomWeek, setCurrentCustomWeek] = useState<any>(null);
   const [viewedUser, setViewedUser] = useState<User>(currentUser);
+  const [weekPercentage, setWeekPercentage] = useState<number>(100);
   const isViewingOwnTimesheet = viewedUser.id === currentUser.id;
 
   useEffect(() => {
@@ -105,6 +107,59 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
     
     fetchUserVisibles();
   }, [currentUser.id]);
+
+  useEffect(() => {
+    const fetchWeekPercentage = async () => {
+      if (!viewedUser.id || !currentCustomWeek) return;
+      
+      try {
+        const { data } = await getWeekPercentages(viewedUser.id);
+        if (data && data.length > 0) {
+          const currentWeekPercentage = data.find(wp => 
+            wp.week_id === currentCustomWeek.id
+          );
+          
+          if (currentWeekPercentage) {
+            setWeekPercentage(Number(currentWeekPercentage.percentage));
+          } else {
+            const weeks = customWeeks.length > 0 ? customWeeks : DEFAULT_WEEKS;
+            const sortedWeeks = [...weeks].sort((a, b) => {
+              const dateA = new Date(a.period_from || a.startDate);
+              const dateB = new Date(b.period_from || b.startDate);
+              return dateA.getTime() - dateB.getTime();
+            });
+            
+            const currentWeekIndex = sortedWeeks.findIndex(week => 
+              week.id === currentCustomWeek.id
+            );
+            
+            if (currentWeekIndex > 0) {
+              for (let i = currentWeekIndex - 1; i >= 0; i--) {
+                const prevWeek = sortedWeeks[i];
+                const prevWeekPercentage = data.find(wp => 
+                  wp.week_id === prevWeek.id
+                );
+                
+                if (prevWeekPercentage) {
+                  setWeekPercentage(Number(prevWeekPercentage.percentage));
+                  break;
+                }
+              }
+            } else {
+              setWeekPercentage(100);
+            }
+          }
+        } else {
+          setWeekPercentage(100);
+        }
+      } catch (error) {
+        console.error('Error fetching week percentage:', error);
+        setWeekPercentage(100);
+      }
+    };
+    
+    fetchWeekPercentage();
+  }, [viewedUser.id, currentCustomWeek, customWeeks]);
 
   const [weekHours, setWeekHours] = useState(() => {
     const initialWeek = DEFAULT_WEEKS.find(week => 
@@ -464,8 +519,8 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
     if (!userFirstWeek) return false;
     
     const sortedWeeks = [...customWeeks].sort((a, b) => {
-      const dateA = parse(a.period_from || '', 'yyyy-MM-dd', new Date());
-      const dateB = parse(b.period_from || '', 'yyyy-MM-dd', new Date());
+      const dateA = parse(a.period_from, 'yyyy-MM-dd', new Date());
+      const dateB = parse(b.period_from, 'yyyy-MM-dd', new Date());
       return dateA.getTime() - dateB.getTime();
     });
     
@@ -537,6 +592,10 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
     }
     
     setSelectedMediaTypes(prev => prev.filter(t => t !== type));
+  };
+
+  const handleWeekHoursChange = (hours: number) => {
+    setWeekHours(hours);
   };
 
   useEffect(() => {
@@ -789,12 +848,6 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
         status={getCurrentWeekStatus()}
         onReturnToFirstUnsubmittedWeek={handleReturnToFirstUnsubmittedWeek}
         onToggleSettings={() => setShowSettings(!showSettings)}
-        onExportToExcel={() => {
-          toast({
-            title: "Export Started",
-            description: "Your timesheet is being exported to Excel",
-          });
-        }}
         firstWeek={viewedUser.firstWeek || firstWeek}
       />
 
@@ -815,19 +868,21 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
           );
           
           if (selectedWeek) {
-            setWeekHours(selectedWeek.required_hours);
+            const effectiveHours = Math.round(selectedWeek.required_hours * (weekPercentage / 100));
+            setWeekHours(effectiveHours);
             setCurrentCustomWeek(selectedWeek);
           } else {
             const defaultWeek = userWeeks.find(w => 
               isSameDay(parse(w.startDate, 'yyyy-MM-dd', new Date()), date)
             );
             if (defaultWeek) {
-              setWeekHours(defaultWeek.hours);
+              const effectiveHours = Math.round(defaultWeek.hours * (weekPercentage / 100));
+              setWeekHours(effectiveHours);
               setCurrentCustomWeek(null);
             }
           }
         }}
-        onWeekHoursChange={setWeekHours}
+        onWeekHoursChange={handleWeekHoursChange}
         status={getCurrentWeekStatus()}
         isManager={userRole === 'manager' || userRole === 'admin'}
         isViewingOwnTimesheet={isViewingOwnTimesheet}
@@ -837,6 +892,8 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
         readOnly={readOnly || (!isViewingOwnTimesheet && userRole !== 'manager' && userRole !== 'admin')}
         firstWeek={viewedUser.firstWeek || firstWeek}
         weekId={currentCustomWeek?.id}
+        weekPercentage={weekPercentage}
+        customWeeks={customWeeks}
       />
 
       <TimeSheetContent
