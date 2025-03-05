@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format, parse, isSameDay, isBefore } from 'date-fns';
 import { CustomWeek } from '@/types/timesheet';
-import { getCustomWeeks } from '@/integrations/supabase/database';
+import { getCustomWeeks, getWeekPercentages } from '@/integrations/supabase/database';
 
 interface WeekPickerProps {
   currentDate: Date;
