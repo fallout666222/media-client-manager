@@ -1,4 +1,3 @@
-
 export type TimeSheetStatus = 'unconfirmed' | 'under-review' | 'accepted' | 'needs-revision';
 
 export interface TimeEntry {
@@ -62,6 +61,9 @@ export interface User {
   department_id?: string;
   manager_id?: string;
   deletion_mark?: boolean;
+  
+  // Added field for department name
+  departmentName?: string | null;
 }
 
 export interface UserFormData {
