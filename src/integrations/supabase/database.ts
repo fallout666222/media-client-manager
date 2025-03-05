@@ -58,6 +58,12 @@ export const authenticateUser = async (login: string, password: string) => {
   return await supabase.from('users').select('*').eq('login', login).eq('password', password).single();
 };
 
+// Get all users (for selecting as managers)
+export const getAllUsers = async () => {
+  return await supabase.from('users').select('*')
+    .eq('deletion_mark', false);
+};
+
 // Get all users with manager role
 export const getManagers = async () => {
   return await supabase.from('users').select('*')

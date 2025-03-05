@@ -25,8 +25,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { 
   getUsers, 
   getDepartments, 
-  updateUser, 
-  getManagers 
+  updateUser,
+  getAllUsers 
 } from "@/integrations/supabase/database";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
@@ -43,7 +43,7 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
 }) => {
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
-  const [managers, setManagers] = useState<User[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,10 +61,10 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
       if (usersError) throw usersError;
       setUsers(usersData || []);
       
-      // Fetch managers
-      const { data: managersData, error: managersError } = await getManagers();
-      if (managersError) throw managersError;
-      setManagers(managersData || []);
+      // Fetch all users (for manager selection)
+      const { data: allUsersData, error: allUsersError } = await getAllUsers();
+      if (allUsersError) throw allUsersError;
+      setAllUsers(allUsersData || []);
       
       // Fetch departments
       const { data: deptsData, error: deptsError } = await getDepartments();
@@ -106,12 +106,13 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
             
             // If manager was selected, add manager data
             if (managerId) {
-              const selectedManager = managers.find(m => m.id === managerId);
+              const selectedManager = allUsers.find(m => m.id === managerId);
               if (selectedManager) {
                 updatedUser.manager = {
                   id: selectedManager.id,
                   name: selectedManager.name,
-                  login: selectedManager.login
+                  login: selectedManager.login,
+                  type: selectedManager.type
                 };
               }
             } else {
@@ -312,13 +313,13 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="none">No Manager</SelectItem>
-                        {/* Only allow users with manager role or the user themselves (self-managed) */}
+                        {/* Allow any user to be a manager */}
                         <SelectItem value={user.id}>Self-Managed</SelectItem>
-                        {managers
-                          .filter((manager) => manager.id !== user.id)
-                          .map((manager) => (
-                            <SelectItem key={manager.id} value={manager.id}>
-                              {manager.login || manager.username} ({manager.type || manager.role})
+                        {allUsers
+                          .filter((otherUser) => otherUser.id !== user.id)
+                          .map((otherUser) => (
+                            <SelectItem key={otherUser.id} value={otherUser.id}>
+                              {otherUser.login || otherUser.username} ({otherUser.type || otherUser.role})
                             </SelectItem>
                           ))}
                       </SelectContent>
