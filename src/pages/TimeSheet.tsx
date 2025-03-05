@@ -21,7 +21,8 @@ import {
   addUserVisibleType,
   removeUserVisibleClient,
   removeUserVisibleType,
-  getWeekStatuses
+  getWeekStatuses,
+  getWeekPercentages
 } from '@/integrations/supabase/database';
 
 const DEFAULT_WEEKS = [
@@ -58,6 +59,8 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
   const [currentCustomWeek, setCurrentCustomWeek] = useState<any>(null);
   const [viewedUser, setViewedUser] = useState<User>(currentUser);
   const isViewingOwnTimesheet = viewedUser.id === currentUser.id;
+
+  const [weekPercentage, setWeekPercentage] = useState<number>(100);
 
   useEffect(() => {
     const fetchCustomWeeks = async () => {
@@ -156,6 +159,51 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
     
     loadWeekStatuses();
   }, [viewedUser.id, customWeeks]);
+
+  useEffect(() => {
+    const fetchWeekPercentages = async () => {
+      if (viewedUser.id && currentCustomWeek) {
+        try {
+          const { data } = await getWeekPercentages(viewedUser.id);
+          if (data && data.length > 0) {
+            let currentPercentage = 100;
+            let lastSetPercentage = null;
+            
+            const sortedWeeks = [...customWeeks].sort((a, b) => {
+              const dateA = parse(a.period_from, 'yyyy-MM-dd', new Date());
+              const dateB = parse(b.period_from, 'yyyy-MM-dd', new Date());
+              return dateA.getTime() - dateB.getTime();
+            });
+            
+            const currentWeekIndex = sortedWeeks.findIndex(week => week.id === currentCustomWeek.id);
+            if (currentWeekIndex === -1) {
+              setWeekPercentage(100);
+              return;
+            }
+            
+            const exactMatch = data.find(wp => wp.week_id === currentCustomWeek.id);
+            if (exactMatch) {
+              currentPercentage = Number(exactMatch.percentage);
+            } else {
+              for (let i = currentWeekIndex - 1; i >= 0; i--) {
+                const prevWeekData = data.find(wp => wp.week_id === sortedWeeks[i].id);
+                if (prevWeekData) {
+                  currentPercentage = Number(prevWeekData.percentage);
+                  break;
+                }
+              }
+            }
+            
+            setWeekPercentage(currentPercentage);
+          }
+        } catch (error) {
+          console.error('Error fetching week percentages:', error);
+        }
+      }
+    };
+    
+    fetchWeekPercentages();
+  }, [viewedUser.id, currentCustomWeek, customWeeks]);
 
   const getUserWeeks = () => {
     const firstWeekDate = parse(firstWeek, 'yyyy-MM-dd', new Date());
@@ -264,18 +312,29 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
     }, 0);
   };
 
+  const getAdjustedWeekHours = (): number => {
+    return Math.round(weekHours * (weekPercentage / 100));
+  };
+
+  const getRemainingHours = (): number => {
+    const adjustedTotal = getAdjustedWeekHours();
+    const used = getTotalHoursForWeek();
+    return adjustedTotal - used;
+  };
+
   const handleSubmitForReview = async () => {
     if (readOnly) return;
     
     const firstUnsubmittedWeek = findFirstUnsubmittedWeek();
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
     const totalHours = getTotalHoursForWeek();
-    const remainingHours = weekHours - totalHours;
+    const adjustedWeekHours = getAdjustedWeekHours();
+    const remainingHours = adjustedWeekHours - totalHours;
     
     if (remainingHours !== 0) {
       toast({
         title: "Cannot Submit Timesheet",
-        description: `You must fill in exactly ${weekHours} hours for this week. Remaining: ${remainingHours} hours`,
+        description: `You must fill in exactly ${adjustedWeekHours} hours for this week. Remaining: ${remainingHours} hours`,
         variant: "destructive"
       });
       return;
@@ -785,7 +844,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
 
       <TimeSheetHeader
         userRole={userRole}
-        remainingHours={weekHours - getTotalHoursForWeek()}
+        remainingHours={getRemainingHours()}
         status={getCurrentWeekStatus()}
         onReturnToFirstUnsubmittedWeek={handleReturnToFirstUnsubmittedWeek}
         onToggleSettings={() => setShowSettings(!showSettings)}
@@ -796,6 +855,8 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
           });
         }}
         firstWeek={viewedUser.firstWeek || firstWeek}
+        weekPercentage={weekPercentage}
+        totalWeekHours={weekHours}
       />
 
       {hasUnsubmittedEarlierWeek() && !readOnly && !isCurrentWeekSubmitted() && (
@@ -837,6 +898,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
         readOnly={readOnly || (!isViewingOwnTimesheet && userRole !== 'manager' && userRole !== 'admin')}
         firstWeek={viewedUser.firstWeek || firstWeek}
         weekId={currentCustomWeek?.id}
+        weekPercentage={weekPercentage}
       />
 
       <TimeSheetContent
@@ -853,7 +915,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
         onSaveVisibleClients={handleSaveVisibleClients}
         onSaveVisibleMediaTypes={handleSaveVisibleMediaTypes}
         readOnly={readOnly || !isViewingOwnTimesheet}
-        weekHours={weekHours}
+        weekHours={getAdjustedWeekHours()}
         userRole={userRole}
         availableClients={availableClients}
         availableMediaTypes={availableMediaTypes}

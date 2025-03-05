@@ -11,6 +11,8 @@ interface TimeSheetHeaderProps {
   onToggleSettings: () => void;
   onExportToExcel: () => void;
   firstWeek?: string;
+  weekPercentage?: number;
+  totalWeekHours?: number;
 }
 
 export const TimeSheetHeader = ({
@@ -21,7 +23,12 @@ export const TimeSheetHeader = ({
   onToggleSettings,
   onExportToExcel,
   firstWeek,
+  weekPercentage = 100,
+  totalWeekHours = 40,
 }: TimeSheetHeaderProps) => {
+  // Calculate the adjusted total hours based on percentage
+  const adjustedTotalHours = Math.round(totalWeekHours * (weekPercentage / 100));
+  
   return (
     <div className="flex items-center justify-between">
       <div>
@@ -34,6 +41,9 @@ export const TimeSheetHeader = ({
         </p>
         <p className="text-sm text-muted-foreground">
           Remaining Hours This Week: <span className="font-medium">{remainingHours}</span>
+          {weekPercentage < 100 && (
+            <span className="text-muted-foreground"> ({weekPercentage}% of {totalWeekHours}h = {adjustedTotalHours}h)</span>
+          )}
         </p>
       </div>
       <div className="flex gap-2">
