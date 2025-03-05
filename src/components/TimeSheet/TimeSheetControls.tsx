@@ -17,7 +17,6 @@ interface TimeSheetControlsProps {
   readOnly?: boolean;
   firstWeek: string;
   weekId?: string;
-  userId?: string;
 }
 
 export const TimeSheetControls = ({
@@ -32,8 +31,7 @@ export const TimeSheetControls = ({
   onReject,
   readOnly = false,
   firstWeek,
-  weekId,
-  userId
+  weekId
 }: TimeSheetControlsProps) => {
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center justify-between p-4 bg-muted rounded-lg">
@@ -43,7 +41,6 @@ export const TimeSheetControls = ({
           onWeekChange={onWeekChange}
           onWeekHoursChange={onWeekHoursChange}
           firstWeek={firstWeek}
-          userId={userId}
         />
       </div>
       
