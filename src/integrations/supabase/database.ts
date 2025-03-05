@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 
 // Custom Weeks
@@ -11,43 +12,17 @@ export const createCustomWeek = async (week: { name: string, period_from: string
 
 // Users
 export const getUsers = async () => {
-  const response = await supabase.from('users').select(`
+  return await supabase.from('users').select(`
     *,
-    department:departments(name),
-    manager:users!users_manager_id_fkey(id, name)
+    department:departments(name)
   `).eq('deletion_mark', false);
-  
-  // Transform response to make manager a single object instead of an array
-  if (response.data) {
-    response.data = response.data.map(user => {
-      const managerArray = user.manager as Array<{ id: string; name: string }> | null;
-      return {
-        ...user,
-        manager: managerArray && managerArray.length > 0 ? managerArray[0] : null
-      };
-    });
-  }
-  
-  return response;
 };
 
 export const getUserById = async (id: string) => {
-  const response = await supabase.from('users').select(`
+  return await supabase.from('users').select(`
     *,
-    department:departments(name),
-    manager:users!users_manager_id_fkey(id, name)
+    department:departments(name)
   `).eq('id', id).single();
-  
-  // Transform response to make manager a single object instead of an array
-  if (response.data) {
-    const managerArray = response.data.manager as Array<{ id: string; name: string }> | null;
-    response.data = {
-      ...response.data,
-      manager: managerArray && managerArray.length > 0 ? managerArray[0] : null
-    };
-  }
-  
-  return response;
 };
 
 export const createUser = async (user: any) => {
