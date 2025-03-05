@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { TimeSheetGrid } from './TimeSheetGrid';
 import { Settings } from './Settings';
@@ -19,6 +18,7 @@ interface TimeSheetContentProps {
   onSaveVisibleMediaTypes?: (types: string[]) => void;
   readOnly?: boolean;
   weekHours?: number;
+  weekPercentage?: number;
   userRole: 'admin' | 'user' | 'manager';
   availableClients: string[];
   availableMediaTypes: string[];
@@ -44,6 +44,7 @@ export const TimeSheetContent = ({
   onSaveVisibleMediaTypes,
   readOnly = false,
   weekHours = 40,
+  weekPercentage = 100,
   userRole,
   availableClients,
   availableMediaTypes,
@@ -141,6 +142,7 @@ export const TimeSheetContent = ({
       onTimeUpdate={onTimeUpdate}
       status={status}
       weekHours={weekHours}
+      weekPercentage={weekPercentage}
       readOnly={readOnly || !isViewingOwnTimesheet || status === 'under-review' || status === 'accepted'}
     />
   );
