@@ -12,19 +12,39 @@ export const createCustomWeek = async (week: { name: string, period_from: string
 
 // Users
 export const getUsers = async () => {
-  return await supabase.from('users').select(`
+  const response = await supabase.from('users').select(`
     *,
     department:departments(name),
     manager:users!users_manager_id_fkey(id, name)
   `).eq('deletion_mark', false);
+  
+  // Transform response to make manager a single object instead of an array
+  if (response.data) {
+    response.data = response.data.map(user => ({
+      ...user,
+      manager: user.manager && user.manager.length > 0 ? user.manager[0] : null
+    }));
+  }
+  
+  return response;
 };
 
 export const getUserById = async (id: string) => {
-  return await supabase.from('users').select(`
+  const response = await supabase.from('users').select(`
     *,
     department:departments(name),
     manager:users!users_manager_id_fkey(id, name)
   `).eq('id', id).single();
+  
+  // Transform response to make manager a single object instead of an array
+  if (response.data) {
+    response.data = {
+      ...response.data,
+      manager: response.data.manager && response.data.manager.length > 0 ? response.data.manager[0] : null
+    };
+  }
+  
+  return response;
 };
 
 export const createUser = async (user: any) => {

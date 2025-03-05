@@ -66,11 +66,11 @@ export interface User {
   // Added field for department name
   departmentName?: string | null;
   
-  // Added field for manager
+  // Modified field for manager to handle the array or single object
   manager?: {
     id?: string;
     name?: string;
-  } | null;
+  } | null | { id: string; name: string }[];
 }
 
 export interface UserFormData {
