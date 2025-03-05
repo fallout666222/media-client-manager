@@ -7,7 +7,7 @@ interface TimeSheetHeaderProps {
   userRole: string;
   remainingHours: number;
   status: string;
-  onReturnToFirstWeek: () => void;
+  onReturnToFirstUnsubmittedWeek: () => void;
   onToggleSettings: () => void;
   onExportToExcel: () => void;
   firstWeek?: string;
@@ -17,7 +17,7 @@ export const TimeSheetHeader = ({
   userRole,
   remainingHours,
   status,
-  onReturnToFirstWeek,
+  onReturnToFirstUnsubmittedWeek,
   onToggleSettings,
   onExportToExcel,
   firstWeek,
@@ -40,7 +40,7 @@ export const TimeSheetHeader = ({
         {firstWeek && (
           <Button
             variant="outline"
-            onClick={onReturnToFirstWeek}
+            onClick={onReturnToFirstUnsubmittedWeek}
             className="flex items-center gap-2"
           >
             <RotateCcw className="h-4 w-4" />
