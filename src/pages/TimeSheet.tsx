@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parse, format, isAfter, isBefore, addWeeks, startOfWeek, isEqual, isSameDay } from 'date-fns';
@@ -246,18 +245,6 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
       return;
     }
 
-    setSubmittedWeeks(prev => {
-      if (!prev.includes(currentWeekKey)) {
-        return [...prev, currentWeekKey];
-      }
-      return prev;
-    });
-    
-    setWeekStatuses(prev => ({
-      ...prev,
-      [currentWeekKey]: 'under-review'
-    }));
-    
     try {
       const currentWeekData = currentCustomWeek || 
         userWeeks.find(w => format(parse(w.startDate, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === currentWeekKey);
@@ -297,13 +284,37 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
               }
             }
           }
+          
+          setWeekStatuses(prev => ({
+            ...prev,
+            [currentWeekKey]: 'under-review'
+          }));
+          
+          setSubmittedWeeks(prev => {
+            if (!prev.includes(currentWeekKey)) {
+              return [...prev, currentWeekKey];
+            }
+            return prev;
+          });
+          
+          const updatedEntries = { ...timeEntries };
+          if (updatedEntries[currentWeekKey]) {
+            for (const client in updatedEntries[currentWeekKey]) {
+              for (const mediaType in updatedEntries[currentWeekKey][client]) {
+                if (updatedEntries[currentWeekKey][client][mediaType]) {
+                  updatedEntries[currentWeekKey][client][mediaType].status = 'under-review';
+                }
+              }
+            }
+            setTimeEntries(updatedEntries);
+          }
+          
+          toast({
+            title: "Timesheet Under Review",
+            description: `Week of ${format(currentDate, 'MMM d, yyyy')} has been submitted and is now under review`,
+          });
         }
       }
-      
-      toast({
-        title: "Timesheet Under Review",
-        description: `Week of ${format(currentDate, 'MMM d, yyyy')} has been submitted and is now under review`,
-      });
     } catch (error) {
       console.error('Error updating week status:', error);
       toast({
@@ -393,7 +404,6 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
   const hasUnsubmittedEarlierWeek = () => {
     if (!customWeeks.length || !currentCustomWeek) return false;
     
-    // Get the user's first custom week
     const userFirstWeek = customWeeks.find(week => week.id === currentUser.firstCustomWeekId);
     if (!userFirstWeek) return false;
     
@@ -406,13 +416,9 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
     const currentIndex = sortedWeeks.findIndex(week => week.id === currentCustomWeek.id);
     if (currentIndex <= 0) return false; // First week or week not found
     
-    // Find the index of the user's first week in the sorted array
     const userFirstWeekIndex = sortedWeeks.findIndex(week => week.id === userFirstWeek.id);
     if (userFirstWeekIndex === -1) return false;
     
-    // Only check weeks that are both:
-    // 1. Before the current week
-    // 2. On or after the user's first week
     for (let i = userFirstWeekIndex; i < currentIndex; i++) {
       const weekKey = sortedWeeks[i].period_from;
       if (weekKey && !submittedWeeks.includes(weekKey)) {
