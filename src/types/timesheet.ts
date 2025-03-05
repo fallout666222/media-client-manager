@@ -90,4 +90,5 @@ export interface CustomWeek {
   period_from?: string;
   period_to?: string;
   required_hours?: number;
+  created_at?: string;
 }

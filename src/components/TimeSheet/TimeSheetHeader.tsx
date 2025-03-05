@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { RotateCcw, Settings2, FileDown } from "lucide-react";
+import { RotateCcw, Settings2 } from "lucide-react";
 
 interface TimeSheetHeaderProps {
   userRole: string;
@@ -53,13 +53,6 @@ export const TimeSheetHeader = ({
         >
           <Settings2 className="h-4 w-4 mr-2" />
           Settings
-        </Button>
-        <Button
-          variant="outline"
-          onClick={onExportToExcel}
-        >
-          <FileDown className="h-4 w-4 mr-2" />
-          Export to Excel
         </Button>
       </div>
     </div>

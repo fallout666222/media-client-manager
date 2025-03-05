@@ -11,7 +11,7 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { ArrowLeft } from "lucide-react";
-import { User, Client, UserFormData } from "@/types/timesheet";
+import { User, Client, UserFormData, CustomWeek } from "@/types/timesheet";
 import * as db from "@/integrations/supabase/database";
 import { useToast } from "@/hooks/use-toast";
 import { UserManagement } from "@/components/Auth/UserManagement";
@@ -23,11 +23,13 @@ interface UserImpersonationProps {
 
 const UserImpersonation: React.FC<UserImpersonationProps> = ({ clients }) => {
   const [users, setUsers] = useState<User[]>([]);
+  const [customWeeks, setCustomWeeks] = useState<CustomWeek[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchUsers();
+    fetchCustomWeeks();
   }, []);
 
   const fetchUsers = async () => {
@@ -73,6 +75,33 @@ const UserImpersonation: React.FC<UserImpersonationProps> = ({ clients }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchCustomWeeks = async () => {
+    try {
+      const { data, error } = await db.getCustomWeeks();
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data) {
+        setCustomWeeks(data);
+      }
+    } catch (error) {
+      console.error("Error fetching custom weeks:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch custom weeks",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getCustomWeekName = (weekId?: string): string => {
+    if (!weekId) return "Not set";
+    const week = customWeeks.find(w => w.id === weekId);
+    return week ? week.name : "Unknown week";
   };
 
   const handleCreateUser = async (userData: UserFormData) => {
@@ -174,7 +203,7 @@ const UserImpersonation: React.FC<UserImpersonationProps> = ({ clients }) => {
                 <TableCell>
                   {user.departmentName || "Not assigned"}
                 </TableCell>
-                <TableCell>{user.first_custom_week_id || "Not set"}</TableCell>
+                <TableCell>{getCustomWeekName(user.first_custom_week_id)}</TableCell>
                 <TableCell>
                   <Button
                     variant="outline"
