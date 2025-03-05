@@ -312,14 +312,9 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
     }, 0);
   };
 
-  const getAdjustedWeekHours = (): number => {
-    return Math.round(weekHours * (weekPercentage / 100));
-  };
-
   const getRemainingHours = (): number => {
-    const adjustedTotal = getAdjustedWeekHours();
-    const used = getTotalHoursForWeek();
-    return adjustedTotal - used;
+    const totalUsed = getTotalHoursForWeek();
+    return weekHours - totalUsed;
   };
 
   const handleSubmitForReview = async () => {
@@ -328,13 +323,12 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
     const firstUnsubmittedWeek = findFirstUnsubmittedWeek();
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
     const totalHours = getTotalHoursForWeek();
-    const adjustedWeekHours = getAdjustedWeekHours();
-    const remainingHours = adjustedWeekHours - totalHours;
+    const remainingHours = weekHours - totalHours;
     
     if (remainingHours !== 0) {
       toast({
         title: "Cannot Submit Timesheet",
-        description: `You must fill in exactly ${adjustedWeekHours} hours for this week. Remaining: ${remainingHours} hours`,
+        description: `You must fill in exactly ${weekHours} hours for this week. Remaining: ${remainingHours} hours`,
         variant: "destructive"
       });
       return;
@@ -848,12 +842,6 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
         status={getCurrentWeekStatus()}
         onReturnToFirstUnsubmittedWeek={handleReturnToFirstUnsubmittedWeek}
         onToggleSettings={() => setShowSettings(!showSettings)}
-        onExportToExcel={() => {
-          toast({
-            title: "Export Started",
-            description: "Your timesheet is being exported to Excel",
-          });
-        }}
         firstWeek={viewedUser.firstWeek || firstWeek}
         weekPercentage={weekPercentage}
         totalWeekHours={weekHours}
@@ -880,53 +868,4 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
             setCurrentCustomWeek(selectedWeek);
           } else {
             const defaultWeek = userWeeks.find(w => 
-              isSameDay(parse(w.startDate, 'yyyy-MM-dd', new Date()), date)
-            );
-            if (defaultWeek) {
-              setWeekHours(defaultWeek.hours);
-              setCurrentCustomWeek(null);
-            }
-          }
-        }}
-        onWeekHoursChange={setWeekHours}
-        status={getCurrentWeekStatus()}
-        isManager={userRole === 'manager' || userRole === 'admin'}
-        isViewingOwnTimesheet={isViewingOwnTimesheet}
-        onSubmitForReview={handleSubmitForReview}
-        onApprove={handleApprove}
-        onReject={handleReject}
-        readOnly={readOnly || (!isViewingOwnTimesheet && userRole !== 'manager' && userRole !== 'admin')}
-        firstWeek={viewedUser.firstWeek || firstWeek}
-        weekId={currentCustomWeek?.id}
-        weekPercentage={weekPercentage}
-      />
-
-      <TimeSheetContent
-        showSettings={showSettings}
-        clients={availableClients}
-        mediaTypes={availableMediaTypes}
-        timeEntries={timeEntries[format(currentDate, 'yyyy-MM-dd')] || {}}
-        status={getCurrentWeekStatus()}
-        onTimeUpdate={handleTimeUpdate}
-        onAddClient={handleAddClient}
-        onRemoveClient={handleRemoveClient}
-        onAddMediaType={handleAddMediaType}
-        onRemoveMediaType={handleRemoveMediaType}
-        onSaveVisibleClients={handleSaveVisibleClients}
-        onSaveVisibleMediaTypes={handleSaveVisibleMediaTypes}
-        readOnly={readOnly || !isViewingOwnTimesheet}
-        weekHours={getAdjustedWeekHours()}
-        userRole={userRole}
-        availableClients={availableClients}
-        availableMediaTypes={availableMediaTypes}
-        selectedClients={selectedClients}
-        selectedMediaTypes={selectedMediaTypes}
-        onSelectClient={handleSelectClient}
-        onSelectMediaType={handleSelectMediaType}
-        isViewingOwnTimesheet={isViewingOwnTimesheet}
-      />
-    </div>
-  );
-};
-
-export default TimeSheet;
+              isSameDay(parse(w.startDate, 'yyyy-MM-dd',

@@ -129,7 +129,7 @@ export const WeekPicker = ({
     // Calculate effective hours based on percentage
     const effectiveHours = Math.round(week.hours * (weekPercentage / 100));
     
-    return `${week.name}: ${start} - ${end} (${effectiveHours}h / ${weekPercentage}%)`;
+    return `${week.name}: ${start} - ${end} (${effectiveHours}h)`;
   };
 
   if (loading || filteredWeeks.length === 0) {
