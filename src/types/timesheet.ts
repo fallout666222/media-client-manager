@@ -60,7 +60,7 @@ export interface User {
   description?: string;
   login?: string;
   department_id?: string;
-  manager_id?: string;  // Added this field
+  manager_id?: string;
   deletion_mark?: boolean;
   
   // Added field for department name
@@ -72,7 +72,7 @@ export interface User {
     name?: string;
     login?: string;
     type?: string;
-  }
+  };
 }
 
 export interface UserFormData {
