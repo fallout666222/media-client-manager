@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parse, format, isAfter, isBefore, addWeeks, startOfWeek, isEqual, isSameDay } from 'date-fns';
@@ -173,25 +172,79 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
   const userWeeks = getUserWeeks();
 
   const findFirstUnsubmittedWeek = () => {
+    if (customWeeks.length > 0) {
+      let userFirstWeekDate: Date | null = null;
+      
+      if (viewedUser.firstCustomWeekId) {
+        const userFirstCustomWeek = customWeeks.find(week => week.id === viewedUser.firstCustomWeekId);
+        if (userFirstCustomWeek) {
+          userFirstWeekDate = parse(userFirstCustomWeek.period_from, 'yyyy-MM-dd', new Date());
+        }
+      } else if (viewedUser.firstWeek) {
+        userFirstWeekDate = parse(viewedUser.firstWeek, 'yyyy-MM-dd', new Date());
+      }
+      
+      if (userFirstWeekDate) {
+        const sortedWeeks = [...customWeeks].sort((a, b) => {
+          const dateA = parse(a.period_from, 'yyyy-MM-dd', new Date());
+          const dateB = parse(b.period_from, 'yyyy-MM-dd', new Date());
+          return dateA.getTime() - dateB.getTime();
+        });
+        
+        const userWeeks = sortedWeeks.filter(week => {
+          const weekDate = parse(week.period_from, 'yyyy-MM-dd', new Date());
+          return !isBefore(weekDate, userFirstWeekDate as Date);
+        });
+        
+        for (const week of userWeeks) {
+          if (!submittedWeeks.includes(week.period_from)) {
+            console.log(`Found first unsubmitted week: ${week.name} (${week.period_from})`);
+            return {
+              date: parse(week.period_from, 'yyyy-MM-dd', new Date()),
+              weekData: week
+            };
+          }
+        }
+      }
+    }
+    
     for (const week of userWeeks) {
       const weekKey = week.startDate;
       if (!submittedWeeks.includes(weekKey)) {
-        return parse(weekKey, 'yyyy-MM-dd', new Date());
+        return {
+          date: parse(weekKey, 'yyyy-MM-dd', new Date()),
+          weekData: week
+        };
       }
     }
+    
     return null;
   };
 
   const handleReturnToFirstUnsubmittedWeek = () => {
-    const firstUnsubmittedWeek = findFirstUnsubmittedWeek();
-    if (firstUnsubmittedWeek) {
-      const unsubmittedWeek = userWeeks.find(week => 
-        isSameDay(parse(week.startDate, 'yyyy-MM-dd', new Date()), firstUnsubmittedWeek)
-      );
-      setCurrentDate(firstUnsubmittedWeek);
-      if (unsubmittedWeek) {
-        setWeekHours(unsubmittedWeek.hours);
+    const firstUnsubmitted = findFirstUnsubmittedWeek();
+    if (firstUnsubmitted) {
+      setCurrentDate(firstUnsubmitted.date);
+      
+      if (firstUnsubmitted.weekData) {
+        if ('required_hours' in firstUnsubmitted.weekData) {
+          setWeekHours(firstUnsubmitted.weekData.required_hours);
+          setCurrentCustomWeek(firstUnsubmitted.weekData);
+        } else {
+          setWeekHours(firstUnsubmitted.weekData.hours);
+          setCurrentCustomWeek(null);
+        }
       }
+      
+      toast({
+        title: "Navigated to First Unsubmitted Week",
+        description: `Showing week of ${format(firstUnsubmitted.date, 'MMM d, yyyy')}`,
+      });
+    } else {
+      toast({
+        title: "No Unsubmitted Weeks",
+        description: "All your weeks have been submitted",
+      });
     }
   };
 
@@ -228,7 +281,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
       return;
     }
     
-    if (firstUnsubmittedWeek && !isSameDay(firstUnsubmittedWeek, currentDate)) {
+    if (firstUnsubmittedWeek && !isSameDay(firstUnsubmittedWeek.date, currentDate)) {
       toast({
         title: "Cannot Submit This Week",
         description: `Week not submitted because previous weeks haven't been filled in yet.`,
@@ -236,9 +289,9 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
       });
       
       const unsubmittedWeek = userWeeks.find(week => 
-        isSameDay(parse(week.startDate, 'yyyy-MM-dd', new Date()), firstUnsubmittedWeek)
+        isSameDay(parse(week.startDate, 'yyyy-MM-dd', new Date()), firstUnsubmittedWeek.date)
       );
-      setCurrentDate(firstUnsubmittedWeek);
+      setCurrentDate(firstUnsubmittedWeek.date);
       if (unsubmittedWeek) {
         setWeekHours(unsubmittedWeek.hours);
       }
@@ -255,7 +308,6 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
         const underReviewStatus = statusNames?.find(status => status.name === 'under-review');
         
         if (underReviewStatus) {
-          // Store the current week data so we can use it after the submission
           const submittedWeekData = { ...currentWeekData };
           
           await updateWeekStatus(currentUser.id, currentWeekData.id, underReviewStatus.id);
@@ -312,9 +364,6 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
             }
             setTimeEntries(updatedEntries);
           }
-          
-          // Important: Don't change the current week after submission
-          // We're staying on the same week to show the updated status
           
           toast({
             title: "Timesheet Under Review",
@@ -411,7 +460,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
   const hasUnsubmittedEarlierWeek = () => {
     if (!customWeeks.length || !currentCustomWeek) return false;
     
-    const userFirstWeek = customWeeks.find(week => week.id === currentUser.firstCustomWeekId);
+    const userFirstWeek = customWeeks.find(week => week.id === viewedUser.firstCustomWeekId);
     if (!userFirstWeek) return false;
     
     const sortedWeeks = [...customWeeks].sort((a, b) => {
