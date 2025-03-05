@@ -868,4 +868,50 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
             setCurrentCustomWeek(selectedWeek);
           } else {
             const defaultWeek = userWeeks.find(w => 
-              isSameDay(parse(w.startDate, 'yyyy-MM-dd',
+              isSameDay(parse(w.startDate, 'yyyy-MM-dd', new Date()), date)
+            );
+            if (defaultWeek) {
+              setWeekHours(defaultWeek.hours);
+              setCurrentCustomWeek(null);
+            }
+          }
+        }}
+        customWeeks={customWeeks}
+        onSubmitForReview={handleSubmitForReview}
+        status={getCurrentWeekStatus()}
+        userRole={userRole}
+        isSubmitted={isCurrentWeekSubmitted()}
+        onApprove={handleApprove}
+        onReject={handleReject}
+        isViewingOwnTimesheet={isViewingOwnTimesheet}
+        readOnly={readOnly}
+        weekPercentage={weekPercentage}
+      />
+
+      <TimeSheetContent
+        clients={selectedClients}
+        mediaTypes={selectedMediaTypes}
+        timeEntries={timeEntries[format(currentDate, 'yyyy-MM-dd')] || {}}
+        status={getCurrentWeekStatus()}
+        onTimeUpdate={handleTimeUpdate}
+        onAddClient={handleAddClient}
+        onAddMediaType={handleAddMediaType}
+        onSelectClient={handleSelectClient}
+        onSelectMediaType={handleSelectMediaType}
+        onRemoveClient={handleRemoveClient}
+        onRemoveMediaType={handleRemoveMediaType}
+        availableClients={availableClients}
+        availableMediaTypes={availableMediaTypes}
+        userRole={userRole}
+        isViewingOwnTimesheet={isViewingOwnTimesheet}
+        isSubmitted={isCurrentWeekSubmitted()}
+        showSettings={showSettings}
+        onSaveVisibleClients={handleSaveVisibleClients}
+        onSaveVisibleMediaTypes={handleSaveVisibleMediaTypes}
+        readOnly={readOnly}
+      />
+    </div>
+  );
+};
+
+export default TimeSheet;
