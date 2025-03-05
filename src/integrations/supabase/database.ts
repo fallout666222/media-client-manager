@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 
 // Custom Weeks
@@ -20,10 +19,13 @@ export const getUsers = async () => {
   
   // Transform response to make manager a single object instead of an array
   if (response.data) {
-    response.data = response.data.map(user => ({
-      ...user,
-      manager: user.manager && user.manager.length > 0 ? user.manager[0] : null
-    }));
+    response.data = response.data.map(user => {
+      const managerArray = user.manager as Array<{ id: string; name: string }> | null;
+      return {
+        ...user,
+        manager: managerArray && managerArray.length > 0 ? managerArray[0] : null
+      };
+    });
   }
   
   return response;
@@ -38,9 +40,10 @@ export const getUserById = async (id: string) => {
   
   // Transform response to make manager a single object instead of an array
   if (response.data) {
+    const managerArray = response.data.manager as Array<{ id: string; name: string }> | null;
     response.data = {
       ...response.data,
-      manager: response.data.manager && response.data.manager.length > 0 ? response.data.manager[0] : null
+      manager: managerArray && managerArray.length > 0 ? managerArray[0] : null
     };
   }
   
