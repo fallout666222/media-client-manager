@@ -390,8 +390,25 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
   };
 
   const hasUnsubmittedEarlierWeek = () => {
-    const firstUnsubmitted = findFirstUnsubmittedWeek();
-    return firstUnsubmitted && !isSameDay(firstUnsubmitted, currentDate);
+    if (!customWeeks.length || !currentCustomWeek) return false;
+    
+    const sortedWeeks = [...customWeeks].sort((a, b) => {
+      const dateA = parse(a.period_from || '', 'yyyy-MM-dd', new Date());
+      const dateB = parse(b.period_from || '', 'yyyy-MM-dd', new Date());
+      return dateA.getTime() - dateB.getTime();
+    });
+    
+    const currentIndex = sortedWeeks.findIndex(week => week.id === currentCustomWeek.id);
+    if (currentIndex <= 0) return false; // First week or week not found
+    
+    for (let i = 0; i < currentIndex; i++) {
+      const weekKey = sortedWeeks[i].period_from;
+      if (weekKey && !submittedWeeks.includes(weekKey)) {
+        return true;
+      }
+    }
+    
+    return false;
   }
 
   const isCurrentWeekSubmitted = () => {
@@ -696,7 +713,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
         userRole={userRole}
         remainingHours={weekHours - getTotalHoursForWeek()}
         status={getCurrentWeekStatus()}
-        onReturnToFirstWeek={handleReturnToFirstUnsubmittedWeek}
+        onReturnToFirstUnsubmittedWeek={handleReturnToFirstUnsubmittedWeek}
         onToggleSettings={() => setShowSettings(!showSettings)}
         onExportToExcel={() => {
           toast({
@@ -727,8 +744,8 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
             setWeekHours(selectedWeek.required_hours);
             setCurrentCustomWeek(selectedWeek);
           } else {
-            const defaultWeek = userWeeks.find(week => 
-              isSameDay(parse(week.startDate, 'yyyy-MM-dd', new Date()), date)
+            const defaultWeek = userWeeks.find(w => 
+              isSameDay(parse(w.startDate, 'yyyy-MM-dd', new Date()), date)
             );
             if (defaultWeek) {
               setWeekHours(defaultWeek.hours);
