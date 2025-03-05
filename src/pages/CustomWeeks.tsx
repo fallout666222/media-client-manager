@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { differenceInDays, parse, format } from "date-fns";
@@ -15,29 +15,60 @@ import { useToast } from "@/hooks/use-toast";
 import { Trash2, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { CustomWeek } from "@/types/timesheet";
-
-const DEFAULT_WEEKS: CustomWeek[] = [
-  { id: "1", name: "Week 1", startDate: "2025-01-01", endDate: "2025-01-06", hours: 48 },
-  { id: "2", name: "Week 2", startDate: "2025-01-10", endDate: "2025-01-03", hours: 40 },
-  { id: "3", name: "Week 3", startDate: "2025-01-13", endDate: "2025-01-17", hours: 40 },
-  { id: "4", name: "Week 4", startDate: "2025-01-20", endDate: "2025-01-24", hours: 40 },
-  { id: "5", name: "Week 5", startDate: "2025-01-27", endDate: "2025-01-31", hours: 40 },
-];
+import { getCustomWeeks, createCustomWeek } from "@/integrations/supabase/database";
 
 const CustomWeeks = () => {
   const [name, setName] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [hours, setHours] = useState<number>(0);
-  const [weeks, setWeeks] = useState<CustomWeek[]>(DEFAULT_WEEKS);
+  const [weeks, setWeeks] = useState<CustomWeek[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  useEffect(() => {
+    fetchWeeks();
+  }, []);
+
+  const fetchWeeks = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await getCustomWeeks();
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data) {
+        // Transform data to match the CustomWeek interface
+        const formattedWeeks = data.map(week => ({
+          id: week.id,
+          name: week.name,
+          startDate: week.period_from,
+          endDate: week.period_to,
+          hours: week.required_hours
+        }));
+        
+        setWeeks(formattedWeeks);
+      }
+    } catch (error) {
+      console.error('Error fetching custom weeks:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load custom weeks",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const calculateHours = (start: string, end: string) => {
     try {
       const startDateObj = parse(start, "yyyy-MM-dd", new Date());
       const endDateObj = parse(end, "yyyy-MM-dd", new Date());
       const days = differenceInDays(endDateObj, startDateObj) + 1;
-      return days * 8; // 8 часов в день по умолчанию
+      return days * 8; // 8 hours per day by default
     } catch {
       return 0;
     }
@@ -62,15 +93,17 @@ const CustomWeeks = () => {
     setHours(isNaN(value) ? 0 : value);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
+    // Note: For now, we're just removing from the UI
+    // A proper delete API would be needed in the database.ts file
     setWeeks(prev => prev.filter(week => week.id !== id));
     toast({
       title: "Success",
-      description: "Custom week deleted successfully",
+      description: "Custom week deleted from UI (database deletion not implemented yet)",
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!name.trim()) {
@@ -100,24 +133,46 @@ const CustomWeeks = () => {
       return;
     }
 
-    const newWeek: CustomWeek = {
-      id: crypto.randomUUID(),
-      name: name.trim(),
-      startDate,
-      endDate,
-      hours,
-    };
-
-    setWeeks(prev => [...prev, newWeek]);
-    setName("");
-    setStartDate("");
-    setEndDate("");
-    setHours(0);
-
-    toast({
-      title: "Success",
-      description: "Custom week added successfully",
-    });
+    try {
+      const { data, error } = await createCustomWeek({
+        name: name.trim(),
+        period_from: startDate,
+        period_to: endDate,
+        required_hours: hours
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data) {
+        const newWeek: CustomWeek = {
+          id: data.id,
+          name: data.name,
+          startDate: data.period_from,
+          endDate: data.period_to,
+          hours: data.required_hours
+        };
+        
+        setWeeks(prev => [...prev, newWeek]);
+        setName("");
+        setStartDate("");
+        setEndDate("");
+        setHours(0);
+        
+        toast({
+          title: "Success",
+          description: "Custom week added successfully",
+        });
+      }
+    } catch (error) {
+      console.error('Error creating custom week:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create custom week",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -193,41 +248,51 @@ const CustomWeeks = () => {
       </form>
 
       <div className="mt-8">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Start Date</TableHead>
-              <TableHead>End Date</TableHead>
-              <TableHead>Hours</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {weeks.map((week) => (
-              <TableRow key={week.id}>
-                <TableCell className="font-medium">{week.name}</TableCell>
-                <TableCell>
-                  {format(parse(week.startDate, "yyyy-MM-dd", new Date()), "MMM dd, yyyy")}
-                </TableCell>
-                <TableCell>
-                  {format(parse(week.endDate, "yyyy-MM-dd", new Date()), "MMM dd, yyyy")}
-                </TableCell>
-                <TableCell>{week.hours}</TableCell>
-                <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDelete(week.id)}
-                    className="text-destructive hover:text-destructive/90"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </TableCell>
+        {loading ? (
+          <div className="text-center p-4">Loading custom weeks...</div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Start Date</TableHead>
+                <TableHead>End Date</TableHead>
+                <TableHead>Hours</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {weeks.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center">No custom weeks found</TableCell>
+                </TableRow>
+              ) : (
+                weeks.map((week) => (
+                  <TableRow key={week.id}>
+                    <TableCell className="font-medium">{week.name}</TableCell>
+                    <TableCell>
+                      {format(parse(week.startDate, "yyyy-MM-dd", new Date()), "MMM dd, yyyy")}
+                    </TableCell>
+                    <TableCell>
+                      {format(parse(week.endDate, "yyyy-MM-dd", new Date()), "MMM dd, yyyy")}
+                    </TableCell>
+                    <TableCell>{week.hours}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(week.id)}
+                        className="text-destructive hover:text-destructive/90"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        )}
       </div>
     </div>
   );

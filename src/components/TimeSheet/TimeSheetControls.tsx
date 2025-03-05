@@ -2,8 +2,6 @@
 import React from 'react';
 import { WeekPicker } from './WeekPicker';
 import { ApprovalActions } from './ApprovalActions';
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { TimeSheetStatus } from '@/types/timesheet';
 
 interface TimeSheetControlsProps {
@@ -47,23 +45,6 @@ export const TimeSheetControls = ({
       </div>
       
       <div className="flex items-center gap-4">
-        {(status === 'unconfirmed' || status === 'needs-revision') && isViewingOwnTimesheet && !readOnly && (
-          <div className="flex items-center">
-            <Label htmlFor="week-hours" className="mr-2 text-sm font-medium">
-              Week Hours:
-            </Label>
-            <Input
-              id="week-hours"
-              type="number"
-              className="w-20"
-              value={40}
-              onChange={(e) => onWeekHoursChange(parseInt(e.target.value))}
-              min={0}
-              max={168}
-            />
-          </div>
-        )}
-        
         <ApprovalActions
           status={status}
           isManager={isManager}
