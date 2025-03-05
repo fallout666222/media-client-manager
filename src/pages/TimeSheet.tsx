@@ -56,6 +56,8 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
     return parse(firstWeek, 'yyyy-MM-dd', new Date());
   });
   const [currentCustomWeek, setCurrentCustomWeek] = useState<any>(null);
+  const [viewedUser, setViewedUser] = useState<User>(currentUser);
+  const isViewingOwnTimesheet = viewedUser.id === currentUser.id;
 
   useEffect(() => {
     const fetchCustomWeeks = async () => {
@@ -445,9 +447,6 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
     
     setSelectedMediaTypes(prev => prev.filter(t => t !== type));
   };
-
-  const [viewedUser, setViewedUser] = useState<User>(currentUser);
-  const isViewingOwnTimesheet = viewedUser.id === currentUser.id;
 
   useEffect(() => {
     const loadUserData = async () => {
