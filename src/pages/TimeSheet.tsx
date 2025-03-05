@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parse, format, isAfter, isBefore, addWeeks, startOfWeek, isEqual, isSameDay } from 'date-fns';
@@ -392,6 +393,10 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
   const hasUnsubmittedEarlierWeek = () => {
     if (!customWeeks.length || !currentCustomWeek) return false;
     
+    // Get the user's first custom week
+    const userFirstWeek = customWeeks.find(week => week.id === currentUser.firstCustomWeekId);
+    if (!userFirstWeek) return false;
+    
     const sortedWeeks = [...customWeeks].sort((a, b) => {
       const dateA = parse(a.period_from || '', 'yyyy-MM-dd', new Date());
       const dateB = parse(b.period_from || '', 'yyyy-MM-dd', new Date());
@@ -401,7 +406,14 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
     const currentIndex = sortedWeeks.findIndex(week => week.id === currentCustomWeek.id);
     if (currentIndex <= 0) return false; // First week or week not found
     
-    for (let i = 0; i < currentIndex; i++) {
+    // Find the index of the user's first week in the sorted array
+    const userFirstWeekIndex = sortedWeeks.findIndex(week => week.id === userFirstWeek.id);
+    if (userFirstWeekIndex === -1) return false;
+    
+    // Only check weeks that are both:
+    // 1. Before the current week
+    // 2. On or after the user's first week
+    for (let i = userFirstWeekIndex; i < currentIndex; i++) {
       const weekKey = sortedWeeks[i].period_from;
       if (weekKey && !submittedWeeks.includes(weekKey)) {
         return true;
