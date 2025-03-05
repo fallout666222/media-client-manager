@@ -14,14 +14,16 @@ export const createCustomWeek = async (week: { name: string, period_from: string
 export const getUsers = async () => {
   return await supabase.from('users').select(`
     *,
-    department:departments(name)
+    department:departments(name),
+    manager:users!users_manager_id_fkey(id, name)
   `).eq('deletion_mark', false);
 };
 
 export const getUserById = async (id: string) => {
   return await supabase.from('users').select(`
     *,
-    department:departments(name)
+    department:departments(name),
+    manager:users!users_manager_id_fkey(id, name)
   `).eq('id', id).single();
 };
 
