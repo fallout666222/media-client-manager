@@ -41,32 +41,32 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        // Fetch users from the database
-        const { data: usersData, error: usersError } = await getUsers();
-        if (usersError) throw usersError;
-        setUsers(usersData || []);
-        
-        // Fetch departments
-        const { data: deptsData, error: deptsError } = await getDepartments();
-        if (deptsError) throw deptsError;
-        setDepartments(deptsData || []);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load data",
-          variant: "destructive"
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     fetchData();
   }, [toast]);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      // Fetch users from the database
+      const { data: usersData, error: usersError } = await getUsers();
+      if (usersError) throw usersError;
+      setUsers(usersData || []);
+      
+      // Fetch departments
+      const { data: deptsData, error: deptsError } = await getDepartments();
+      if (deptsError) throw deptsError;
+      setDepartments(deptsData || []);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load data",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleManagerChange = async (user: User, managerId: string | undefined) => {
     if (!user.id) {
@@ -82,6 +82,13 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
       await updateUser(user.id, { manager_id: managerId });
       
       onUpdateUserManager(user.login || user.username || '', managerId);
+      
+      // Update the users state to reflect the changes immediately
+      setUsers(prevUsers => 
+        prevUsers.map(u => 
+          u.id === user.id ? { ...u, manager_id: managerId } : u
+        )
+      );
       
       toast({
         title: "Manager Updated",
@@ -112,6 +119,20 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
       
       onUpdateUserDepartment(user.login || user.username || '', departmentId);
       
+      // Find department name for immediate UI update
+      const departmentName = departmentId 
+        ? departments.find(dept => dept.id === departmentId)?.name || null
+        : null;
+      
+      // Update the users state to reflect the changes immediately
+      setUsers(prevUsers => 
+        prevUsers.map(u => 
+          u.id === user.id 
+            ? { ...u, department_id: departmentId, departmentId: departmentId, departmentName: departmentName } 
+            : u
+        )
+      );
+      
       toast({
         title: "Department Updated",
         description: `Department updated for ${user.login || user.username}`,
@@ -141,6 +162,13 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
       await updateUser(user.id, { hidden });
       
       onToggleUserHidden(user.login || user.username || '', hidden);
+      
+      // Update the users state to reflect the changes immediately
+      setUsers(prevUsers => 
+        prevUsers.map(u => 
+          u.id === user.id ? { ...u, hidden } : u
+        )
+      );
       
       toast({
         title: "Visibility Updated",

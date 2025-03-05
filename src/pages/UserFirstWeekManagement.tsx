@@ -31,32 +31,32 @@ const UserFirstWeekManagement = () => {
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        // Fetch users from the database
-        const { data: usersData, error: usersError } = await getUsers();
-        if (usersError) throw usersError;
-        setUsers(usersData || []);
-        
-        // Fetch custom weeks
-        const { data: weeksData, error: weeksError } = await getCustomWeeks();
-        if (weeksError) throw weeksError;
-        setCustomWeeks(weeksData || []);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load data",
-          variant: "destructive"
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     fetchData();
   }, [toast]);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      // Fetch users from the database
+      const { data: usersData, error: usersError } = await getUsers();
+      if (usersError) throw usersError;
+      setUsers(usersData || []);
+      
+      // Fetch custom weeks
+      const { data: weeksData, error: weeksError } = await getCustomWeeks();
+      if (weeksError) throw weeksError;
+      setCustomWeeks(weeksData || []);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load data",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleWeekChange = (userId: string, weekId: string) => {
     setSelectedWeeks(prev => ({ ...prev, [userId]: weekId }));
@@ -71,6 +71,26 @@ const UserFirstWeekManagement = () => {
         await updateUser(user.id, {
           first_custom_week_id: weekId,
           first_week: selectedWeek.period_from
+        });
+        
+        // Update local state to reflect changes immediately
+        setUsers(prevUsers => 
+          prevUsers.map(u => 
+            u.id === user.id ? {
+              ...u,
+              first_custom_week_id: weekId,
+              firstCustomWeekId: weekId,
+              first_week: selectedWeek.period_from,
+              firstWeek: selectedWeek.period_from
+            } : u
+          )
+        );
+        
+        // Clear selected week
+        setSelectedWeeks(prev => {
+          const updated = { ...prev };
+          delete updated[user.id];
+          return updated;
         });
         
         toast({

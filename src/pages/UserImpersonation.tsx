@@ -92,8 +92,30 @@ const UserImpersonation: React.FC<UserImpersonationProps> = ({ clients }) => {
       }
       
       if (data) {
-        // Refresh user list after creating a new user
-        fetchUsers();
+        // Map the new user to our User type and add to the state immediately
+        const newMappedUser: User = {
+          id: data.id,
+          username: data.login,
+          name: data.name,
+          password: data.password,
+          role: data.type as 'admin' | 'user' | 'manager',
+          type: data.type,
+          login: data.login,
+          departmentName: null,
+          // Add other fields with default values
+          email: data.email || null,
+          job_position: data.job_position || null,
+          description: data.description || null,
+          department_id: data.department_id || null,
+          departmentId: data.department_id || null,
+          first_week: data.first_week || null,
+          firstWeek: data.first_week || null,
+          first_custom_week_id: data.first_custom_week_id || null,
+          firstCustomWeekId: data.first_custom_week_id || null,
+          deletion_mark: data.deletion_mark || false
+        };
+        
+        setUsers(prevUsers => [...prevUsers, newMappedUser]);
         
         toast({
           title: "User Created",
