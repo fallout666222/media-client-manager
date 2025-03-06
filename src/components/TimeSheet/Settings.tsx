@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, X, Check, Info } from "lucide-react";
+import { Plus, X, Check, Info, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Select,
@@ -15,6 +16,8 @@ import { Client } from '@/types/timesheet';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery } from "@tanstack/react-query";
 import * as db from "@/integrations/supabase/database";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const DEFAULT_SYSTEM_CLIENTS = [
   "Administrative",
@@ -62,7 +65,9 @@ export const Settings = ({
   const [newClient, setNewClient] = useState('');
   const [newMediaType, setNewMediaType] = useState('');
   const [selectedClientToAdd, setSelectedClientToAdd] = useState('');
+  const [selectedClientsToAdd, setSelectedClientsToAdd] = useState<string[]>([]);
   const [selectedMediaTypeToAdd, setSelectedMediaTypeToAdd] = useState('');
+  const [clientSearchTerm, setClientSearchTerm] = useState('');
   const { toast } = useToast();
 
   const isAdmin = userRole === 'admin';
@@ -105,6 +110,13 @@ export const Settings = ({
     return a.localeCompare(b);
   });
 
+  // Filter clients based on search term
+  const filteredClients = sortedAvailableClients
+    .filter(client => !selectedClients.includes(client))
+    .filter(client => 
+      client.toLowerCase().includes(clientSearchTerm.toLowerCase())
+    );
+
   const mediaTypeOptions = allMediaTypes.map(type => type.name);
 
   const handleAddClient = () => {
@@ -137,6 +149,30 @@ export const Settings = ({
     if (selectedClientToAdd && !selectedClients.includes(selectedClientToAdd)) {
       onSelectClient(selectedClientToAdd);
       setSelectedClientToAdd('');
+    }
+  };
+
+  const handleSelectMultipleClients = () => {
+    if (selectedClientsToAdd.length > 0) {
+      selectedClientsToAdd.forEach(client => {
+        if (!selectedClients.includes(client)) {
+          onSelectClient(client);
+        }
+      });
+      setSelectedClientsToAdd([]);
+      setClientSearchTerm('');
+      toast({
+        title: "Clients Added",
+        description: `Added ${selectedClientsToAdd.length} clients to your visible clients`,
+      });
+    }
+  };
+
+  const handleToggleClientSelection = (client: string, checked: boolean) => {
+    if (checked) {
+      setSelectedClientsToAdd(prev => [...prev, client]);
+    } else {
+      setSelectedClientsToAdd(prev => prev.filter(c => c !== client));
     }
   };
 
@@ -205,27 +241,46 @@ export const Settings = ({
         <h3 className="text-lg font-medium mb-4">Your Visible Clients</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
-            <Label htmlFor="client-select">Select client to add</Label>
-            <div className="flex gap-2 mt-1">
-              <Select value={selectedClientToAdd} onValueChange={setSelectedClientToAdd}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select client" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sortedAvailableClients
-                    .filter(client => !selectedClients.includes(client))
-                    .map(client => (
-                      <SelectItem key={client} value={client}>
-                        {client}
-                        {DEFAULT_SYSTEM_CLIENTS.includes(client) && (
-                          <span className="ml-2 text-xs font-medium text-blue-600">(System)</span>
-                        )}
-                      </SelectItem>
+            <Label htmlFor="client-select">Select clients to add</Label>
+            <div className="flex flex-col gap-2 mt-1">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search clients..."
+                  value={clientSearchTerm}
+                  onChange={(e) => setClientSearchTerm(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+              <ScrollArea className="h-48 border rounded-md p-2">
+                {filteredClients.length === 0 ? (
+                  <p className="text-sm text-muted-foreground p-2">No matching clients found</p>
+                ) : (
+                  <div className="space-y-2">
+                    {filteredClients.map(client => (
+                      <div key={client} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`client-${client}`} 
+                          checked={selectedClientsToAdd.includes(client)}
+                          onCheckedChange={(checked) => handleToggleClientSelection(client, checked === true)}
+                        />
+                        <label htmlFor={`client-${client}`} className="text-sm flex-1 cursor-pointer">
+                          {client}
+                          {DEFAULT_SYSTEM_CLIENTS.includes(client) && (
+                            <span className="ml-2 text-xs font-medium text-blue-600">(System)</span>
+                          )}
+                        </label>
+                      </div>
                     ))}
-                </SelectContent>
-              </Select>
-              <Button onClick={handleSelectClient} disabled={!selectedClientToAdd}>
-                <Plus className="h-4 w-4" />
+                  </div>
+                )}
+              </ScrollArea>
+              <Button 
+                onClick={handleSelectMultipleClients} 
+                disabled={selectedClientsToAdd.length === 0}
+                className="w-full"
+              >
+                Add {selectedClientsToAdd.length > 0 ? `Selected Clients (${selectedClientsToAdd.length})` : 'Clients'}
               </Button>
             </div>
           </div>
@@ -246,14 +301,12 @@ export const Settings = ({
                   <span className="ml-1 text-xs font-medium">(System)</span>
                 )}
               </span>
-              {!DEFAULT_SYSTEM_CLIENTS.includes(client) && (
-                <button
-                  onClick={() => onRemoveClient(client)}
-                  className="text-muted-foreground hover:text-destructive"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
+              <button
+                onClick={() => onRemoveClient(client)}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
           ))}
         </div>

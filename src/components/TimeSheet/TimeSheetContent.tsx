@@ -38,8 +38,8 @@ interface TimeSheetContentProps {
   onSelectClient: (client: string) => void;
   onSelectMediaType: (type: string) => void;
   isViewingOwnTimesheet: boolean;
-  clientObjects?: Client[]; // Keep this prop
-  adminOverride?: boolean; // Add admin override prop
+  clientObjects?: Client[];
+  adminOverride?: boolean;
 }
 
 export const TimeSheetContent = ({
@@ -131,11 +131,6 @@ export const TimeSheetContent = ({
         mediaTypes={mediaTypes}
         onAddClient={onAddClient}
         onRemoveClient={(client) => {
-          // Prevent removing default system clients
-          if (DEFAULT_SYSTEM_CLIENTS.includes(client)) {
-            return; // Don't allow removal
-          }
-          
           onRemoveClient(client);
           if (onSaveVisibleClients) {
             const newClients = selectedClients.filter(c => c !== client);
