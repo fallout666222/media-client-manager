@@ -22,13 +22,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Client } from '@/types/timesheet';
 import * as db from '@/integrations/supabase/database';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
