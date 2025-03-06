@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -25,7 +24,6 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
   const [selectedTeamMember, setSelectedTeamMember] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Fetch all users using React Query
   const { data: users = [], isLoading, error } = useQuery({
     queryKey: ['users'],
     queryFn: async () => {
@@ -35,7 +33,6 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
     }
   });
 
-  // Filter users who have the current user set as their User Head
   const teamMembers = users.filter(user => user.user_head_id === currentUser.id);
 
   const handleTeamMemberSelect = (userId: string) => {
@@ -68,7 +65,6 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       );
     }
     
-    // Check for first_week or first_custom_week_id
     if (!teamMember.first_week) {
       return (
         <div className="p-4 border rounded-lg bg-gray-50">
@@ -79,19 +75,14 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       );
     }
     
-    // Create a User object with the required properties
     const userForTimesheet: User = {
       id: teamMember.id,
       name: teamMember.name,
-      // Ensure role is one of the allowed values
-      role: ((['admin', 'user', 'manager'] as const).includes(teamMember.type as any) 
-        ? teamMember.type as 'admin' | 'user' | 'manager' 
-        : 'user'),
+      role: 'user' as 'admin' | 'user' | 'manager',
       firstWeek: teamMember.first_week,
       firstCustomWeekId: teamMember.first_custom_week_id,
       username: teamMember.login,
       login: teamMember.login,
-      // Ensure type is properly handled
       type: teamMember.type,
       email: teamMember.email,
       job_position: teamMember.job_position,
