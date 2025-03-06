@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +27,7 @@ interface SettingsProps {
   selectedMediaTypes: string[];
   onSelectClient: (client: string) => void;
   onSelectMediaType: (type: string) => void;
-  visibleClients?: Client[]; // Add this prop to receive the filtered client list
+  visibleClients?: Client[]; // This prop receives the filtered client list
 }
 
 export const Settings = ({
@@ -55,11 +54,15 @@ export const Settings = ({
 
   const isAdmin = userRole === 'admin';
 
-  // Filter available clients to only show those that are not hidden
-  // For admins, we'll still show all clients; for users, we'll only show visible ones
+  // For admin users, show all clients; for regular users, filter out those marked as hidden
   const filteredAvailableClients = isAdmin 
     ? availableClients 
-    : visibleClients.filter(client => !client.hidden).map(client => client.name);
+    : availableClients.filter(clientName => {
+        // Find the client object that matches this name
+        const clientObject = visibleClients.find(c => c.name === clientName);
+        // Only include clients that aren't marked as hidden
+        return clientObject && !clientObject.hidden;
+      });
 
   const handleAddClient = () => {
     if (!newClient.trim()) {
