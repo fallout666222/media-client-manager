@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { Input } from "@/components/ui/input";
 import { TimeEntry, TimeSheetStatus } from '@/types/timesheet';
 import { useToast } from "@/hooks/use-toast";
@@ -28,18 +28,121 @@ export const TimeSheetGrid = ({
 }: TimeSheetGridProps) => {
   const isFormDisabled = readOnly || status === 'under-review' || status === 'accepted';
   const { toast } = useToast();
+  const [localTimeEntries, setLocalTimeEntries] = useState<Record<string, Record<string, number>>>({});
+  const [activeInput, setActiveInput] = useState<string | null>(null);
   
   // Calculate effective hours based on week percentage
   const effectiveWeekHours = Math.round(weekHours * (weekPercentage / 100));
 
   const calculateTotalHours = (excludingClient?: string, excludingType?: string): number => {
-    return Object.entries(timeEntries).reduce((clientSum, [client, mediaEntries]) => {
+    // Start with local changes
+    let total = Object.entries(localTimeEntries).reduce((clientSum, [client, mediaEntries]) => {
       if (client === excludingClient) return clientSum;
-      return clientSum + Object.entries(mediaEntries).reduce((mediaSum, [type, entry]) => {
+      return clientSum + Object.entries(mediaEntries).reduce((mediaSum, [type, hours]) => {
         if (type === excludingType && client === excludingClient) return mediaSum;
-        return mediaSum + (entry.hours || 0);
+        return mediaSum + (hours || 0);
       }, 0);
     }, 0);
+    
+    // Add values from timeEntries that don't have local changes
+    Object.entries(timeEntries).forEach(([client, mediaEntries]) => {
+      if (!(client in localTimeEntries) || client === excludingClient) {
+        Object.entries(mediaEntries).forEach(([type, entry]) => {
+          if (
+            (!(client in localTimeEntries) || !(type in localTimeEntries[client])) && 
+            !(client === excludingClient && type === excludingType)
+          ) {
+            total += (entry.hours || 0);
+          }
+        });
+      } else {
+        Object.entries(mediaEntries).forEach(([type, entry]) => {
+          if (
+            !(type in localTimeEntries[client]) && 
+            !(client === excludingClient && type === excludingType)
+          ) {
+            total += (entry.hours || 0);
+          }
+        });
+      }
+    });
+    
+    return total;
+  };
+
+  const handleInputChange = (client: string, type: string, value: string) => {
+    const hours = parseInt(value) || 0;
+    
+    setLocalTimeEntries(prev => {
+      const newEntries = { ...prev };
+      if (!newEntries[client]) {
+        newEntries[client] = {};
+      }
+      newEntries[client][type] = hours;
+      return newEntries;
+    });
+    
+    // Set this as the active input
+    setActiveInput(`${client}-${type}`);
+  };
+  
+  const handleInputBlur = (client: string, type: string) => {
+    if (activeInput !== `${client}-${type}`) return;
+    
+    setActiveInput(null);
+    
+    // Get the current local value
+    const hours = localTimeEntries[client]?.[type] ?? 0;
+    const currentValue = timeEntries[client]?.[type]?.hours || 0;
+    
+    // Skip if value hasn't changed
+    if (hours === currentValue) return;
+    
+    // Calculate totals to check if we exceed limits
+    const currentTotal = calculateTotalHours(client, type);
+    const newTotal = currentTotal + hours - currentValue;
+    
+    if (newTotal > effectiveWeekHours) {
+      toast({
+        title: "Cannot Add Hours",
+        description: `Total hours cannot exceed ${effectiveWeekHours} for the week (${weekPercentage}% of ${weekHours})`,
+        variant: "destructive"
+      });
+      
+      // Reset the local value
+      setLocalTimeEntries(prev => {
+        const newEntries = { ...prev };
+        if (newEntries[client] && type in newEntries[client]) {
+          newEntries[client][type] = currentValue;
+        }
+        return newEntries;
+      });
+      
+      return;
+    }
+    
+    // Now save to database
+    onTimeUpdate(client, type, hours);
+    
+    // Clear this entry from local changes after saving
+    setLocalTimeEntries(prev => {
+      const newEntries = { ...prev };
+      if (newEntries[client] && type in newEntries[client]) {
+        delete newEntries[client][type];
+        if (Object.keys(newEntries[client]).length === 0) {
+          delete newEntries[client];
+        }
+      }
+      return newEntries;
+    });
+  };
+  
+  // Get display value, preferring local value if it exists
+  const getDisplayValue = (client: string, type: string): string => {
+    if (localTimeEntries[client]?.[type] !== undefined) {
+      return localTimeEntries[client][type].toString();
+    }
+    return timeEntries[client]?.[type]?.hours?.toString() || '';
   };
 
   return (
@@ -68,32 +171,21 @@ export const TimeSheetGrid = ({
                     max={effectiveWeekHours.toString()}
                     step="1"
                     className="text-center"
-                    value={timeEntries[client]?.[type]?.hours || ''}
-                    onChange={(e) => {
-                      const hours = parseInt(e.target.value) || 0;
-                      const currentTotal = calculateTotalHours(client, type);
-                      const currentValue = timeEntries[client]?.[type]?.hours || 0;
-                      const newTotal = currentTotal + hours - currentValue;
-                      
-                      if (newTotal > effectiveWeekHours) {
-                        toast({
-                          title: "Cannot Add Hours",
-                          description: `Total hours cannot exceed ${effectiveWeekHours} for the week (${weekPercentage}% of ${weekHours})`,
-                          variant: "destructive"
-                        });
-                        return;
-                      }
-                      
-                      onTimeUpdate(client, type, hours);
-                    }}
+                    value={getDisplayValue(client, type)}
+                    onChange={(e) => handleInputChange(client, type, e.target.value)}
+                    onBlur={() => handleInputBlur(client, type)}
                     disabled={isFormDisabled}
                   />
                 </TableCell>
               ))}
               <TableCell className="font-medium text-center">
-                {mediaTypes.reduce((sum, type) => 
-                  sum + (timeEntries[client]?.[type]?.hours || 0), 0
-                )}
+                {mediaTypes.reduce((sum, type) => {
+                  // Use local time entries if available, otherwise use server data
+                  const hours = localTimeEntries[client]?.[type] !== undefined
+                    ? localTimeEntries[client][type]
+                    : (timeEntries[client]?.[type]?.hours || 0);
+                  return sum + hours;
+                }, 0)}
               </TableCell>
             </TableRow>
           ))}
@@ -101,9 +193,13 @@ export const TimeSheetGrid = ({
             <TableCell className="font-bold">Total</TableCell>
             {mediaTypes.map((type) => (
               <TableCell key={`total-${type}`} className="font-bold text-center">
-                {clients.reduce((sum, client) => 
-                  sum + (timeEntries[client]?.[type]?.hours || 0), 0
-                )}
+                {clients.reduce((sum, client) => {
+                  // Use local time entries if available, otherwise use server data
+                  const hours = localTimeEntries[client]?.[type] !== undefined
+                    ? localTimeEntries[client][type]
+                    : (timeEntries[client]?.[type]?.hours || 0);
+                  return sum + hours;
+                }, 0)}
               </TableCell>
             ))}
             <TableCell className="font-bold text-center">
