@@ -48,7 +48,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
     return (
       (user.login || '').toLowerCase().includes(searchLower) ||
       (user.name || '').toLowerCase().includes(searchLower) ||
-      (user.type || user.role || '').toLowerCase().includes(searchLower)
+      (user.type || '').toLowerCase().includes(searchLower)
     );
   });
 
