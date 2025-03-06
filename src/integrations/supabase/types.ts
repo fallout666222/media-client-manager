@@ -17,6 +17,7 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          parent_id: string | null
           ts_code: string | null
         }
         Insert: {
@@ -26,6 +27,7 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
+          parent_id?: string | null
           ts_code?: string | null
         }
         Update: {
@@ -35,9 +37,18 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+          parent_id?: string | null
           ts_code?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clients_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       custom_weeks: {
         Row: {

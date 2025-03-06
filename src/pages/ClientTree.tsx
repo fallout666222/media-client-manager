@@ -23,23 +23,112 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Client } from '@/types/timesheet';
+import * as db from '@/integrations/supabase/database';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-interface ClientTreeProps {
-  clients: Client[];
-  onAddClient: (clientData: Omit<Client, "id">) => void;
-  onUpdateClient: (id: string, clientData: Partial<Client>) => void;
-  onDeleteClient: (id: string) => void;
-}
-
-const ClientTree: React.FC<ClientTreeProps> = ({
-  clients,
-  onAddClient,
-  onUpdateClient,
-  onDeleteClient
-}) => {
+const ClientTree: React.FC = () => {
   const [newClientName, setNewClientName] = useState('');
   const [newClientParent, setNewClientParent] = useState<string | null>(null);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Fetch clients from database
+  const { data: clients = [], isLoading } = useQuery({
+    queryKey: ['clients'],
+    queryFn: async () => {
+      const { data, error } = await db.getClients();
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to load clients",
+          variant: "destructive",
+        });
+        return [];
+      }
+      
+      // Convert database fields to frontend format for compatibility
+      return data?.map(client => ({
+        ...client,
+        parentId: client.parent_id,
+        // Add UI-specific fields that aren't in the database
+        hidden: Boolean(client.deletion_mark),
+        isDefault: false // Assuming no client is default by default
+      })) || [];
+    }
+  });
+
+  // Add client mutation
+  const addClientMutation = useMutation({
+    mutationFn: async (clientData: { name: string, parentId: string | null }) => {
+      const { data, error } = await db.createClient({
+        name: clientData.name,
+        parent_id: clientData.parentId
+      });
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      setNewClientName('');
+      setNewClientParent(null);
+      
+      toast({
+        title: "Success",
+        description: "Client added successfully",
+      });
+    },
+    onError: (error) => {
+      console.error('Error adding client:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add client",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Update client mutation
+  const updateClientMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string, data: Partial<Client> }) => {
+      const { error } = await db.updateClient(id, data);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+    },
+    onError: (error) => {
+      console.error('Error updating client:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update client",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Delete client mutation
+  const deleteClientMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await db.deleteClient(id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      toast({
+        title: "Success",
+        description: "Client deleted successfully",
+      });
+    },
+    onError: (error) => {
+      console.error('Error deleting client:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete client",
+        variant: "destructive",
+      });
+    }
+  });
 
   const handleAddClient = () => {
     if (newClientName.trim() === '') {
@@ -61,23 +150,17 @@ const ClientTree: React.FC<ClientTreeProps> = ({
       return;
     }
 
-    onAddClient({
+    addClientMutation.mutate({
       name: newClientName.trim(),
-      parentId: newClientParent,
-      hidden: false
-    });
-
-    setNewClientName('');
-    setNewClientParent(null);
-    
-    toast({
-      title: "Success",
-      description: "Client added successfully",
+      parentId: newClientParent
     });
   };
 
   const handleToggleHidden = (id: string, currentValue: boolean) => {
-    onUpdateClient(id, { hidden: !currentValue });
+    updateClientMutation.mutate({
+      id,
+      data: { deletion_mark: !currentValue }
+    });
   };
 
   const handleUpdateParent = (id: string, parentId: string | null) => {
@@ -101,7 +184,10 @@ const ClientTree: React.FC<ClientTreeProps> = ({
       return;
     }
 
-    onUpdateClient(id, { parentId });
+    updateClientMutation.mutate({
+      id,
+      data: { parent_id: parentId }
+    });
   };
 
   // Function to check if setting a new parent would create a circular reference
@@ -132,7 +218,28 @@ const ClientTree: React.FC<ClientTreeProps> = ({
   };
 
   const handleDeleteClient = (id: string) => {
-    onDeleteClient(id);
+    const client = clients.find(c => c.id === id);
+    
+    if (client?.isDefault) {
+      toast({
+        title: "Cannot Delete",
+        description: "Default clients cannot be deleted",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Check if this client has children
+    if (clients.some(c => c.parentId === id)) {
+      toast({
+        title: "Cannot Delete",
+        description: "This client has child clients. Please reassign or delete them first.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    deleteClientMutation.mutate(id);
   };
 
   const getParentName = (parentId: string | null): string => {
@@ -140,6 +247,10 @@ const ClientTree: React.FC<ClientTreeProps> = ({
     const parent = clients.find(client => client.id === parentId);
     return parent ? parent.name : "Unknown";
   };
+
+  if (isLoading) {
+    return <div className="container mx-auto p-4 pt-16">Loading clients...</div>;
+  }
 
   return (
     <div className="container mx-auto p-4 pt-16">
@@ -179,9 +290,13 @@ const ClientTree: React.FC<ClientTreeProps> = ({
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={handleAddClient} className="flex items-center gap-2">
+          <Button 
+            onClick={handleAddClient} 
+            className="flex items-center gap-2"
+            disabled={addClientMutation.isPending}
+          >
             <Plus className="h-4 w-4" />
-            Add Client
+            {addClientMutation.isPending ? 'Adding...' : 'Add Client'}
           </Button>
         </div>
       </div>
@@ -213,7 +328,7 @@ const ClientTree: React.FC<ClientTreeProps> = ({
                   <Select 
                     value={client.parentId || "none"} 
                     onValueChange={(value) => handleUpdateParent(client.id, value === "none" ? null : value)}
-                    disabled={client.isDefault}
+                    disabled={client.isDefault || updateClientMutation.isPending}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="None" />
@@ -236,6 +351,7 @@ const ClientTree: React.FC<ClientTreeProps> = ({
                       id={`hide-${client.id}`}
                       checked={client.hidden}
                       onCheckedChange={() => handleToggleHidden(client.id, client.hidden)}
+                      disabled={updateClientMutation.isPending}
                     />
                     <label
                       htmlFor={`hide-${client.id}`}
@@ -260,6 +376,7 @@ const ClientTree: React.FC<ClientTreeProps> = ({
                       variant="outline" 
                       size="sm"
                       onClick={() => handleDeleteClient(client.id)}
+                      disabled={deleteClientMutation.isPending}
                       className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
                     >
                       <X className="h-4 w-4" />
