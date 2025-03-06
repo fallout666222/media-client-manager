@@ -42,7 +42,7 @@ export const ApprovalActions = ({
           </Button>
         )}
         
-        {(status === 'under-review' || status === 'accepted') && (
+        {status === 'under-review' && (
           <>
             <Button onClick={onApprove} variant="default" disabled={disabled}>
               <Check className="h-4 w-4 mr-2" />
