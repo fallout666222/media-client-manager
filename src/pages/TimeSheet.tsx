@@ -57,7 +57,7 @@ const TimeSheet = ({
   adminOverride = false
 }: TimeSheetProps) => {
   const [showSettings, setShowSettings] = useState(false);
-  const [customWeeks, setCustomWeeks] = useState([]);
+  const [customWeeks, setCustomWeeks] = useState<any[]>([]);
   const [currentDate, setCurrentDate] = useState<Date>(() => {
     if (userRole === 'admin' && (!firstWeek || firstWeek === 'null') && !currentUser.firstCustomWeekId) {
       return parse("2024-01-01", 'yyyy-MM-dd', new Date());
@@ -274,13 +274,16 @@ const TimeSheet = ({
       }
     }
     
-    for (const week of userWeeks) {
-      const weekKey = week.startDate;
-      if (!submittedWeeks.includes(weekKey)) {
-        return {
-          date: parse(weekKey, 'yyyy-MM-dd', new Date()),
-          weekData: week
-        };
+    if (!adminOverride) {
+      const userWeeks = getUserWeeks();
+      for (const week of userWeeks) {
+        const weekKey = week.startDate;
+        if (!submittedWeeks.includes(weekKey)) {
+          return {
+            date: parse(weekKey, 'yyyy-MM-dd', new Date()),
+            weekData: week
+          };
+        }
       }
     }
     
@@ -309,7 +312,9 @@ const TimeSheet = ({
     } else {
       toast({
         title: "No Unsubmitted Weeks",
-        description: "All your weeks have been submitted",
+        description: adminOverride 
+          ? "There are no unsubmitted weeks in the database for this user" 
+          : "All your weeks have been submitted",
       });
     }
   };
@@ -881,6 +886,7 @@ const TimeSheet = ({
         firstWeek={viewedUser.firstWeek || firstWeek}
         weekPercentage={weekPercentage}
         weekHours={weekHours}
+        hasCustomWeeks={customWeeks.length > 0}
       />
 
       {hasUnsubmittedEarlierWeek() && !readOnly && !isCurrentWeekSubmitted() && !adminOverride && (

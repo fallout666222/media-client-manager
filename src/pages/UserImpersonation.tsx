@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, UserCircle, Eye } from "lucide-react";
-import { getUsers } from '@/integrations/supabase/database';
+import { getUsers, getCustomWeeks } from '@/integrations/supabase/database';
 import { Client, User } from '@/types/timesheet';
 import TimeSheet from './TimeSheet';
 import { Link } from 'react-router-dom';
@@ -20,14 +19,25 @@ const UserImpersonation = ({ clients }: UserImpersonationProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [adminUser, setAdminUser] = useState<User | null>(null);
+  const [customWeeks, setCustomWeeks] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchUsers = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const { data } = await getUsers();
         
-        if (data) {
+        // Fetch users
+        const { data: usersData } = await getUsers();
+        
+        // Fetch custom weeks
+        const { data: weeksData } = await getCustomWeeks();
+        
+        if (weeksData) {
+          setCustomWeeks(weeksData);
+          console.log(`Loaded ${weeksData.length} custom weeks from database`);
+        }
+        
+        if (usersData) {
           // Create admin user for context
           const admin: User = {
             id: 'admin',
@@ -40,16 +50,16 @@ const UserImpersonation = ({ clients }: UserImpersonationProps) => {
           };
           
           setAdminUser(admin);
-          setUsers(data);
+          setUsers(usersData);
         }
       } catch (error) {
-        console.error('Error fetching users:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
       }
     };
     
-    fetchUsers();
+    fetchData();
   }, []);
 
   const handleImpersonateUser = (user: User) => {
@@ -97,6 +107,29 @@ const UserImpersonation = ({ clients }: UserImpersonationProps) => {
           </CardContent>
         </Card>
         
+        {customWeeks.length === 0 && (
+          <Card className="mb-6 border-yellow-400 bg-yellow-50">
+            <CardContent className="pt-6">
+              <div className="flex items-start">
+                <div className="mr-2 mt-0.5 text-yellow-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-yellow-800">No Custom Weeks Found</h4>
+                  <p className="mt-1 text-sm text-yellow-700">
+                    No custom weeks are available in the database. The timesheet will display correctly,
+                    but "Return to First Unsubmitted Week" functionality will be limited.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        
         {/* Timesheet with admin privileges */}
         <div>
           <h2 className="text-xl font-semibold mb-4">Timesheet Management</h2>
@@ -113,6 +146,7 @@ const UserImpersonation = ({ clients }: UserImpersonationProps) => {
             clients={clients}
             impersonatedUser={selectedUser}
             adminOverride={true}
+            customWeeks={customWeeks}
           />
         </div>
       </div>
