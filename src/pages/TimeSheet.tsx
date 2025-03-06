@@ -514,6 +514,7 @@ const TimeSheet = ({
     if (readOnly && !adminOverride) return;
     
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
+    const currentStatus = getCurrentWeekStatus();
     
     try {
       const currentWeekData = currentCustomWeek || 
@@ -521,29 +522,37 @@ const TimeSheet = ({
       
       if (currentWeekData && viewedUser.id) {
         const { data: statusNames } = await getWeekStatusNames();
-        const needsRevisionStatus = statusNames?.find(status => status.name === 'needs-revision');
         
-        if (needsRevisionStatus) {
-          await updateWeekStatus(viewedUser.id, currentWeekData.id, needsRevisionStatus.id);
+        const targetStatusName = (currentStatus === 'accepted' && adminOverride) ? 'unconfirmed' : 'needs-revision';
+        const targetStatus = statusNames?.find(status => status.name === targetStatusName);
+        
+        if (targetStatus) {
+          await updateWeekStatus(viewedUser.id, currentWeekData.id, targetStatus.id);
           
           setWeekStatuses(prev => ({
             ...prev,
-            [currentWeekKey]: 'needs-revision'
+            [currentWeekKey]: targetStatusName as TimeSheetStatus
           }));
           
-          setSubmittedWeeks(prev => prev.filter(week => week !== currentWeekKey));
+          if (currentStatus === 'accepted' || currentStatus === 'under-review') {
+            setSubmittedWeeks(prev => prev.filter(week => week !== currentWeekKey));
+          }
+          
+          const message = currentStatus === 'accepted' ? 
+            `Week of ${format(currentDate, 'MMM d, yyyy')} reverted to unconfirmed` : 
+            `Week of ${format(currentDate, 'MMM d, yyyy')} needs revision`;
           
           toast({
-            title: "Timesheet Rejected",
-            description: `Week of ${format(currentDate, 'MMM d, yyyy')} needs revision`,
+            title: currentStatus === 'accepted' ? "Timesheet Reverted" : "Timesheet Rejected",
+            description: message,
           });
         }
       }
     } catch (error) {
-      console.error('Error rejecting timesheet:', error);
+      console.error('Error rejecting/reverting timesheet:', error);
       toast({
         title: "Error",
-        description: "Failed to reject timesheet",
+        description: "Failed to process timesheet action",
         variant: "destructive"
       });
     }

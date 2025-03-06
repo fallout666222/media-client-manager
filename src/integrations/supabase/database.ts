@@ -86,6 +86,10 @@ export const assignManagerToUser = async (userId: string, managerId: string) => 
 };
 
 // Week Statuses
+export const getWeekStatusNames = async () => {
+  return await supabase.from('week_status_names').select('*');
+};
+
 export const getWeekStatuses = async (userId: string) => {
   return await supabase.from('week_statuses').select(`
     *,
