@@ -20,6 +20,7 @@ interface TimeSheetControlsProps {
   weekPercentage?: number;
   customWeeks?: any[];
   adminOverride?: boolean;
+  defaultToLatestWeek?: boolean;
 }
 
 export const TimeSheetControls = ({
@@ -37,7 +38,8 @@ export const TimeSheetControls = ({
   weekId,
   weekPercentage = 100,
   customWeeks = [],
-  adminOverride = false
+  adminOverride = false,
+  defaultToLatestWeek = false
 }: TimeSheetControlsProps) => {
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center justify-between p-4 bg-muted rounded-lg">
@@ -49,6 +51,7 @@ export const TimeSheetControls = ({
           firstWeek={firstWeek}
           weekPercentage={weekPercentage}
           customWeeks={customWeeks}
+          defaultToLatestWeek={defaultToLatestWeek}
         />
       </div>
       
