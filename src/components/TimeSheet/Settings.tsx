@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +16,16 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useQuery } from "@tanstack/react-query";
 import * as db from "@/integrations/supabase/database";
 
+const DEFAULT_SYSTEM_CLIENTS = [
+  "Administrative",
+  "Education/Training",
+  "General Research",
+  "Network Requests",
+  "New Business",
+  "Sick Leave",
+  "VACATION"
+];
+
 interface SettingsProps {
   clients: string[];
   mediaTypes: string[];
@@ -31,7 +40,7 @@ interface SettingsProps {
   selectedMediaTypes: string[];
   onSelectClient: (client: string) => void;
   onSelectMediaType: (type: string) => void;
-  visibleClients?: Client[]; // Add this prop to receive the filtered client list
+  visibleClients?: Client[];
 }
 
 export const Settings = ({
@@ -48,7 +57,7 @@ export const Settings = ({
   selectedMediaTypes,
   onSelectClient,
   onSelectMediaType,
-  visibleClients = [], // Default to empty array
+  visibleClients = [],
 }: SettingsProps) => {
   const [newClient, setNewClient] = useState('');
   const [newMediaType, setNewMediaType] = useState('');
@@ -58,7 +67,6 @@ export const Settings = ({
 
   const isAdmin = userRole === 'admin';
 
-  // Fetch all media types from the database
   const { data: allMediaTypes = [], isLoading: isLoadingMediaTypes } = useQuery({
     queryKey: ['mediaTypes'],
     queryFn: async () => {
@@ -76,16 +84,27 @@ export const Settings = ({
       
       return data || [];
     },
-    enabled: true, // Always fetch media types
+    enabled: true,
   });
 
-  // Filter available clients to only show those that are not hidden
-  // For admins, we'll still show all clients; for users, we'll only show visible ones
   const filteredAvailableClients = isAdmin 
     ? availableClients 
     : visibleClients.filter(client => !client.hidden).map(client => client.name);
 
-  // Map media types from database to strings for dropdowns
+  const sortedAvailableClients = [...filteredAvailableClients].sort((a, b) => {
+    const aIsDefault = DEFAULT_SYSTEM_CLIENTS.includes(a);
+    const bIsDefault = DEFAULT_SYSTEM_CLIENTS.includes(b);
+    
+    if (aIsDefault && !bIsDefault) return -1;
+    if (!aIsDefault && bIsDefault) return 1;
+    
+    if (aIsDefault && bIsDefault) {
+      return DEFAULT_SYSTEM_CLIENTS.indexOf(a) - DEFAULT_SYSTEM_CLIENTS.indexOf(b);
+    }
+    
+    return a.localeCompare(b);
+  });
+
   const mediaTypeOptions = allMediaTypes.map(type => type.name);
 
   const handleAddClient = () => {
@@ -128,6 +147,20 @@ export const Settings = ({
     }
   };
 
+  const sortedSelectedClients = [...selectedClients].sort((a, b) => {
+    const aIsDefault = DEFAULT_SYSTEM_CLIENTS.includes(a);
+    const bIsDefault = DEFAULT_SYSTEM_CLIENTS.includes(b);
+    
+    if (aIsDefault && !bIsDefault) return -1;
+    if (!aIsDefault && bIsDefault) return 1;
+    
+    if (aIsDefault && bIsDefault) {
+      return DEFAULT_SYSTEM_CLIENTS.indexOf(a) - DEFAULT_SYSTEM_CLIENTS.indexOf(b);
+    }
+    
+    return a.localeCompare(b);
+  });
+
   return (
     <div className="space-y-8">
       {isAdmin && (
@@ -160,7 +193,6 @@ export const Settings = ({
                     className="flex items-center gap-2 bg-secondary px-3 py-1 rounded-full"
                   >
                     <span>{type.name}</span>
-                    {/* Media types cannot be deleted */}
                   </div>
                 ))}
               </div>
@@ -180,10 +212,15 @@ export const Settings = ({
                   <SelectValue placeholder="Select client" />
                 </SelectTrigger>
                 <SelectContent>
-                  {filteredAvailableClients
+                  {sortedAvailableClients
                     .filter(client => !selectedClients.includes(client))
                     .map(client => (
-                      <SelectItem key={client} value={client}>{client}</SelectItem>
+                      <SelectItem key={client} value={client}>
+                        {client}
+                        {DEFAULT_SYSTEM_CLIENTS.includes(client) && (
+                          <span className="ml-2 text-xs font-medium text-blue-600">(System)</span>
+                        )}
+                      </SelectItem>
                     ))}
                 </SelectContent>
               </Select>
@@ -194,18 +231,29 @@ export const Settings = ({
           </div>
         </div>
         <div className="flex flex-wrap gap-2 mb-8">
-          {selectedClients.map((client) => (
+          {sortedSelectedClients.map((client) => (
             <div
               key={client}
-              className="flex items-center gap-2 bg-secondary px-3 py-1 rounded-full"
+              className={`flex items-center gap-2 px-3 py-1 rounded-full ${
+                DEFAULT_SYSTEM_CLIENTS.includes(client) 
+                  ? "bg-blue-100 text-blue-900" 
+                  : "bg-secondary"
+              }`}
             >
-              <span>{client}</span>
-              <button
-                onClick={() => onRemoveClient(client)}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <span>
+                {client}
+                {DEFAULT_SYSTEM_CLIENTS.includes(client) && (
+                  <span className="ml-1 text-xs font-medium">(System)</span>
+                )}
+              </span>
+              {!DEFAULT_SYSTEM_CLIENTS.includes(client) && (
+                <button
+                  onClick={() => onRemoveClient(client)}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
           ))}
         </div>

@@ -1,8 +1,18 @@
-
 import React, { useMemo } from 'react';
 import { TimeSheetGrid } from './TimeSheetGrid';
 import { Settings } from './Settings';
 import { TimeEntry, TimeSheetStatus, Client } from '@/types/timesheet';
+
+// Define the system default clients - keep in sync with ClientTree.tsx
+const DEFAULT_SYSTEM_CLIENTS = [
+  "Administrative",
+  "Education/Training",
+  "General Research",
+  "Network Requests",
+  "New Business",
+  "Sick Leave",
+  "VACATION"
+];
 
 interface TimeSheetContentProps {
   showSettings: boolean;
@@ -90,7 +100,24 @@ export const TimeSheetContent = ({
   
   // Combine selected clients/media types with those that have entries
   const effectiveClients = useMemo(() => {
-    return [...new Set([...selectedClients, ...clientsWithEntries])];
+    const combinedClients = [...new Set([...selectedClients, ...clientsWithEntries])];
+    
+    // Sort clients with default system clients at the top
+    return combinedClients.sort((a, b) => {
+      const aIsDefault = DEFAULT_SYSTEM_CLIENTS.includes(a);
+      const bIsDefault = DEFAULT_SYSTEM_CLIENTS.includes(b);
+      
+      if (aIsDefault && !bIsDefault) return -1;
+      if (!aIsDefault && bIsDefault) return 1;
+      
+      // Sort default clients in the same order as DEFAULT_SYSTEM_CLIENTS
+      if (aIsDefault && bIsDefault) {
+        return DEFAULT_SYSTEM_CLIENTS.indexOf(a) - DEFAULT_SYSTEM_CLIENTS.indexOf(b);
+      }
+      
+      // Regular alphabetical sorting for non-default clients
+      return a.localeCompare(b);
+    });
   }, [selectedClients, clientsWithEntries]);
   
   const effectiveMediaTypes = useMemo(() => {
@@ -104,6 +131,11 @@ export const TimeSheetContent = ({
         mediaTypes={mediaTypes}
         onAddClient={onAddClient}
         onRemoveClient={(client) => {
+          // Prevent removing default system clients
+          if (DEFAULT_SYSTEM_CLIENTS.includes(client)) {
+            return; // Don't allow removal
+          }
+          
           onRemoveClient(client);
           if (onSaveVisibleClients) {
             const newClients = selectedClients.filter(c => c !== client);
@@ -125,6 +157,15 @@ export const TimeSheetContent = ({
         selectedMediaTypes={selectedMediaTypes}
         onSelectClient={(client) => {
           onSelectClient(client);
+          
+          // If the client is a system default client, automatically add "Administrative" media type
+          if (DEFAULT_SYSTEM_CLIENTS.includes(client) && !selectedMediaTypes.includes("Administrative")) {
+            onSelectMediaType("Administrative");
+            if (onSaveVisibleMediaTypes) {
+              onSaveVisibleMediaTypes([...selectedMediaTypes, "Administrative"]);
+            }
+          }
+          
           if (onSaveVisibleClients) {
             onSaveVisibleClients([...selectedClients, client]);
           }

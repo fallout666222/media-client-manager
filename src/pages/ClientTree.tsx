@@ -26,6 +26,17 @@ import { Client } from '@/types/timesheet';
 import * as db from '@/integrations/supabase/database';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
+// Define the system default clients
+const DEFAULT_SYSTEM_CLIENTS = [
+  "Administrative",
+  "Education/Training",
+  "General Research",
+  "Network Requests",
+  "New Business",
+  "Sick Leave",
+  "VACATION"
+];
+
 const ClientTree: React.FC = () => {
   const [newClientName, setNewClientName] = useState('');
   const [newClientParent, setNewClientParent] = useState<string | null>(null);
@@ -50,8 +61,8 @@ const ClientTree: React.FC = () => {
       return data?.map(client => ({
         ...client,
         parentId: client.parent_id,
-        // Use the actual hidden field from the database now
-        isDefault: false // Assuming no client is default by default
+        // Mark system default clients
+        isDefault: DEFAULT_SYSTEM_CLIENTS.includes(client.name)
       })) || [];
     }
   });
@@ -91,6 +102,12 @@ const ClientTree: React.FC = () => {
   // Update client mutation
   const updateClientMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string, data: Partial<Client> }) => {
+      // Check if it's a system default client
+      const client = clients.find(c => c.id === id);
+      if (client && DEFAULT_SYSTEM_CLIENTS.includes(client.name)) {
+        throw new Error("Cannot modify system default clients");
+      }
+      
       const { error } = await db.updateClient(id, data);
       if (error) throw error;
     },
@@ -110,6 +127,13 @@ const ClientTree: React.FC = () => {
   // Delete client mutation
   const deleteClientMutation = useMutation({
     mutationFn: async (id: string) => {
+      const client = clients.find(c => c.id === id);
+      
+      // Check if it's a system default client
+      if (client && DEFAULT_SYSTEM_CLIENTS.includes(client.name)) {
+        throw new Error("Cannot delete system default clients");
+      }
+      
       const { error } = await db.deleteClient(id);
       if (error) throw error;
     },
@@ -130,6 +154,38 @@ const ClientTree: React.FC = () => {
     }
   });
 
+  // Check if system default clients exist, if not, create them
+  useEffect(() => {
+    const ensureDefaultClients = async () => {
+      if (!clients.length) return; // Wait until clients are loaded
+      
+      // Check which default clients don't exist
+      const missingClients = DEFAULT_SYSTEM_CLIENTS.filter(
+        defaultClient => !clients.some(client => client.name === defaultClient)
+      );
+      
+      // Create missing default clients
+      for (const clientName of missingClients) {
+        try {
+          await db.createClient({
+            name: clientName,
+            hidden: false
+          });
+          console.log(`Created default client: ${clientName}`);
+        } catch (error) {
+          console.error(`Failed to create default client ${clientName}:`, error);
+        }
+      }
+      
+      if (missingClients.length > 0) {
+        // Refresh client list
+        queryClient.invalidateQueries({ queryKey: ['clients'] });
+      }
+    };
+    
+    ensureDefaultClients();
+  }, [clients, queryClient]);
+
   const handleAddClient = () => {
     if (newClientName.trim() === '') {
       toast({
@@ -149,6 +205,16 @@ const ClientTree: React.FC = () => {
       });
       return;
     }
+    
+    // Check if trying to add a system default client
+    if (DEFAULT_SYSTEM_CLIENTS.includes(newClientName.trim())) {
+      toast({
+        title: "Error",
+        description: "This client is a system default and already exists",
+        variant: "destructive",
+      });
+      return;
+    }
 
     addClientMutation.mutate({
       name: newClientName.trim(),
@@ -157,6 +223,18 @@ const ClientTree: React.FC = () => {
   };
 
   const handleToggleHidden = (id: string, currentValue: boolean) => {
+    const client = clients.find(c => c.id === id);
+    
+    // Prevent hiding system default clients
+    if (client && DEFAULT_SYSTEM_CLIENTS.includes(client.name)) {
+      toast({
+        title: "Error",
+        description: "System default clients cannot be hidden",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Now we're updating the actual hidden field, not deletion_mark
     updateClientMutation.mutate({
       id,
@@ -165,6 +243,18 @@ const ClientTree: React.FC = () => {
   };
 
   const handleUpdateParent = (id: string, parentId: string | null) => {
+    const client = clients.find(c => c.id === id);
+    
+    // Prevent modifying system default clients
+    if (client && DEFAULT_SYSTEM_CLIENTS.includes(client.name)) {
+      toast({
+        title: "Error",
+        description: "System default clients cannot be modified",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Prevent circular references
     if (parentId === id) {
       toast({
@@ -221,10 +311,11 @@ const ClientTree: React.FC = () => {
   const handleDeleteClient = (id: string) => {
     const client = clients.find(c => c.id === id);
     
-    if (client?.isDefault) {
+    // Prevent deleting system default clients
+    if (client && DEFAULT_SYSTEM_CLIENTS.includes(client.name)) {
       toast({
         title: "Cannot Delete",
-        description: "Default clients cannot be deleted",
+        description: "System default clients cannot be deleted",
         variant: "destructive",
       });
       return;
@@ -320,8 +411,8 @@ const ClientTree: React.FC = () => {
                 <TableCell className="font-medium">
                   {client.name}
                   {client.isDefault && (
-                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                      Default
+                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                      System Default
                     </span>
                   )}
                 </TableCell>
@@ -352,7 +443,7 @@ const ClientTree: React.FC = () => {
                       id={`hide-${client.id}`}
                       checked={client.hidden}
                       onCheckedChange={() => handleToggleHidden(client.id, client.hidden)}
-                      disabled={updateClientMutation.isPending}
+                      disabled={client.isDefault || updateClientMutation.isPending}
                     />
                     <label
                       htmlFor={`hide-${client.id}`}
