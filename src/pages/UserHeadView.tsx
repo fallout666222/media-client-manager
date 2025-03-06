@@ -103,11 +103,11 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
     
     return (
       <TimeSheet
-        userRole={teamMember.type as 'admin' | 'user' | 'manager'} // Fix here: cast to allowed type
+        userRole={teamMember.type as 'admin' | 'user' | 'manager'}
         firstWeek={teamMember.first_week}
         currentUser={userForTimesheet}
         users={users}
-        impersonatedUser={userForTimesheet} // Changed from viewingUser to impersonatedUser
+        impersonatedUser={userForTimesheet}
         clients={clients}
       />
     );

@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { User } from "@/types/timesheet";
-import { parse } from "date-fns";
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -72,14 +71,18 @@ export const Login = ({ onLogin, users }: LoginProps) => {
         
         // Check if user has unconfirmed or needs-revision weeks
         try {
+          console.log('Checking for unconfirmed weeks for user:', data.id);
           const firstUnconfirmedWeek = await getUserFirstUnconfirmedWeek(data.id);
           
           if (firstUnconfirmedWeek) {
+            console.log('Found unconfirmed week to redirect to:', firstUnconfirmedWeek);
             // Set the first unconfirmed week in localStorage to redirect after login
             localStorage.setItem('redirectToWeek', JSON.stringify({
               weekId: firstUnconfirmedWeek.id,
               date: firstUnconfirmedWeek.period_from
             }));
+          } else {
+            console.log('No unconfirmed weeks found for user');
           }
         } catch (error) {
           console.error('Error getting first unconfirmed week:', error);

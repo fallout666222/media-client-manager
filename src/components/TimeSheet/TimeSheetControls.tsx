@@ -48,12 +48,17 @@ export const TimeSheetControls = ({
     const redirectData = localStorage.getItem('redirectToWeek');
     if (redirectData) {
       try {
+        console.log('Found redirect data in localStorage:', redirectData);
         const { weekId: redirectWeekId, date } = JSON.parse(redirectData);
+        
+        console.log('Looking for week with ID:', redirectWeekId);
+        console.log('Available custom weeks:', customWeeks);
         
         // Find the week in customWeeks
         const weekToRedirectTo = customWeeks.find(week => week.id === redirectWeekId);
         
         if (weekToRedirectTo) {
+          console.log('Found week to redirect to:', weekToRedirectTo);
           // Convert the date string to a Date object
           const dateObj = parse(date, 'yyyy-MM-dd', new Date());
           
@@ -64,6 +69,10 @@ export const TimeSheetControls = ({
           if (weekToRedirectTo.required_hours) {
             onWeekHoursChange(weekToRedirectTo.required_hours);
           }
+          
+          console.log('Redirected to week:', weekToRedirectTo.name);
+        } else {
+          console.log('Week not found in available weeks');
         }
         
         // Clear the redirect data after using it
