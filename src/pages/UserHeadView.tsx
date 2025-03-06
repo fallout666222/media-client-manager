@@ -108,8 +108,8 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
         firstWeek={teamMember.first_week}
         currentUser={userForTimesheet}
         users={users}
-        viewingUser={currentUser}
-        isUserHead={true}
+        impersonatedUser={userForTimesheet} // Changed from viewingUser to impersonatedUser
+        isUserHead={true} // Keep for backward compatibility, if needed
         clients={clients}
       />
     );
