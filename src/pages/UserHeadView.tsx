@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import TimeSheet from "./TimeSheet";
 import { User } from '@/types/timesheet';
 import { getUsers } from '@/integrations/supabase/database';
 import { useQuery } from '@tanstack/react-query';
+import SearchBar from '@/components/SearchBar';
 
 interface UserHeadViewProps {
   currentUser: User;
@@ -22,6 +24,7 @@ interface UserHeadViewProps {
 
 const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => {
   const [selectedTeamMember, setSelectedTeamMember] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
 
   // Fetch all users using React Query
@@ -34,11 +37,28 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
     }
   });
 
-  // Filter users who have the current user set as their User Head
-  const teamMembers = users.filter(user => user.user_head_id === currentUser.id);
+  // Filter users who have the current user set as their User Head AND are not hidden
+  const teamMembers = users.filter(user => 
+    user.user_head_id === currentUser.id && !user.hidden
+  );
+
+  // Filter team members based on search term
+  const filteredTeamMembers = teamMembers.filter(user => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      (user.login || '').toLowerCase().includes(searchLower) ||
+      (user.name || '').toLowerCase().includes(searchLower) ||
+      (user.type || user.role || '').toLowerCase().includes(searchLower)
+    );
+  });
 
   const handleTeamMemberSelect = (userId: string) => {
     setSelectedTeamMember(userId);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setSelectedTeamMember(null); // Reset selection when searching
   };
 
   useEffect(() => {
@@ -133,22 +153,32 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
         </Link>
       </div>
 
-      {teamMembers.length === 0 ? (
+      {filteredTeamMembers.length === 0 ? (
         <div className="p-4 border rounded-lg bg-gray-50">
           <p className="text-center text-gray-500">
-            You don't have any team members assigned to you as User Head
+            {teamMembers.length === 0 ? 
+              "You don't have any team members assigned to you as User Head" : 
+              "No team members match your search criteria"}
           </p>
         </div>
       ) : (
         <>
           <div className="mb-8">
-            <h2 className="text-lg font-medium mb-4">Select Team Member</h2>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+              <h2 className="text-lg font-medium">Select Team Member</h2>
+              <SearchBar 
+                value={searchTerm} 
+                onChange={handleSearchChange} 
+                placeholder="Search team members..." 
+                className="max-w-xs"
+              />
+            </div>
             <Select onValueChange={handleTeamMemberSelect}>
               <SelectTrigger className="w-[250px]">
                 <SelectValue placeholder="Select team member" />
               </SelectTrigger>
               <SelectContent>
-                {teamMembers.map((member) => (
+                {filteredTeamMembers.map((member) => (
                   <SelectItem key={member.id} value={member.id}>
                     {member.login}
                   </SelectItem>

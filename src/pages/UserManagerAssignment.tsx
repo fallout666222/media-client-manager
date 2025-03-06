@@ -20,9 +20,10 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { User, Department } from "@/types/timesheet";
 import { Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getUsers, getDepartments, updateUser } from "@/integrations/supabase/database";
+import SearchBar from "@/components/SearchBar";
 
 interface UserManagerAssignmentProps {
   onUpdateUserManager: (username: string, managerId: string | undefined) => void;
@@ -39,6 +40,11 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
   const [users, setUsers] = useState<User[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Search and pagination state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   useEffect(() => {
     fetchData();
@@ -192,7 +198,6 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
     }
     
     try {
-      // We may need to add a 'hidden' column to the users table if it doesn't exist
       await updateUser(user.id, { hidden });
       
       onToggleUserHidden(user.login || user.username || '', hidden);
@@ -206,7 +211,7 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
       
       toast({
         title: "Visibility Updated",
-        description: `${user.login || user.username} is now ${hidden ? "hidden from" : "visible in"} manager views`,
+        description: `${user.login || user.username} is now ${hidden ? "hidden from" : "visible in"} User Head views`,
       });
     } catch (error) {
       console.error('Error updating user visibility:', error);
@@ -216,6 +221,37 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
         variant: "destructive",
       });
     }
+  };
+
+  // Filter users based on search term
+  const filteredUsers = users.filter(user => {
+    const searchValue = searchTerm.toLowerCase();
+    const username = (user.login || user.username || "").toLowerCase();
+    const role = (user.type || user.role || "").toLowerCase();
+    const department = user.departmentName?.toLowerCase() || "";
+    
+    return username.includes(searchValue) || 
+           role.includes(searchValue) || 
+           department.includes(searchValue);
+  });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const paginatedUsers = filteredUsers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Handle search change
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1); // Reset to first page when searching
+  };
+
+  // Handle items per page change
+  const handleItemsPerPageChange = (value: string) => {
+    setItemsPerPage(Number(value));
+    setCurrentPage(1); // Reset to first page when changing items per page
   };
 
   if (loading) {
@@ -238,6 +274,33 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
         </Link>
       </div>
       
+      <div className="flex items-center justify-between mb-4">
+        <SearchBar 
+          value={searchTerm} 
+          onChange={handleSearchChange} 
+          placeholder="Search users..." 
+          className="w-full max-w-sm"
+        />
+        
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Items per page:</span>
+          <Select 
+            value={itemsPerPage.toString()} 
+            onValueChange={handleItemsPerPageChange}
+          >
+            <SelectTrigger className="w-20">
+              <SelectValue placeholder="10" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="5">5</SelectItem>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="20">20</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      
       <div className="rounded-md border">
         <Table>
           <TableCaption>Manage user and manager relationships</TableCaption>
@@ -246,14 +309,12 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
               <TableHead>User</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Department</TableHead>
-              <TableHead>Manager</TableHead>
               <TableHead>User Head</TableHead>
-              <TableHead>Hide from Manager View</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead className="text-center">Hide from User Head View</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
+            {paginatedUsers.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="font-medium">{user.login || user.username}</TableCell>
                 <TableCell>{user.type || user.role}</TableCell>
@@ -274,29 +335,6 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
                           {department.name}
                         </SelectItem>
                       ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <Select
-                    value={user.manager_id || user.managerId || "none"}
-                    onValueChange={(value) => {
-                      handleManagerChange(user, value === "none" ? undefined : value);
-                    }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select a manager" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No Manager</SelectItem>
-                      <SelectItem value={user.id}>Self-Managed</SelectItem>
-                      {users
-                        .filter((manager) => (manager.type === "manager" || manager.role === "manager") && manager.id !== user.id)
-                        .map((manager) => (
-                          <SelectItem key={manager.id} value={manager.id}>
-                            {manager.login || manager.username} ({manager.type || manager.role})
-                          </SelectItem>
-                        ))}
                     </SelectContent>
                   </Select>
                 </TableCell>
@@ -333,20 +371,41 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
                     />
                   </div>
                 </TableCell>
-                <TableCell>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleManagerChange(user, undefined)}
-                  >
-                    Clear Manager
-                  </Button>
-                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
+      
+      {/* Pagination controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <div className="text-sm text-muted-foreground">
+            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredUsers.length)} of {filteredUsers.length} users
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
