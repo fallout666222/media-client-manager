@@ -58,7 +58,9 @@ export const Login = ({ onLogin, users }: LoginProps) => {
           description: data.description,
           department_id: data.department_id,
           departmentId: data.department_id,
-          deletion_mark: data.deletion_mark
+          deletion_mark: data.deletion_mark,
+          user_head_id: data.user_head_id,
+          hidden: data.hidden
         };
         
         onLogin(appUser);
