@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, UserCircle, Eye } from "lucide-react";
-import { getUsers } from '@/integrations/supabase/database';
+import { getUsers, getCustomWeeks } from '@/integrations/supabase/database';
 import { Client, User } from '@/types/timesheet';
 import TimeSheet from './TimeSheet';
 import { Link } from 'react-router-dom';
@@ -20,6 +19,7 @@ const UserImpersonation = ({ clients }: UserImpersonationProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [adminUser, setAdminUser] = useState<User | null>(null);
+  const [customWeeks, setCustomWeeks] = useState([]);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -49,7 +49,19 @@ const UserImpersonation = ({ clients }: UserImpersonationProps) => {
       }
     };
     
+    const fetchCustomWeeks = async () => {
+      try {
+        const { data } = await getCustomWeeks();
+        if (data) {
+          setCustomWeeks(data);
+        }
+      } catch (error) {
+        console.error('Error fetching custom weeks:', error);
+      }
+    };
+    
     fetchUsers();
+    fetchCustomWeeks();
   }, []);
 
   const handleImpersonateUser = (user: User) => {
@@ -113,6 +125,7 @@ const UserImpersonation = ({ clients }: UserImpersonationProps) => {
             clients={clients}
             impersonatedUser={selectedUser}
             adminOverride={true}
+            customWeeks={customWeeks}
           />
         </div>
       </div>

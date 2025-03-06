@@ -248,6 +248,8 @@ const TimeSheet = ({
         }
       } else if (viewedUser.firstWeek) {
         userFirstWeekDate = parse(viewedUser.firstWeek, 'yyyy-MM-dd', new Date());
+      } else if (viewedUser.first_week) {
+        userFirstWeekDate = parse(viewedUser.first_week, 'yyyy-MM-dd', new Date());
       }
       
       if (userFirstWeekDate) {
@@ -271,16 +273,30 @@ const TimeSheet = ({
             };
           }
         }
+        
+        if (userWeeks.length > 0) {
+          const latestWeek = userWeeks[userWeeks.length - 1];
+          return {
+            date: parse(latestWeek.period_from, 'yyyy-MM-dd', new Date()),
+            weekData: latestWeek
+          };
+        }
+      }
+      
+      if (adminOverride) {
+        return null;
       }
     }
     
-    for (const week of userWeeks) {
-      const weekKey = week.startDate;
-      if (!submittedWeeks.includes(weekKey)) {
-        return {
-          date: parse(weekKey, 'yyyy-MM-dd', new Date()),
-          weekData: week
-        };
+    if (!adminOverride || customWeeks.length === 0) {
+      for (const week of userWeeks) {
+        const weekKey = week.startDate;
+        if (!submittedWeeks.includes(weekKey)) {
+          return {
+            date: parse(weekKey, 'yyyy-MM-dd', new Date()),
+            weekData: week
+          };
+        }
       }
     }
     
@@ -309,7 +325,7 @@ const TimeSheet = ({
     } else {
       toast({
         title: "No Unsubmitted Weeks",
-        description: "All your weeks have been submitted",
+        description: adminOverride ? "No custom weeks available for this user" : "All your weeks have been submitted",
       });
     }
   };
@@ -878,9 +894,10 @@ const TimeSheet = ({
         status={getCurrentWeekStatus()}
         onReturnToFirstUnsubmittedWeek={handleReturnToFirstUnsubmittedWeek}
         onToggleSettings={() => setShowSettings(!showSettings)}
-        firstWeek={viewedUser.firstWeek || firstWeek}
+        firstWeek={viewedUser.firstWeek || viewedUser.first_week || firstWeek}
         weekPercentage={weekPercentage}
         weekHours={weekHours}
+        adminOverride={adminOverride}
       />
 
       {hasUnsubmittedEarlierWeek() && !readOnly && !isCurrentWeekSubmitted() && !adminOverride && (
@@ -920,7 +937,7 @@ const TimeSheet = ({
         onApprove={handleApprove}
         onReject={handleReject}
         readOnly={readOnly || (!isViewingOwnTimesheet && userRole !== 'manager' && userRole !== 'admin' && !adminOverride)}
-        firstWeek={viewedUser.firstWeek || firstWeek}
+        firstWeek={viewedUser.firstWeek || viewedUser.first_week || firstWeek}
         weekId={currentCustomWeek?.id}
         weekPercentage={weekPercentage}
         customWeeks={customWeeks}
