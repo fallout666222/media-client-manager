@@ -14,6 +14,8 @@ import {
 import { Label } from "@/components/ui/label";
 import { Client } from '@/types/timesheet';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useQuery } from "@tanstack/react-query";
+import * as db from "@/integrations/supabase/database";
 
 interface SettingsProps {
   clients: string[];
@@ -56,11 +58,35 @@ export const Settings = ({
 
   const isAdmin = userRole === 'admin';
 
+  // Fetch all media types from the database
+  const { data: allMediaTypes = [], isLoading: isLoadingMediaTypes } = useQuery({
+    queryKey: ['mediaTypes'],
+    queryFn: async () => {
+      const { data, error } = await db.getMediaTypes();
+      
+      if (error) {
+        console.error("Error fetching media types:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load media types",
+          variant: "destructive",
+        });
+        throw error;
+      }
+      
+      return data || [];
+    },
+    enabled: true, // Always fetch media types
+  });
+
   // Filter available clients to only show those that are not hidden
   // For admins, we'll still show all clients; for users, we'll only show visible ones
   const filteredAvailableClients = isAdmin 
     ? availableClients 
     : visibleClients.filter(client => !client.hidden).map(client => client.name);
+
+  // Map media types from database to strings for dropdowns
+  const mediaTypeOptions = allMediaTypes.map(type => type.name);
 
   const handleAddClient = () => {
     if (!newClient.trim()) {
@@ -124,17 +150,21 @@ export const Settings = ({
                 <p>Media type management has been moved to the dedicated Media Types page. Please use that page to add or view media types.</p>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {mediaTypes.map((type) => (
-                <div
-                  key={type}
-                  className="flex items-center gap-2 bg-secondary px-3 py-1 rounded-full"
-                >
-                  <span>{type}</span>
-                  {/* Media types cannot be deleted */}
-                </div>
-              ))}
-            </div>
+            {isLoadingMediaTypes ? (
+              <div className="text-center py-2">Loading media types...</div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {allMediaTypes.map((type) => (
+                  <div
+                    key={type.id}
+                    className="flex items-center gap-2 bg-secondary px-3 py-1 rounded-full"
+                  >
+                    <span>{type.name}</span>
+                    {/* Media types cannot be deleted */}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </>
       )}
@@ -204,14 +234,18 @@ export const Settings = ({
                   <SelectValue placeholder="Select media type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableMediaTypes
-                    .filter(type => !selectedMediaTypes.includes(type))
-                    .map(type => (
-                      <SelectItem key={type} value={type}>{type}</SelectItem>
-                    ))}
+                  {isLoadingMediaTypes ? (
+                    <SelectItem value="loading" disabled>Loading media types...</SelectItem>
+                  ) : (
+                    mediaTypeOptions
+                      .filter(type => !selectedMediaTypes.includes(type))
+                      .map(type => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                      ))
+                  )}
                 </SelectContent>
               </Select>
-              <Button onClick={handleSelectMediaType} disabled={!selectedMediaTypeToAdd}>
+              <Button onClick={handleSelectMediaType} disabled={!selectedMediaTypeToAdd || isLoadingMediaTypes}>
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
