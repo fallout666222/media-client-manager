@@ -58,7 +58,18 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
     }
     
     const teamMember = users.find(u => u.id === selectedTeamMember);
-    if (!teamMember || !teamMember.firstWeek) {
+    if (!teamMember) {
+      return (
+        <div className="p-4 border rounded-lg bg-gray-50">
+          <p className="text-center text-gray-500">
+            User not found
+          </p>
+        </div>
+      );
+    }
+    
+    // Check for first_week or first_custom_week_id
+    if (!teamMember.first_week) {
       return (
         <div className="p-4 border rounded-lg bg-gray-50">
           <p className="text-center text-gray-500">
@@ -68,11 +79,33 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       );
     }
     
+    // Create a User object with the required properties
+    const userForTimesheet: User = {
+      id: teamMember.id,
+      name: teamMember.name,
+      role: teamMember.type as 'admin' | 'user' | 'manager',
+      firstWeek: teamMember.first_week,
+      firstCustomWeekId: teamMember.first_custom_week_id,
+      username: teamMember.login,
+      login: teamMember.login,
+      type: teamMember.type,
+      email: teamMember.email,
+      job_position: teamMember.job_position,
+      description: teamMember.description,
+      department_id: teamMember.department_id,
+      departmentId: teamMember.department_id,
+      first_week: teamMember.first_week,
+      first_custom_week_id: teamMember.first_custom_week_id,
+      deletion_mark: teamMember.deletion_mark,
+      hidden: teamMember.hidden,
+      user_head_id: teamMember.user_head_id
+    };
+    
     return (
       <TimeSheet
-        userRole={teamMember.role}
-        firstWeek={teamMember.firstWeek}
-        currentUser={teamMember}
+        userRole={teamMember.type}
+        firstWeek={teamMember.first_week}
+        currentUser={userForTimesheet}
         users={users}
         viewingUser={currentUser}
         isUserHead={true}
@@ -118,7 +151,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
               <SelectContent>
                 {teamMembers.map((member) => (
                   <SelectItem key={member.id} value={member.id}>
-                    {member.login || member.username}
+                    {member.login}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -129,8 +162,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
             {selectedTeamMember ? (
               <>
                 <h2 className="text-lg font-medium mb-4">
-                  Timesheet for {users.find(u => u.id === selectedTeamMember)?.login || 
-                                users.find(u => u.id === selectedTeamMember)?.username}
+                  Timesheet for {users.find(u => u.id === selectedTeamMember)?.login}
                 </h2>
                 {renderTeamMemberTimesheet()}
               </>
