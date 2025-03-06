@@ -1,8 +1,9 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { WeekPicker } from './WeekPicker';
 import { ApprovalActions } from './ApprovalActions';
 import { TimeSheetStatus } from '@/types/timesheet';
+import { parse } from 'date-fns';
 
 interface TimeSheetControlsProps {
   currentDate: Date;
@@ -41,6 +42,39 @@ export const TimeSheetControls = ({
   customWeeks = [],
   adminOverride = false
 }: TimeSheetControlsProps) => {
+  
+  useEffect(() => {
+    // Check for redirect information in localStorage
+    const redirectData = localStorage.getItem('redirectToWeek');
+    if (redirectData) {
+      try {
+        const { weekId: redirectWeekId, date } = JSON.parse(redirectData);
+        
+        // Find the week in customWeeks
+        const weekToRedirectTo = customWeeks.find(week => week.id === redirectWeekId);
+        
+        if (weekToRedirectTo) {
+          // Convert the date string to a Date object
+          const dateObj = parse(date, 'yyyy-MM-dd', new Date());
+          
+          // Update the current week
+          onWeekChange(dateObj);
+          
+          // If the week has hours, update those too
+          if (weekToRedirectTo.required_hours) {
+            onWeekHoursChange(weekToRedirectTo.required_hours);
+          }
+        }
+        
+        // Clear the redirect data after using it
+        localStorage.removeItem('redirectToWeek');
+      } catch (error) {
+        console.error('Error processing redirect data:', error);
+        localStorage.removeItem('redirectToWeek');
+      }
+    }
+  }, [customWeeks, onWeekChange, onWeekHoursChange]);
+  
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center justify-between p-4 bg-muted rounded-lg">
       <div>

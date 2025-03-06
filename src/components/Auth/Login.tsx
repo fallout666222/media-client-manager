@@ -1,8 +1,10 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { User } from "@/types/timesheet";
+import { parse } from "date-fns";
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -21,7 +23,7 @@ export const Login = ({ onLogin, users }: LoginProps) => {
     try {
       setLoading(true);
       
-      const { authenticateUser } = await import('@/integrations/supabase/database');
+      const { authenticateUser, getUserFirstUnconfirmedWeek } = await import('@/integrations/supabase/database');
       const { data, error } = await authenticateUser(username, password);
       
       if (error) {
@@ -60,10 +62,26 @@ export const Login = ({ onLogin, users }: LoginProps) => {
         };
         
         onLogin(appUser);
+        
         toast({
           title: "Welcome back!",
           description: `You are now logged in as ${data.name}`,
         });
+        
+        // Check if user has unconfirmed or needs-revision weeks
+        try {
+          const firstUnconfirmedWeek = await getUserFirstUnconfirmedWeek(data.id);
+          
+          if (firstUnconfirmedWeek) {
+            // Set the first unconfirmed week in localStorage to redirect after login
+            localStorage.setItem('redirectToWeek', JSON.stringify({
+              weekId: firstUnconfirmedWeek.id,
+              date: firstUnconfirmedWeek.period_from
+            }));
+          }
+        } catch (error) {
+          console.error('Error getting first unconfirmed week:', error);
+        }
       } else {
         toast({
           title: "Authentication Failed",

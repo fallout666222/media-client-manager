@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 
 // Custom Weeks
@@ -34,6 +35,38 @@ export const updateUser = async (id: string, user: any) => {
 
 export const authenticateUser = async (login: string, password: string) => {
   return await supabase.from('users').select('*').eq('login', login).eq('password', password).single();
+};
+
+export const getUserFirstUnconfirmedWeek = async (userId: string) => {
+  // Get week statuses that are either unconfirmed or needs-revision
+  const { data: statusNames } = await supabase
+    .from('week_status_names')
+    .select('id')
+    .or('name.eq.unconfirmed,name.eq.needs-revision');
+  
+  if (!statusNames || statusNames.length === 0) {
+    return null;
+  }
+  
+  const statusIds = statusNames.map(status => status.id);
+  
+  // Find the first week with these statuses
+  const { data: weekStatus } = await supabase
+    .from('week_statuses')
+    .select(`
+      *,
+      week:custom_weeks(*)
+    `)
+    .eq('user_id', userId)
+    .in('week_status_id', statusIds)
+    .order('week.period_from', { ascending: true })
+    .limit(1);
+  
+  if (weekStatus && weekStatus.length > 0) {
+    return weekStatus[0].week;
+  }
+  
+  return null;
 };
 
 // Media Types
