@@ -1,11 +1,18 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, X, ArrowLeft, Lock } from "lucide-react";
+import { Plus, X, ArrowLeft, Lock, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import SearchBar from "@/components/SearchBar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -26,7 +33,6 @@ import { Client } from '@/types/timesheet';
 import * as db from '@/integrations/supabase/database';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-// Define the system default clients
 const DEFAULT_SYSTEM_CLIENTS = [
   "Administrative",
   "Education/Training",
@@ -37,13 +43,17 @@ const DEFAULT_SYSTEM_CLIENTS = [
   "VACATION"
 ];
 
+const ITEMS_PER_PAGE_OPTIONS = [5, 10, 20, 50];
+
 const ClientTree: React.FC = () => {
   const [newClientName, setNewClientName] = useState('');
   const [newClientParent, setNewClientParent] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch clients from database
   const { data: clients = [], isLoading } = useQuery({
     queryKey: ['clients'],
     queryFn: async () => {
@@ -57,23 +67,20 @@ const ClientTree: React.FC = () => {
         return [];
       }
       
-      // Convert database fields to frontend format for compatibility
       return data?.map(client => ({
         ...client,
         parentId: client.parent_id,
-        // Mark system default clients
         isDefault: DEFAULT_SYSTEM_CLIENTS.includes(client.name)
       })) || [];
     }
   });
 
-  // Add client mutation
   const addClientMutation = useMutation({
     mutationFn: async (clientData: { name: string, parentId: string | null }) => {
       const { data, error } = await db.createClient({
         name: clientData.name,
         parent_id: clientData.parentId,
-        hidden: false // New clients are not hidden by default
+        hidden: false
       });
       
       if (error) throw error;
@@ -99,10 +106,8 @@ const ClientTree: React.FC = () => {
     }
   });
 
-  // Update client mutation
   const updateClientMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string, data: Partial<Client> }) => {
-      // Check if it's a system default client
       const client = clients.find(c => c.id === id);
       if (client && DEFAULT_SYSTEM_CLIENTS.includes(client.name)) {
         throw new Error("Cannot modify system default clients");
@@ -124,12 +129,10 @@ const ClientTree: React.FC = () => {
     }
   });
 
-  // Delete client mutation
   const deleteClientMutation = useMutation({
     mutationFn: async (id: string) => {
       const client = clients.find(c => c.id === id);
       
-      // Check if it's a system default client
       if (client && DEFAULT_SYSTEM_CLIENTS.includes(client.name)) {
         throw new Error("Cannot delete system default clients");
       }
@@ -154,17 +157,14 @@ const ClientTree: React.FC = () => {
     }
   });
 
-  // Check if system default clients exist, if not, create them
   useEffect(() => {
     const ensureDefaultClients = async () => {
-      if (!clients.length) return; // Wait until clients are loaded
+      if (!clients.length) return;
       
-      // Check which default clients don't exist
       const missingClients = DEFAULT_SYSTEM_CLIENTS.filter(
         defaultClient => !clients.some(client => client.name === defaultClient)
       );
       
-      // Create missing default clients
       for (const clientName of missingClients) {
         try {
           await db.createClient({
@@ -178,7 +178,6 @@ const ClientTree: React.FC = () => {
       }
       
       if (missingClients.length > 0) {
-        // Refresh client list
         queryClient.invalidateQueries({ queryKey: ['clients'] });
       }
     };
@@ -196,7 +195,6 @@ const ClientTree: React.FC = () => {
       return;
     }
 
-    // Check if client with this name already exists
     if (clients.some(client => client.name.toLowerCase() === newClientName.toLowerCase())) {
       toast({
         title: "Error",
@@ -206,7 +204,6 @@ const ClientTree: React.FC = () => {
       return;
     }
     
-    // Check if trying to add a system default client
     if (DEFAULT_SYSTEM_CLIENTS.includes(newClientName.trim())) {
       toast({
         title: "Error",
@@ -225,7 +222,6 @@ const ClientTree: React.FC = () => {
   const handleToggleHidden = (id: string, currentValue: boolean) => {
     const client = clients.find(c => c.id === id);
     
-    // Prevent hiding system default clients
     if (client && DEFAULT_SYSTEM_CLIENTS.includes(client.name)) {
       toast({
         title: "Error",
@@ -235,7 +231,6 @@ const ClientTree: React.FC = () => {
       return;
     }
     
-    // Now we're updating the actual hidden field, not deletion_mark
     updateClientMutation.mutate({
       id,
       data: { hidden: !currentValue }
@@ -245,7 +240,6 @@ const ClientTree: React.FC = () => {
   const handleUpdateParent = (id: string, parentId: string | null) => {
     const client = clients.find(c => c.id === id);
     
-    // Prevent modifying system default clients
     if (client && DEFAULT_SYSTEM_CLIENTS.includes(client.name)) {
       toast({
         title: "Error",
@@ -255,7 +249,6 @@ const ClientTree: React.FC = () => {
       return;
     }
     
-    // Prevent circular references
     if (parentId === id) {
       toast({
         title: "Error",
@@ -265,7 +258,6 @@ const ClientTree: React.FC = () => {
       return;
     }
 
-    // Check if this would create a circular reference in the hierarchy
     if (parentId && wouldCreateCircularReference(id, parentId)) {
       toast({
         title: "Error",
@@ -281,18 +273,17 @@ const ClientTree: React.FC = () => {
     });
   };
 
-  // Function to check if setting a new parent would create a circular reference
   const wouldCreateCircularReference = (clientId: string, newParentId: string): boolean => {
     let currentParentId = newParentId;
     const visited = new Set<string>();
     
     while (currentParentId) {
       if (visited.has(currentParentId)) {
-        return true; // Circular reference detected
+        return true;
       }
       
       if (currentParentId === clientId) {
-        return true; // This would create a circle
+        return true;
       }
       
       visited.add(currentParentId);
@@ -311,7 +302,6 @@ const ClientTree: React.FC = () => {
   const handleDeleteClient = (id: string) => {
     const client = clients.find(c => c.id === id);
     
-    // Prevent deleting system default clients
     if (client && DEFAULT_SYSTEM_CLIENTS.includes(client.name)) {
       toast({
         title: "Cannot Delete",
@@ -321,7 +311,6 @@ const ClientTree: React.FC = () => {
       return;
     }
     
-    // Check if this client has children
     if (clients.some(c => c.parentId === id)) {
       toast({
         title: "Cannot Delete",
@@ -339,6 +328,22 @@ const ClientTree: React.FC = () => {
     const parent = clients.find(client => client.id === parentId);
     return parent ? parent.name : "Unknown";
   };
+
+  const filteredClients = clients.filter(client =>
+    client.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedClients = filteredClients.slice(startIndex, startIndex + itemsPerPage);
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   if (isLoading) {
     return <div className="container mx-auto p-4 pt-16">Loading clients...</div>;
@@ -393,8 +398,38 @@ const ClientTree: React.FC = () => {
         </div>
       </div>
 
-      <div>
-        <h2 className="text-lg font-medium mb-4">Client Hierarchy</h2>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="w-1/3">
+            <SearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search clients..."
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Items per page:</span>
+            <Select
+              value={itemsPerPage.toString()}
+              onValueChange={(value) => {
+                setItemsPerPage(Number(value));
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger className="w-20">
+                <SelectValue placeholder="10" />
+              </SelectTrigger>
+              <SelectContent>
+                {ITEMS_PER_PAGE_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option.toString()}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         <Table>
           <TableCaption>Manage your client hierarchy and visibility</TableCaption>
           <TableHeader>
@@ -406,7 +441,7 @@ const ClientTree: React.FC = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {clients.map((client) => (
+            {paginatedClients.map((client) => (
               <TableRow key={client.id} className={client.isDefault ? "bg-muted/30" : ""}>
                 <TableCell className="font-medium">
                   {client.name}
@@ -428,7 +463,7 @@ const ClientTree: React.FC = () => {
                     <SelectContent>
                       <SelectItem value="none">None</SelectItem>
                       {clients
-                        .filter(c => c.id !== client.id) // Can't be its own parent
+                        .filter(c => c.id !== client.id)
                         .map((parentClient) => (
                           <SelectItem key={parentClient.id} value={parentClient.id}>
                             {parentClient.name}
@@ -479,6 +514,33 @@ const ClientTree: React.FC = () => {
             ))}
           </TableBody>
         </Table>
+
+        <div className="flex items-center justify-between mt-4">
+          <div className="text-sm text-muted-foreground">
+            Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredClients.length)} of {filteredClients.length} entries
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
