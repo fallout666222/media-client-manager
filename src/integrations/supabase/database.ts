@@ -219,8 +219,3 @@ export const addUserVisibleType = async (userId: string, typeId: string) => {
 export const removeUserVisibleType = async (id: string) => {
   return await supabase.from('visible_types').delete().eq('id', id);
 };
-
-// Status Names
-export const getWeekStatusNames = async () => {
-  return await supabase.from('week_status_names').select('*');
-};
