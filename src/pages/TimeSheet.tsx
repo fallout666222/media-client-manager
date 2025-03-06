@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parse, format, isAfter, isBefore, addWeeks, startOfWeek, isEqual, isSameDay } from 'date-fns';
@@ -44,6 +45,7 @@ interface TimeSheetProps {
   readOnly?: boolean;
   impersonatedUser?: User;
   adminOverride?: boolean;
+  customWeeks?: any[];
 }
 
 const TimeSheet = ({ 
