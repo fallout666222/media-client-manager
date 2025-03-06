@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   Table,
@@ -27,14 +28,12 @@ interface UserManagerAssignmentProps {
   onUpdateUserManager: (username: string, managerId: string | undefined) => void;
   onUpdateUserDepartment: (username: string, departmentId: string | undefined) => void;
   onToggleUserHidden: (username: string, hidden: boolean) => void;
-  onUpdateUserHead?: (username: string, userHeadId: string | undefined) => void;
 }
 
 const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
   onUpdateUserManager,
   onUpdateUserDepartment,
-  onToggleUserHidden,
-  onUpdateUserHead
+  onToggleUserHidden
 }) => {
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
@@ -118,10 +117,6 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
     try {
       await updateUser(user.id, { user_head_id: userHeadId });
       
-      if (onUpdateUserHead) {
-        onUpdateUserHead(user.login || user.username || '', userHeadId);
-      }
-      
       // Update the users state to reflect the changes immediately
       setUsers(prevUsers => 
         prevUsers.map(u => 
@@ -131,7 +126,7 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
       
       toast({
         title: "User Head Updated",
-        description: `User Head assignment updated for ${user.login || user.username}`,
+        description: `User Head updated for ${user.login || user.username}`,
       });
     } catch (error) {
       console.error('Error updating user head:', error);
@@ -245,7 +240,7 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
       
       <div className="rounded-md border">
         <Table>
-          <TableCaption>Manage user relationships</TableCaption>
+          <TableCaption>Manage user and manager relationships</TableCaption>
           <TableHeader>
             <TableRow>
               <TableHead>User</TableHead>
@@ -317,9 +312,8 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">No User Head</SelectItem>
-                      <SelectItem value={user.id}>Self-Managed</SelectItem>
                       {users
-                        .filter((head) => head.id !== user.id)
+                        .filter((head) => head.id !== user.id || user.user_head_id === user.id) // Allow self-assignment if already self-assigned
                         .map((head) => (
                           <SelectItem key={head.id} value={head.id}>
                             {head.login || head.username} ({head.type || head.role})
@@ -340,22 +334,13 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleManagerChange(user, undefined)}
-                    >
-                      Clear Manager
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleUserHeadChange(user, undefined)}
-                    >
-                      Clear Head
-                    </Button>
-                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleManagerChange(user, undefined)}
+                  >
+                    Clear Manager
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}

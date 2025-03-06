@@ -12,7 +12,6 @@ import UserManagerAssignment from "./pages/UserManagerAssignment";
 import UserFirstWeekManagement from "./pages/UserFirstWeekManagement";
 import UserWeekPercentage from "./pages/UserWeekPercentage";
 import ManagerView from "./pages/ManagerView";
-import UserHeadView from "./pages/UserHeadView";
 import ClientTree from "./pages/ClientTree";
 import MediaTypeManagement from "./pages/MediaTypeManagement";
 import { useState, useEffect } from "react";
@@ -33,6 +32,8 @@ import {
 } from "lucide-react";
 import { useToast } from "./hooks/use-toast";
 import * as db from "./integrations/supabase/database";
+import UserHeadView from "./pages/UserHeadView";
+import { UserCircle } from "lucide-react";
 
 const queryClient = new QueryClient();
 
@@ -84,9 +85,7 @@ export function App() {
           firstWeek: data.first_week,
           first_custom_week_id: data.first_custom_week_id,
           firstCustomWeekId: data.first_custom_week_id,
-          deletion_mark: data.deletion_mark,
-          user_head_id: data.user_head_id,
-          userHeadId: data.user_head_id
+          deletion_mark: data.deletion_mark
         };
         
         setUser(fullUserData);
@@ -306,10 +305,7 @@ export function App() {
     return clients.filter(c => !c.hidden).map(c => c.name);
   };
 
-  const isUserHead = () => {
-    if (!user || !user.id) return false;
-    return users.some(u => u.user_head_id === user.id || u.userHeadId === user.id);
-  };
+  const isUserHead = (user && users.some(u => u.user_head_id === user.id)) || false;
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
@@ -386,11 +382,11 @@ export function App() {
                   </Button>
                 </Link>
               )}
-              {isUserHead() && (
-                <Link to="/head-view">
+              {isUserHead && (
+                <Link to="/user-head-view">
                   <Button variant="outline" size="sm" className="flex items-center gap-2">
-                    <Eye className="h-4 w-4" />
-                    View Team as Head
+                    <UserCircle className="h-4 w-4" />
+                    User Head View
                   </Button>
                 </Link>
               )}
@@ -511,16 +507,6 @@ export function App() {
               }
             />
             <Route
-              path="/head-view"
-              element={
-                isUserHead() ? (
-                  <UserHeadView />
-                ) : (
-                  <Navigate to="/" replace />
-                )
-              }
-            />
-            <Route
               path="/client-tree"
               element={
                 user?.role === 'admin' ? (
@@ -560,6 +546,19 @@ export function App() {
               element={
                 user?.role === 'admin' ? (
                   <MediaTypeManagement />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              }
+            />
+            <Route
+              path="/user-head-view"
+              element={
+                user && isUserHead ? (
+                  <UserHeadView
+                    currentUser={user}
+                    clients={clients}
+                  />
                 ) : (
                   <Navigate to="/" replace />
                 )

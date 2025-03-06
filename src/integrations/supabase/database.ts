@@ -17,13 +17,6 @@ export const getUsers = async () => {
   `).eq('deletion_mark', false);
 };
 
-export const getUsersByUserHeadId = async (userHeadId: string) => {
-  return await supabase.from('users').select(`
-    *,
-    department:departments(name)
-  `).eq('user_head_id', userHeadId).eq('deletion_mark', false);
-};
-
 export const getUserById = async (id: string) => {
   return await supabase.from('users').select(`
     *,

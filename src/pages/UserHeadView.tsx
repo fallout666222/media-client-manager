@@ -2,136 +2,130 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft } from "lucide-react";
-import { useToast } from '@/hooks/use-toast';
-import TimeSheet from '@/pages/TimeSheet';
-import { User, Client } from '@/types/timesheet';
-import { supabase } from '@/integrations/supabase/client';
-import * as db from '@/integrations/supabase/database';
+import { useToast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import TimeSheet from "./TimeSheet";
+import { User } from '@/types/timesheet';
+import { getUsers } from '@/integrations/supabase/database';
+import { useQuery } from '@tanstack/react-query';
 
-// Remove the props from the component definition since we're getting them via supabase queries
-const UserHeadView = () => {
+interface UserHeadViewProps {
+  currentUser: User;
+  clients: any[];
+}
+
+const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => {
+  const [selectedTeamMember, setSelectedTeamMember] = useState<string | null>(null);
   const { toast } = useToast();
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [teamMembers, setTeamMembers] = useState<User[]>([]);
-  const [selectedTeamMember, setSelectedTeamMember] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [customWeeks, setCustomWeeks] = useState([]);
-  const [clients, setClients] = useState<Client[]>([]);
 
-  useEffect(() => {
-    fetchCurrentUser();
-    fetchCustomWeeks();
-    fetchClients();
-  }, []);
-
-  const fetchCurrentUser = async () => {
-    try {
-      const sessionResponse = await supabase.auth.getSession();
-      if (!sessionResponse.data.session) {
-        toast({
-          title: "Not authenticated",
-          description: "Please login to view this page",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('login', sessionResponse.data.session.user.email)
-        .single();
-
-      if (userError) throw userError;
-      setCurrentUser(userData);
-
-      fetchTeamMembers(userData.id);
-    } catch (error) {
-      console.error('Error fetching current user:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load user data",
-        variant: "destructive"
-      });
+  // Fetch all users using React Query
+  const { data: users = [], isLoading, error } = useQuery({
+    queryKey: ['users'],
+    queryFn: async () => {
+      const { data, error } = await getUsers();
+      if (error) throw error;
+      return data || [];
     }
+  });
+
+  // Filter users who have the current user set as their User Head
+  const teamMembers = users.filter(user => user.user_head_id === currentUser.id);
+
+  const handleTeamMemberSelect = (userId: string) => {
+    setSelectedTeamMember(userId);
   };
 
-  const fetchTeamMembers = async (userHeadId: string) => {
-    setLoading(true);
-    try {
-      const { data: membersData, error: membersError } = await db.getUsersByUserHeadId(userHeadId);
-
-      if (membersError) throw membersError;
-      
-      setTeamMembers(membersData || []);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching team members:', error);
+  useEffect(() => {
+    if (error) {
       toast({
         title: "Error",
         description: "Failed to load team members",
         variant: "destructive"
       });
-      setLoading(false);
     }
-  };
+  }, [error, toast]);
 
-  const fetchCustomWeeks = async () => {
-    try {
-      const { data, error } = await supabase.from('custom_weeks').select('*').order('period_from', { ascending: true });
-      if (error) throw error;
-      setCustomWeeks(data || []);
-    } catch (error) {
-      console.error('Error fetching custom weeks:', error);
+  const renderTeamMemberTimesheet = () => {
+    if (!selectedTeamMember) {
+      return null;
     }
-  };
-
-  const fetchClients = async () => {
-    try {
-      const { data, error } = await supabase.from('clients').select('*').eq('deletion_mark', false);
-      if (error) throw error;
-      setClients(data || []);
-    } catch (error) {
-      console.error('Error fetching clients:', error);
+    
+    const teamMember = users.find(u => u.id === selectedTeamMember);
+    if (!teamMember) {
+      return (
+        <div className="p-4 border rounded-lg bg-gray-50">
+          <p className="text-center text-gray-500">
+            User not found
+          </p>
+        </div>
+      );
     }
-  };
-
-  const handleTeamMemberChange = (memberId: string) => {
-    const teamMember = teamMembers.find(member => member.id === memberId);
-    if (teamMember) {
-      setSelectedTeamMember(teamMember);
+    
+    // Check for first_week or first_custom_week_id
+    if (!teamMember.first_week) {
+      return (
+        <div className="p-4 border rounded-lg bg-gray-50">
+          <p className="text-center text-gray-500">
+            This user does not have a first week set
+          </p>
+        </div>
+      );
     }
-  };
-
-  if (loading || !currentUser) {
-    return <div className="container mx-auto p-6 text-center">Loading...</div>;
-  }
-
-  if (teamMembers.length === 0) {
+    
+    // Create a User object with the required properties
+    const userForTimesheet: User = {
+      id: teamMember.id,
+      name: teamMember.name,
+      role: teamMember.type as 'admin' | 'user' | 'manager',
+      firstWeek: teamMember.first_week,
+      firstCustomWeekId: teamMember.first_custom_week_id,
+      username: teamMember.login,
+      login: teamMember.login,
+      type: teamMember.type,
+      email: teamMember.email,
+      job_position: teamMember.job_position,
+      description: teamMember.description,
+      department_id: teamMember.department_id,
+      departmentId: teamMember.department_id,
+      first_week: teamMember.first_week,
+      first_custom_week_id: teamMember.first_custom_week_id,
+      deletion_mark: teamMember.deletion_mark,
+      hidden: teamMember.hidden,
+      user_head_id: teamMember.user_head_id
+    };
+    
     return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">User Head View</h1>
-          <Link to="/">
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Dashboard
-            </Button>
-          </Link>
-        </div>
-        <div className="bg-muted p-6 rounded-lg text-center">
-          <p>You don't have any team members assigned to you yet.</p>
-        </div>
+      <TimeSheet
+        userRole={teamMember.type}
+        firstWeek={teamMember.first_week}
+        currentUser={userForTimesheet}
+        users={users}
+        viewingUser={currentUser}
+        isUserHead={true}
+        clients={clients}
+      />
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-4 pt-16 text-center">
+        <p>Loading team members...</p>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto p-4 pt-16">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">User Head View</h1>
+        <h1 className="text-2xl font-bold">Team Timesheets (User Head View)</h1>
         <Link to="/">
           <Button variant="outline" size="sm" className="flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
@@ -140,38 +134,43 @@ const UserHeadView = () => {
         </Link>
       </div>
 
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold mb-2">Select Team Member:</h2>
-        <Select onValueChange={handleTeamMemberChange} value={selectedTeamMember?.id || ''}>
-          <SelectTrigger className="w-full md:w-1/2">
-            <SelectValue placeholder="Select a team member" />
-          </SelectTrigger>
-          <SelectContent>
-            {teamMembers.map((member) => (
-              <SelectItem key={member.id} value={member.id}>
-                {member.name} ({member.login})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {selectedTeamMember && (
-        <div className="mt-4">
-          <h2 className="text-xl font-semibold mb-4">
-            Viewing Timesheet for: {selectedTeamMember.name}
-          </h2>
-          <TimeSheet
-            userRole="user"
-            firstWeek={selectedTeamMember.first_week || null}
-            currentUser={currentUser as any}
-            users={teamMembers}
-            clients={clients}
-            impersonatedUser={selectedTeamMember as any}
-            readOnly={false}
-            customWeeks={customWeeks}
-          />
+      {teamMembers.length === 0 ? (
+        <div className="p-4 border rounded-lg bg-gray-50">
+          <p className="text-center text-gray-500">
+            You don't have any team members assigned to you as User Head
+          </p>
         </div>
+      ) : (
+        <>
+          <div className="mb-8">
+            <h2 className="text-lg font-medium mb-4">Select Team Member</h2>
+            <Select onValueChange={handleTeamMemberSelect}>
+              <SelectTrigger className="w-[250px]">
+                <SelectValue placeholder="Select team member" />
+              </SelectTrigger>
+              <SelectContent>
+                {teamMembers.map((member) => (
+                  <SelectItem key={member.id} value={member.id}>
+                    {member.login}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            {selectedTeamMember ? (
+              <>
+                <h2 className="text-lg font-medium mb-4">
+                  Timesheet for {users.find(u => u.id === selectedTeamMember)?.login}
+                </h2>
+                {renderTeamMemberTimesheet()}
+              </>
+            ) : (
+              <p>Select a team member to view their timesheet.</p>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
