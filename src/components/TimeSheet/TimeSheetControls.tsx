@@ -11,6 +11,7 @@ interface TimeSheetControlsProps {
   status: TimeSheetStatus;
   isManager?: boolean;
   isViewingOwnTimesheet?: boolean;
+  isUserHead?: boolean; // Add this prop
   onSubmitForReview?: () => void;
   onApprove: () => void;
   onReject: () => void;
@@ -29,6 +30,7 @@ export const TimeSheetControls = ({
   status,
   isManager = false,
   isViewingOwnTimesheet = true,
+  isUserHead = false, // Default to false
   onSubmitForReview,
   onApprove,
   onReject,
@@ -57,6 +59,7 @@ export const TimeSheetControls = ({
           status={status}
           isManager={isManager}
           isViewingOwnTimesheet={isViewingOwnTimesheet}
+          isUserHead={isUserHead}
           onSubmitForReview={onSubmitForReview}
           onApprove={onApprove}
           onReject={onReject}

@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -33,6 +32,8 @@ import {
 } from "lucide-react";
 import { useToast } from "./hooks/use-toast";
 import * as db from "./integrations/supabase/database";
+import UserHeadView from "./pages/UserHeadView";
+import { UserCircle } from "lucide-react";
 
 const queryClient = new QueryClient();
 
@@ -304,6 +305,8 @@ export function App() {
     return clients.filter(c => !c.hidden).map(c => c.name);
   };
 
+  const isUserHead = (user && users.some(u => u.user_head_id === user.id)) || false;
+
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
@@ -376,6 +379,14 @@ export function App() {
                   <Button variant="outline" size="sm" className="flex items-center gap-2">
                     <Eye className="h-4 w-4" />
                     View Team
+                  </Button>
+                </Link>
+              )}
+              {isUserHead && (
+                <Link to="/user-head-view">
+                  <Button variant="outline" size="sm" className="flex items-center gap-2">
+                    <UserCircle className="h-4 w-4" />
+                    User Head View
                   </Button>
                 </Link>
               )}
@@ -535,6 +546,19 @@ export function App() {
               element={
                 user?.role === 'admin' ? (
                   <MediaTypeManagement />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              }
+            />
+            <Route
+              path="/user-head-view"
+              element={
+                user && isUserHead ? (
+                  <UserHeadView
+                    currentUser={user}
+                    clients={clients}
+                  />
                 ) : (
                   <Navigate to="/" replace />
                 )

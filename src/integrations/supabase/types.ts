@@ -174,6 +174,7 @@ export type Database = {
           name: string
           password: string
           type: string
+          user_head_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -190,6 +191,7 @@ export type Database = {
           name: string
           password: string
           type: string
+          user_head_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -206,6 +208,7 @@ export type Database = {
           name?: string
           password?: string
           type?: string
+          user_head_id?: string | null
         }
         Relationships: [
           {
@@ -220,6 +223,13 @@ export type Database = {
             columns: ["first_custom_week_id"]
             isOneToOne: false
             referencedRelation: "custom_weeks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "users_user_head_id_fkey"
+            columns: ["user_head_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]

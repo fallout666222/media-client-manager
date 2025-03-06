@@ -8,6 +8,7 @@ interface ApprovalActionsProps {
   status?: TimeSheetStatus;
   isManager?: boolean;
   isViewingOwnTimesheet?: boolean;
+  isUserHead?: boolean; // Add this to identify if the viewer is a user head
   onSubmitForReview?: () => void;
   onApprove: () => void;
   onReject: () => void;
@@ -20,6 +21,7 @@ export const ApprovalActions = ({
   status,
   isManager,
   isViewingOwnTimesheet,
+  isUserHead = false, // Default to false
   onSubmitForReview,
   onApprove,
   onReject,
@@ -70,7 +72,23 @@ export const ApprovalActions = ({
     );
   }
 
-  // Original logic for non-admin users
+  // User Head can approve/reject timesheets under review for their team members
+  if (isUserHead && !isViewingOwnTimesheet && status === 'under-review') {
+    return (
+      <div className="flex gap-2">
+        <Button onClick={onApprove} variant="default" disabled={disabled}>
+          <Check className="h-4 w-4 mr-2" />
+          Approve
+        </Button>
+        <Button onClick={handleReject} variant="destructive" disabled={disabled}>
+          <X className="h-4 w-4 mr-2" />
+          Reject
+        </Button>
+      </div>
+    );
+  }
+
+  // Original logic for managers
   if (isManager && !isViewingOwnTimesheet && status === 'under-review') {
     return (
       <div className="flex gap-2">
