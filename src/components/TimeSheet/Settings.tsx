@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Client } from '@/types/timesheet';
 
 interface SettingsProps {
   clients: string[];
@@ -27,6 +28,7 @@ interface SettingsProps {
   selectedMediaTypes: string[];
   onSelectClient: (client: string) => void;
   onSelectMediaType: (type: string) => void;
+  visibleClients?: Client[]; // Add this prop to receive the filtered client list
 }
 
 export const Settings = ({
@@ -43,6 +45,7 @@ export const Settings = ({
   selectedMediaTypes,
   onSelectClient,
   onSelectMediaType,
+  visibleClients = [], // Default to empty array
 }: SettingsProps) => {
   const [newClient, setNewClient] = useState('');
   const [newMediaType, setNewMediaType] = useState('');
@@ -51,6 +54,12 @@ export const Settings = ({
   const { toast } = useToast();
 
   const isAdmin = userRole === 'admin';
+
+  // Filter available clients to only show those that are not hidden
+  // For admins, we'll still show all clients; for users, we'll only show visible ones
+  const filteredAvailableClients = isAdmin 
+    ? availableClients 
+    : visibleClients.filter(client => !client.hidden).map(client => client.name);
 
   const handleAddClient = () => {
     if (!newClient.trim()) {
@@ -151,7 +160,7 @@ export const Settings = ({
                   <SelectValue placeholder="Select client" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableClients
+                  {filteredAvailableClients
                     .filter(client => !selectedClients.includes(client))
                     .map(client => (
                       <SelectItem key={client} value={client}>{client}</SelectItem>

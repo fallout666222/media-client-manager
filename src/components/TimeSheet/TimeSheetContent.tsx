@@ -1,7 +1,8 @@
+
 import React, { useMemo } from 'react';
 import { TimeSheetGrid } from './TimeSheetGrid';
 import { Settings } from './Settings';
-import { TimeEntry, TimeSheetStatus } from '@/types/timesheet';
+import { TimeEntry, TimeSheetStatus, Client } from '@/types/timesheet';
 
 interface TimeSheetContentProps {
   showSettings: boolean;
@@ -27,6 +28,7 @@ interface TimeSheetContentProps {
   onSelectClient: (client: string) => void;
   onSelectMediaType: (type: string) => void;
   isViewingOwnTimesheet: boolean;
+  clientObjects?: Client[]; // Add this prop to receive the full client objects
 }
 
 export const TimeSheetContent = ({
@@ -53,6 +55,7 @@ export const TimeSheetContent = ({
   onSelectClient,
   onSelectMediaType,
   isViewingOwnTimesheet,
+  clientObjects = [], // Default to empty array
 }: TimeSheetContentProps) => {
   // Get all clients and media types that have entries with hours > 0
   const clientsWithEntries = useMemo(() => {
@@ -130,6 +133,7 @@ export const TimeSheetContent = ({
             onSaveVisibleMediaTypes([...selectedMediaTypes, type]);
           }
         }}
+        visibleClients={clientObjects}
       />
     );
   }
