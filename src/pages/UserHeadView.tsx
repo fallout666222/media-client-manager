@@ -83,14 +83,15 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
     const userForTimesheet: User = {
       id: teamMember.id,
       name: teamMember.name,
-      // Properly type the role by checking if it's one of the allowed values
-      role: (['admin', 'user', 'manager'].includes(teamMember.type || '') 
+      // Ensure role is one of the allowed values
+      role: ((['admin', 'user', 'manager'] as const).includes(teamMember.type as any) 
         ? teamMember.type as 'admin' | 'user' | 'manager' 
         : 'user'),
       firstWeek: teamMember.first_week,
       firstCustomWeekId: teamMember.first_custom_week_id,
       username: teamMember.login,
       login: teamMember.login,
+      // Ensure type is properly handled
       type: teamMember.type,
       email: teamMember.email,
       job_position: teamMember.job_position,
