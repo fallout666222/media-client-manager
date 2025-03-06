@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 
 // Custom Weeks
@@ -38,11 +39,7 @@ export const authenticateUser = async (login: string, password: string) => {
 
 // Media Types
 export const getMediaTypes = async () => {
-  return await supabase.from('media_types').select('*').order('name', { ascending: true });
-};
-
-export const createMediaType = async (mediaType: { name: string }) => {
-  return await supabase.from('media_types').insert(mediaType).select().single();
+  return await supabase.from('media_types').select('*');
 };
 
 // Departments
