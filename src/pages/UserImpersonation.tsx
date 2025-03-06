@@ -4,10 +4,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, UserCircle, Eye } from "lucide-react";
-import { getUsers, getCustomWeeks } from '@/integrations/supabase/database';
+import { getUsers, getCustomWeeks, getWeekHours } from '@/integrations/supabase/database';
 import { Client, User } from '@/types/timesheet';
 import TimeSheet from './TimeSheet';
 import { Link } from 'react-router-dom';
+import { parse } from 'date-fns';
 
 interface UserImpersonationProps {
   clients: Client[];
@@ -20,6 +21,7 @@ const UserImpersonation = ({ clients }: UserImpersonationProps) => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [adminUser, setAdminUser] = useState<User | null>(null);
   const [customWeeks, setCustomWeeks] = useState<any[]>([]);
+  const [initialWeekId, setInitialWeekId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -62,12 +64,49 @@ const UserImpersonation = ({ clients }: UserImpersonationProps) => {
     fetchData();
   }, []);
 
-  const handleImpersonateUser = (user: User) => {
-    setSelectedUser(user);
+  const handleImpersonateUser = async (user: User) => {
+    try {
+      // Reset initial week ID
+      setInitialWeekId(null);
+      
+      // Find most recent week with filled hours for this user
+      if (user.id && customWeeks.length > 0) {
+        let mostRecentWeekWithHours = null;
+        
+        // Check each week for hours data, start from the end (most recent)
+        for (const week of customWeeks) {
+          const { data: hoursData } = await getWeekHours(user.id, week.id);
+          
+          // If this week has hours entries, use it
+          if (hoursData && hoursData.length > 0) {
+            mostRecentWeekWithHours = week;
+            break;
+          }
+        }
+        
+        // If we found a week with hours, set it as initial
+        if (mostRecentWeekWithHours) {
+          console.log(`Found recent week with hours: ${mostRecentWeekWithHours.name}`);
+          setInitialWeekId(mostRecentWeekWithHours.id);
+        } else if (customWeeks.length > 0) {
+          // Otherwise, use the first week from custom_weeks
+          console.log(`No weeks with hours found, using first week: ${customWeeks[0].name}`);
+          setInitialWeekId(customWeeks[0].id);
+        }
+      }
+      
+      // Set the selected user
+      setSelectedUser(user);
+    } catch (error) {
+      console.error('Error finding week with hours:', error);
+      // Set the user anyway, we'll default to the first week
+      setSelectedUser(user);
+    }
   };
 
   const handleBackToUserList = () => {
     setSelectedUser(null);
+    setInitialWeekId(null);
   };
 
   const filteredUsers = users.filter(user => 
@@ -147,6 +186,7 @@ const UserImpersonation = ({ clients }: UserImpersonationProps) => {
             impersonatedUser={selectedUser}
             adminOverride={true}
             customWeeks={customWeeks}
+            initialWeekId={initialWeekId}
           />
         </div>
       </div>

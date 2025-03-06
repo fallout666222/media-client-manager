@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parse, format, isAfter, isBefore, addWeeks, startOfWeek, isEqual, isSameDay } from 'date-fns';
@@ -46,6 +45,7 @@ interface TimeSheetProps {
   impersonatedUser?: User;
   adminOverride?: boolean;
   customWeeks?: any[];
+  initialWeekId?: string | null;
 }
 
 const TimeSheet = ({ 
@@ -56,7 +56,9 @@ const TimeSheet = ({
   clients, 
   readOnly = false,
   impersonatedUser,
-  adminOverride = false
+  adminOverride = false,
+  customWeeks: propCustomWeeks,
+  initialWeekId = null
 }: TimeSheetProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [customWeeks, setCustomWeeks] = useState<any[]>([]);
@@ -77,16 +79,31 @@ const TimeSheet = ({
   useEffect(() => {
     const fetchCustomWeeks = async () => {
       try {
-        const { data } = await getCustomWeeks();
-        if (data) {
-          setCustomWeeks(data);
-          
-          if (currentUser.firstCustomWeekId) {
-            const userFirstWeek = data.find(week => week.id === currentUser.firstCustomWeekId);
-            if (userFirstWeek) {
-              setCurrentDate(parse(userFirstWeek.period_from, 'yyyy-MM-dd', new Date()));
-              setCurrentCustomWeek(userFirstWeek);
-            }
+        let weeksData;
+        
+        if (propCustomWeeks && propCustomWeeks.length > 0) {
+          weeksData = propCustomWeeks;
+          console.log(`Using ${weeksData.length} custom weeks from props`);
+        } else {
+          const { data } = await getCustomWeeks();
+          weeksData = data || [];
+          console.log(`Fetched ${weeksData.length} custom weeks from database`);
+        }
+        
+        setCustomWeeks(weeksData);
+        
+        if (initialWeekId && weeksData.length > 0) {
+          const initialWeek = weeksData.find((week: any) => week.id === initialWeekId);
+          if (initialWeek) {
+            console.log(`Setting initial week to: ${initialWeek.name}`);
+            setCurrentDate(parse(initialWeek.period_from, 'yyyy-MM-dd', new Date()));
+            setCurrentCustomWeek(initialWeek);
+          }
+        } else if (currentUser.firstCustomWeekId) {
+          const userFirstWeek = weeksData.find((week: any) => week.id === currentUser.firstCustomWeekId);
+          if (userFirstWeek) {
+            setCurrentDate(parse(userFirstWeek.period_from, 'yyyy-MM-dd', new Date()));
+            setCurrentCustomWeek(userFirstWeek);
           }
         }
       } catch (error) {
@@ -95,7 +112,7 @@ const TimeSheet = ({
     };
     
     fetchCustomWeeks();
-  }, [currentUser.firstCustomWeekId]);
+  }, [currentUser.firstCustomWeekId, propCustomWeeks, initialWeekId]);
 
   useEffect(() => {
     const fetchUserVisibles = async () => {
