@@ -19,7 +19,7 @@ interface TimeSheetControlsProps {
   weekId?: string;
   weekPercentage?: number;
   customWeeks?: any[];
-  adminOverride?: boolean;
+  adminOverride?: boolean; // Add this prop for admin override
 }
 
 export const TimeSheetControls = ({
@@ -37,7 +37,7 @@ export const TimeSheetControls = ({
   weekId,
   weekPercentage = 100,
   customWeeks = [],
-  adminOverride = false
+  adminOverride = false // Default to false
 }: TimeSheetControlsProps) => {
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center justify-between p-4 bg-muted rounded-lg">

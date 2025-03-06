@@ -44,7 +44,6 @@ interface TimeSheetProps {
   readOnly?: boolean;
   impersonatedUser?: User;
   adminOverride?: boolean;
-  customWeeks?: any[];
 }
 
 const TimeSheet = ({ 
@@ -55,8 +54,7 @@ const TimeSheet = ({
   clients, 
   readOnly = false,
   impersonatedUser,
-  adminOverride = false,
-  customWeeks = []
+  adminOverride = false
 }: TimeSheetProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [customWeeks, setCustomWeeks] = useState([]);
@@ -77,25 +75,12 @@ const TimeSheet = ({
   useEffect(() => {
     const fetchCustomWeeks = async () => {
       try {
-        if (customWeeks.length === 0) {
-          const { data } = await getCustomWeeks();
-          if (data) {
-            setCustomWeeks(data);
-            
-            if (currentUser.firstCustomWeekId) {
-              const userFirstWeek = data.find(week => week.id === currentUser.firstCustomWeekId);
-              if (userFirstWeek) {
-                setCurrentDate(parse(userFirstWeek.period_from, 'yyyy-MM-dd', new Date()));
-                setCurrentCustomWeek(userFirstWeek);
-              }
-            }
-          }
-        } else {
-          setCustomWeeks(customWeeks);
+        const { data } = await getCustomWeeks();
+        if (data) {
+          setCustomWeeks(data);
           
-          if (currentUser.firstCustomWeekId || (impersonatedUser && impersonatedUser.firstCustomWeekId)) {
-            const targetId = impersonatedUser ? impersonatedUser.firstCustomWeekId : currentUser.firstCustomWeekId;
-            const userFirstWeek = customWeeks.find(week => week.id === targetId);
+          if (currentUser.firstCustomWeekId) {
+            const userFirstWeek = data.find(week => week.id === currentUser.firstCustomWeekId);
             if (userFirstWeek) {
               setCurrentDate(parse(userFirstWeek.period_from, 'yyyy-MM-dd', new Date()));
               setCurrentCustomWeek(userFirstWeek);
@@ -108,7 +93,7 @@ const TimeSheet = ({
     };
     
     fetchCustomWeeks();
-  }, [currentUser.firstCustomWeekId, customWeeks, impersonatedUser]);
+  }, [currentUser.firstCustomWeekId]);
 
   useEffect(() => {
     const fetchUserVisibles = async () => {
@@ -254,18 +239,15 @@ const TimeSheet = ({
 
   const findFirstUnsubmittedWeek = () => {
     if (customWeeks.length > 0) {
-      const targetUser = impersonatedUser || viewedUser;
       let userFirstWeekDate: Date | null = null;
       
-      if (targetUser.firstCustomWeekId) {
-        const userFirstCustomWeek = customWeeks.find(week => week.id === targetUser.firstCustomWeekId);
+      if (viewedUser.firstCustomWeekId) {
+        const userFirstCustomWeek = customWeeks.find(week => week.id === viewedUser.firstCustomWeekId);
         if (userFirstCustomWeek) {
           userFirstWeekDate = parse(userFirstCustomWeek.period_from, 'yyyy-MM-dd', new Date());
         }
-      } else if (targetUser.firstWeek) {
-        userFirstWeekDate = parse(targetUser.firstWeek, 'yyyy-MM-dd', new Date());
-      } else if (targetUser.first_week) {
-        userFirstWeekDate = parse(targetUser.first_week, 'yyyy-MM-dd', new Date());
+      } else if (viewedUser.firstWeek) {
+        userFirstWeekDate = parse(viewedUser.firstWeek, 'yyyy-MM-dd', new Date());
       }
       
       if (userFirstWeekDate) {
@@ -289,30 +271,16 @@ const TimeSheet = ({
             };
           }
         }
-        
-        if (userWeeks.length > 0) {
-          const latestWeek = userWeeks[userWeeks.length - 1];
-          return {
-            date: parse(latestWeek.period_from, 'yyyy-MM-dd', new Date()),
-            weekData: latestWeek
-          };
-        }
-      }
-      
-      if (adminOverride) {
-        return null;
       }
     }
     
-    if (!adminOverride || customWeeks.length === 0) {
-      for (const week of userWeeks) {
-        const weekKey = week.startDate;
-        if (!submittedWeeks.includes(weekKey)) {
-          return {
-            date: parse(weekKey, 'yyyy-MM-dd', new Date()),
-            weekData: week
-          };
-        }
+    for (const week of userWeeks) {
+      const weekKey = week.startDate;
+      if (!submittedWeeks.includes(weekKey)) {
+        return {
+          date: parse(weekKey, 'yyyy-MM-dd', new Date()),
+          weekData: week
+        };
       }
     }
     
@@ -341,7 +309,7 @@ const TimeSheet = ({
     } else {
       toast({
         title: "No Unsubmitted Weeks",
-        description: adminOverride ? "No custom weeks available for this user" : "All your weeks have been submitted",
+        description: "All your weeks have been submitted",
       });
     }
   };
@@ -910,11 +878,9 @@ const TimeSheet = ({
         status={getCurrentWeekStatus()}
         onReturnToFirstUnsubmittedWeek={handleReturnToFirstUnsubmittedWeek}
         onToggleSettings={() => setShowSettings(!showSettings)}
-        firstWeek={viewedUser.firstWeek || viewedUser.first_week || firstWeek}
+        firstWeek={viewedUser.firstWeek || firstWeek}
         weekPercentage={weekPercentage}
         weekHours={weekHours}
-        adminOverride={adminOverride}
-        customWeeks={customWeeks}
       />
 
       {hasUnsubmittedEarlierWeek() && !readOnly && !isCurrentWeekSubmitted() && !adminOverride && (
@@ -954,7 +920,7 @@ const TimeSheet = ({
         onApprove={handleApprove}
         onReject={handleReject}
         readOnly={readOnly || (!isViewingOwnTimesheet && userRole !== 'manager' && userRole !== 'admin' && !adminOverride)}
-        firstWeek={viewedUser.firstWeek || viewedUser.first_week || firstWeek}
+        firstWeek={viewedUser.firstWeek || firstWeek}
         weekId={currentCustomWeek?.id}
         weekPercentage={weekPercentage}
         customWeeks={customWeeks}

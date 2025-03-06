@@ -13,8 +13,6 @@ interface TimeSheetHeaderProps {
   firstWeek?: string;
   weekPercentage?: number;
   weekHours?: number;
-  adminOverride?: boolean;
-  customWeeks?: any[];
 }
 
 export const TimeSheetHeader = ({
@@ -26,8 +24,6 @@ export const TimeSheetHeader = ({
   firstWeek,
   weekPercentage = 100,
   weekHours = 40,
-  adminOverride = false,
-  customWeeks = []
 }: TimeSheetHeaderProps) => {
   // Calculate the effective hours based on percentage
   const effectiveWeekHours = Math.round(weekHours * (weekPercentage / 100));
@@ -57,8 +53,6 @@ export const TimeSheetHeader = ({
             variant="outline"
             onClick={onReturnToFirstUnsubmittedWeek}
             className="flex items-center gap-2"
-            disabled={adminOverride && (!customWeeks || customWeeks.length === 0)}
-            title={adminOverride && (!customWeeks || customWeeks.length === 0) ? "No custom weeks available" : "Return to first unsubmitted week"}
           >
             <RotateCcw className="h-4 w-4" />
             Return to First Unsubmitted Week
