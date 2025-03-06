@@ -83,6 +83,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
     const userForTimesheet: User = {
       id: teamMember.id,
       name: teamMember.name,
+      // Convert the string type to the expected 'admin' | 'user' | 'manager' type
       role: teamMember.type as 'admin' | 'user' | 'manager',
       firstWeek: teamMember.first_week,
       firstCustomWeekId: teamMember.first_custom_week_id,
@@ -103,7 +104,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
     
     return (
       <TimeSheet
-        userRole={teamMember.type}
+        userRole={teamMember.type as 'admin' | 'user' | 'manager'} // Fix here: cast to allowed type
         firstWeek={teamMember.first_week}
         currentUser={userForTimesheet}
         users={users}
