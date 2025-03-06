@@ -83,7 +83,8 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
     const userForTimesheet: User = {
       id: teamMember.id,
       name: teamMember.name,
-      role: teamMember.type as 'admin' | 'user' | 'manager',
+      // Fix the type error by explicitly casting or ensuring compatible types
+      role: (teamMember.type as 'admin' | 'user' | 'manager') || 'user',
       firstWeek: teamMember.first_week,
       firstCustomWeekId: teamMember.first_custom_week_id,
       username: teamMember.login,
