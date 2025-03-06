@@ -6,7 +6,7 @@ import { TimeEntry, TimeSheetStatus, Client } from '@/types/timesheet';
 // Define the system default clients - keep in sync with ClientTree.tsx
 const DEFAULT_SYSTEM_CLIENTS = [
   "Administrative",
-  "Education/Training",
+  "Education/Training", 
   "General Research",
   "Network Requests",
   "New Business",
@@ -40,6 +40,8 @@ interface TimeSheetContentProps {
   isViewingOwnTimesheet: boolean;
   clientObjects?: Client[];
   adminOverride?: boolean;
+  onReorderClients?: (clients: string[]) => void;
+  onReorderMediaTypes?: (types: string[]) => void;
 }
 
 export const TimeSheetContent = ({
@@ -67,7 +69,9 @@ export const TimeSheetContent = ({
   onSelectMediaType,
   isViewingOwnTimesheet,
   clientObjects = [],
-  adminOverride = false
+  adminOverride = false,
+  onReorderClients,
+  onReorderMediaTypes
 }: TimeSheetContentProps) => {
   // Get all clients and media types that have entries with hours > 0
   const clientsWithEntries = useMemo(() => {
@@ -100,28 +104,39 @@ export const TimeSheetContent = ({
   
   // Combine selected clients/media types with those that have entries
   const effectiveClients = useMemo(() => {
-    const combinedClients = [...new Set([...selectedClients, ...clientsWithEntries])];
+    // Get unique clients
+    const uniqueClients = [...new Set([...selectedClients, ...clientsWithEntries])];
     
-    // Sort clients with default system clients at the top
-    return combinedClients.sort((a, b) => {
-      const aIsDefault = DEFAULT_SYSTEM_CLIENTS.includes(a);
-      const bIsDefault = DEFAULT_SYSTEM_CLIENTS.includes(b);
-      
-      if (aIsDefault && !bIsDefault) return -1;
-      if (!aIsDefault && bIsDefault) return 1;
-      
-      // Sort default clients in the same order as DEFAULT_SYSTEM_CLIENTS
-      if (aIsDefault && bIsDefault) {
-        return DEFAULT_SYSTEM_CLIENTS.indexOf(a) - DEFAULT_SYSTEM_CLIENTS.indexOf(b);
+    // Keep the order of selectedClients (user's preferred order)
+    const orderedClients = [...selectedClients];
+    
+    // Add any clients with entries that aren't already in the ordered list
+    clientsWithEntries.forEach(client => {
+      if (!orderedClients.includes(client)) {
+        orderedClients.push(client);
       }
-      
-      // Regular alphabetical sorting for non-default clients
-      return a.localeCompare(b);
     });
+    
+    // Filter to only include unique clients that are in our combined set
+    return orderedClients.filter(client => uniqueClients.includes(client));
   }, [selectedClients, clientsWithEntries]);
   
   const effectiveMediaTypes = useMemo(() => {
-    return [...new Set([...selectedMediaTypes, ...mediaTypesWithEntries])];
+    // Get unique media types
+    const uniqueMediaTypes = [...new Set([...selectedMediaTypes, ...mediaTypesWithEntries])];
+    
+    // Keep the order of selectedMediaTypes (user's preferred order)
+    const orderedMediaTypes = [...selectedMediaTypes];
+    
+    // Add any media types with entries that aren't already in the ordered list
+    mediaTypesWithEntries.forEach(type => {
+      if (!orderedMediaTypes.includes(type)) {
+        orderedMediaTypes.push(type);
+      }
+    });
+    
+    // Filter to only include unique media types that are in our combined set
+    return orderedMediaTypes.filter(type => uniqueMediaTypes.includes(type));
   }, [selectedMediaTypes, mediaTypesWithEntries]);
 
   if (showSettings) {
@@ -172,6 +187,22 @@ export const TimeSheetContent = ({
           }
         }}
         visibleClients={clientObjects}
+        onReorderClients={(newOrder) => {
+          if (onReorderClients) {
+            onReorderClients(newOrder);
+          }
+          if (onSaveVisibleClients) {
+            onSaveVisibleClients(newOrder);
+          }
+        }}
+        onReorderMediaTypes={(newOrder) => {
+          if (onReorderMediaTypes) {
+            onReorderMediaTypes(newOrder);
+          }
+          if (onSaveVisibleMediaTypes) {
+            onSaveVisibleMediaTypes(newOrder);
+          }
+        }}
       />
     );
   }
