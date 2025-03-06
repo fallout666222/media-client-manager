@@ -514,11 +514,7 @@ export function App() {
               path="/head-view"
               element={
                 isUserHead() ? (
-                  <UserHeadView 
-                    currentUser={user}
-                    users={users}
-                    clients={clients}
-                  />
+                  <UserHeadView />
                 ) : (
                   <Navigate to="/" replace />
                 )

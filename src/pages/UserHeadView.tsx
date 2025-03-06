@@ -6,9 +6,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import TimeSheet from '@/pages/TimeSheet';
-import { User } from '@/types/timesheet';
+import { User, Client } from '@/types/timesheet';
 import { supabase } from '@/integrations/supabase/client';
+import * as db from '@/integrations/supabase/database';
 
+// Remove the props from the component definition since we're getting them via supabase queries
 const UserHeadView = () => {
   const { toast } = useToast();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -16,7 +18,7 @@ const UserHeadView = () => {
   const [selectedTeamMember, setSelectedTeamMember] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [customWeeks, setCustomWeeks] = useState([]);
-  const [clients, setClients] = useState([]);
+  const [clients, setClients] = useState<Client[]>([]);
 
   useEffect(() => {
     fetchCurrentUser();
@@ -59,11 +61,7 @@ const UserHeadView = () => {
   const fetchTeamMembers = async (userHeadId: string) => {
     setLoading(true);
     try {
-      const { data: membersData, error: membersError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('user_head_id', userHeadId)
-        .eq('deletion_mark', false);
+      const { data: membersData, error: membersError } = await db.getUsersByUserHeadId(userHeadId);
 
       if (membersError) throw membersError;
       
