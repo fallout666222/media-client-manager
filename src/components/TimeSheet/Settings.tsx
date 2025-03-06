@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -139,14 +138,12 @@ export const Settings = ({
     return a.localeCompare(b);
   });
 
-  // Filter clients based on search term
   const filteredClients = sortedAvailableClients
     .filter(client => !selectedClients.includes(client))
     .filter(client => 
       client.toLowerCase().includes(clientSearchTerm.toLowerCase())
     );
 
-  // Filter media types based on search term
   const mediaTypeOptions = allMediaTypes.map(type => type.name);
   const filteredMediaTypes = mediaTypeOptions
     .filter(type => !selectedMediaTypes.includes(type))
@@ -268,44 +265,6 @@ export const Settings = ({
 
   return (
     <div className="space-y-8">
-      {isAdmin && (
-        <>
-          <div>
-            <h3 className="text-lg font-medium mb-4">Manage Clients (Admin)</h3>
-            <div className="flex items-center mb-4">
-              <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 w-full">
-                <p className="font-bold">Client Management Moved</p>
-                <p>Client management has been moved to the dedicated Client Tree page. Please use that page to add, edit, or remove clients.</p>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-lg font-medium mb-4">Manage Media Types (Admin)</h3>
-            <div className="flex gap-2 mb-4">
-              <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 w-full">
-                <p className="font-bold">Media Type Management Moved</p>
-                <p>Media type management has been moved to the dedicated Media Types page. Please use that page to add or view media types.</p>
-              </div>
-            </div>
-            {isLoadingMediaTypes ? (
-              <div className="text-center py-2">Loading media types...</div>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {allMediaTypes.map((type) => (
-                  <div
-                    key={type.id}
-                    className="flex items-center gap-2 bg-secondary px-3 py-1 rounded-full"
-                  >
-                    <span>{type.name}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </>
-      )}
-
       <div>
         <h3 className="text-lg font-medium mb-4">Your Visible Clients</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
