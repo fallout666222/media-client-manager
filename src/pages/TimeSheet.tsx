@@ -42,9 +42,20 @@ interface TimeSheetProps {
   users: User[];
   clients: Client[];
   readOnly?: boolean;
+  impersonatedUser?: User;
+  adminOverride?: boolean;
 }
 
-const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly = false }: TimeSheetProps) => {
+const TimeSheet = ({ 
+  userRole, 
+  firstWeek, 
+  currentUser, 
+  users, 
+  clients, 
+  readOnly = false,
+  impersonatedUser,
+  adminOverride = false
+}: TimeSheetProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [customWeeks, setCustomWeeks] = useState([]);
   const [currentDate, setCurrentDate] = useState<Date>(() => {
@@ -57,9 +68,9 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
     return parse(firstWeek, 'yyyy-MM-dd', new Date());
   });
   const [currentCustomWeek, setCurrentCustomWeek] = useState<any>(null);
-  const [viewedUser, setViewedUser] = useState<User>(currentUser);
+  const [viewedUser, setViewedUser] = useState<User>(impersonatedUser || currentUser);
   const [weekPercentage, setWeekPercentage] = useState<number>(100);
-  const isViewingOwnTimesheet = viewedUser.id === currentUser.id;
+  const isViewingOwnTimesheet = impersonatedUser ? adminOverride : viewedUser.id === currentUser.id;
 
   useEffect(() => {
     const fetchCustomWeeks = async () => {
@@ -320,13 +331,12 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
   };
 
   const handleSubmitForReview = async () => {
-    if (readOnly) return;
+    if (readOnly && !adminOverride) return;
     
     const firstUnsubmittedWeek = findFirstUnsubmittedWeek();
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
     const totalHours = getTotalHoursForWeek();
     
-    // Calculate effective hours based on week percentage
     const effectiveHours = Math.round(weekHours * (weekPercentage / 100));
     const remainingHours = effectiveHours - totalHours;
     
@@ -440,7 +450,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
   };
 
   const handleApprove = async () => {
-    if (readOnly) return;
+    if (readOnly && !adminOverride) return;
     
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
     
@@ -477,7 +487,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
   };
 
   const handleReject = async () => {
-    if (readOnly) return;
+    if (readOnly && !adminOverride) return;
     
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
     
@@ -663,7 +673,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
   }, [viewedUser, currentDate]);
 
   const handleTimeUpdate = async (client: string, mediaType: string, hours: number) => {
-    if (readOnly || !isViewingOwnTimesheet) return;
+    if ((readOnly || !isViewingOwnTimesheet) && !adminOverride) return;
     
     const currentTotal = getTotalHoursForWeek();
     const existingHours = timeEntries[format(currentDate, 'yyyy-MM-dd')]?.[client]?.[mediaType]?.hours || 0;
@@ -833,7 +843,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
 
   return (
     <div className="space-y-6">
-      {userRole === 'manager' && (
+      {userRole === 'manager' && !impersonatedUser && (
         <div className="mb-4">
           <h3 className="text-sm font-medium mb-2">View Timesheet For:</h3>
           <TeamMemberSelector
@@ -842,6 +852,23 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
             onUserSelect={setViewedUser}
             selectedUser={viewedUser}
           />
+        </div>
+      )}
+
+      {adminOverride && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-yellow-700">
+                <strong>Admin Override Mode:</strong> You have full control over this user's timesheet, including submitting, approving, rejecting, and modifying hours regardless of week status.
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -856,7 +883,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
         weekHours={weekHours}
       />
 
-      {hasUnsubmittedEarlierWeek() && !readOnly && !isCurrentWeekSubmitted() && (
+      {hasUnsubmittedEarlierWeek() && !readOnly && !isCurrentWeekSubmitted() && !adminOverride && (
         <Alert variant="destructive" className="mb-4">
           <AlertDescription>
             You have unsubmitted timesheets from previous weeks. Please submit them in chronological order.
@@ -892,11 +919,12 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
         onSubmitForReview={handleSubmitForReview}
         onApprove={handleApprove}
         onReject={handleReject}
-        readOnly={readOnly || (!isViewingOwnTimesheet && userRole !== 'manager' && userRole !== 'admin')}
+        readOnly={readOnly || (!isViewingOwnTimesheet && userRole !== 'manager' && userRole !== 'admin' && !adminOverride)}
         firstWeek={viewedUser.firstWeek || firstWeek}
         weekId={currentCustomWeek?.id}
         weekPercentage={weekPercentage}
         customWeeks={customWeeks}
+        adminOverride={adminOverride}
       />
 
       <TimeSheetContent
@@ -912,7 +940,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
         onRemoveMediaType={handleRemoveMediaType}
         onSaveVisibleClients={handleSaveVisibleClients}
         onSaveVisibleMediaTypes={handleSaveVisibleMediaTypes}
-        readOnly={readOnly || !isViewingOwnTimesheet}
+        readOnly={readOnly || (!isViewingOwnTimesheet && !adminOverride)}
         weekHours={weekHours}
         weekPercentage={weekPercentage}
         userRole={userRole}
@@ -922,7 +950,9 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
         selectedMediaTypes={selectedMediaTypes}
         onSelectClient={handleSelectClient}
         onSelectMediaType={handleSelectMediaType}
-        isViewingOwnTimesheet={isViewingOwnTimesheet}
+        isViewingOwnTimesheet={isViewingOwnTimesheet || adminOverride}
+        clientObjects={clients}
+        adminOverride={adminOverride}
       />
     </div>
   );

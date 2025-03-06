@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { TimeSheetStatus } from '@/types/timesheet';
-import { Check, X, Send } from "lucide-react";
+import { Check, X, Send, RotateCcw } from "lucide-react";
 
 interface ApprovalActionsProps {
   status?: TimeSheetStatus;
@@ -13,6 +13,7 @@ interface ApprovalActionsProps {
   onReject: () => void;
   disabled?: boolean;
   weekId?: string;
+  adminOverride?: boolean; // Add this prop for admin override
 }
 
 export const ApprovalActions = ({
@@ -23,12 +24,53 @@ export const ApprovalActions = ({
   onApprove,
   onReject,
   disabled = false,
-  weekId
+  weekId,
+  adminOverride = false
 }: ApprovalActionsProps) => {
   const handleReject = () => {
     onReject();
   };
 
+  // For admin override, show all possible actions based on current status
+  if (adminOverride) {
+    return (
+      <div className="flex gap-2 flex-wrap">
+        {(status === 'unconfirmed' || status === 'needs-revision') && (
+          <Button onClick={onSubmitForReview} disabled={disabled}>
+            <Send className="h-4 w-4 mr-2" />
+            Submit for Review
+          </Button>
+        )}
+        
+        {(status === 'under-review' || status === 'accepted') && (
+          <>
+            <Button onClick={onApprove} variant="default" disabled={disabled}>
+              <Check className="h-4 w-4 mr-2" />
+              Approve
+            </Button>
+            <Button onClick={handleReject} variant="destructive" disabled={disabled}>
+              <X className="h-4 w-4 mr-2" />
+              Reject
+            </Button>
+          </>
+        )}
+        
+        {status === 'accepted' && (
+          <Button 
+            onClick={handleReject} 
+            variant="outline" 
+            disabled={disabled}
+            className="border-amber-500 text-amber-500 hover:bg-amber-50"
+          >
+            <RotateCcw className="h-4 w-4 mr-2" />
+            Revert to Unconfirmed
+          </Button>
+        )}
+      </div>
+    );
+  }
+
+  // Original logic for non-admin users
   if (isManager && !isViewingOwnTimesheet && status === 'under-review') {
     return (
       <div className="flex gap-2">

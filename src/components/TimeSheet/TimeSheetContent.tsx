@@ -28,7 +28,8 @@ interface TimeSheetContentProps {
   onSelectClient: (client: string) => void;
   onSelectMediaType: (type: string) => void;
   isViewingOwnTimesheet: boolean;
-  clientObjects?: Client[]; // Add this prop to receive the full client objects
+  clientObjects?: Client[]; // Keep this prop
+  adminOverride?: boolean; // Add admin override prop
 }
 
 export const TimeSheetContent = ({
@@ -55,7 +56,8 @@ export const TimeSheetContent = ({
   onSelectClient,
   onSelectMediaType,
   isViewingOwnTimesheet,
-  clientObjects = [], // Default to empty array
+  clientObjects = [],
+  adminOverride = false
 }: TimeSheetContentProps) => {
   // Get all clients and media types that have entries with hours > 0
   const clientsWithEntries = useMemo(() => {
@@ -147,7 +149,7 @@ export const TimeSheetContent = ({
       status={status}
       weekHours={weekHours}
       weekPercentage={weekPercentage}
-      readOnly={readOnly || !isViewingOwnTimesheet || status === 'under-review' || status === 'accepted'}
+      readOnly={readOnly || !isViewingOwnTimesheet || (!adminOverride && (status === 'under-review' || status === 'accepted'))}
     />
   );
 };
