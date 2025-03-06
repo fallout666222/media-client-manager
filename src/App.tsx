@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +12,7 @@ import UserManagerAssignment from "./pages/UserManagerAssignment";
 import UserFirstWeekManagement from "./pages/UserFirstWeekManagement";
 import UserWeekPercentage from "./pages/UserWeekPercentage";
 import ManagerView from "./pages/ManagerView";
+import UserHeadView from "./pages/UserHeadView";
 import ClientTree from "./pages/ClientTree";
 import MediaTypeManagement from "./pages/MediaTypeManagement";
 import { useState, useEffect } from "react";
@@ -84,7 +84,9 @@ export function App() {
           firstWeek: data.first_week,
           first_custom_week_id: data.first_custom_week_id,
           firstCustomWeekId: data.first_custom_week_id,
-          deletion_mark: data.deletion_mark
+          deletion_mark: data.deletion_mark,
+          user_head_id: data.user_head_id,
+          userHeadId: data.user_head_id
         };
         
         setUser(fullUserData);
@@ -304,6 +306,11 @@ export function App() {
     return clients.filter(c => !c.hidden).map(c => c.name);
   };
 
+  const isUserHead = () => {
+    if (!user || !user.id) return false;
+    return users.some(u => u.user_head_id === user.id || u.userHeadId === user.id);
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
@@ -376,6 +383,14 @@ export function App() {
                   <Button variant="outline" size="sm" className="flex items-center gap-2">
                     <Eye className="h-4 w-4" />
                     View Team
+                  </Button>
+                </Link>
+              )}
+              {isUserHead() && (
+                <Link to="/head-view">
+                  <Button variant="outline" size="sm" className="flex items-center gap-2">
+                    <Eye className="h-4 w-4" />
+                    View Team as Head
                   </Button>
                 </Link>
               )}
@@ -488,6 +503,20 @@ export function App() {
                   <ManagerView 
                     currentUser={user}
                     users={getVisibleUsers()}
+                    clients={clients}
+                  />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              }
+            />
+            <Route
+              path="/head-view"
+              element={
+                isUserHead() ? (
+                  <UserHeadView 
+                    currentUser={user}
+                    users={users}
                     clients={clients}
                   />
                 ) : (

@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 
 // Custom Weeks
