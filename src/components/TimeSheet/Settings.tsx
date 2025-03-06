@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, X, Check } from "lucide-react";
+import { Plus, X, Check, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Select,
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Client } from '@/types/timesheet';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface SettingsProps {
   clients: string[];
@@ -118,16 +119,10 @@ export const Settings = ({
           <div>
             <h3 className="text-lg font-medium mb-4">Manage Media Types (Admin)</h3>
             <div className="flex gap-2 mb-4">
-              <Input
-                placeholder="Add new media type"
-                value={newMediaType}
-                onChange={(e) => setNewMediaType(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleAddMediaType()}
-              />
-              <Button onClick={handleAddMediaType}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add
-              </Button>
+              <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 w-full">
+                <p className="font-bold">Media Type Management Moved</p>
+                <p>Media type management has been moved to the dedicated Media Types page. Please use that page to add or view media types.</p>
+              </div>
             </div>
             <div className="flex flex-wrap gap-2">
               {mediaTypes.map((type) => (
@@ -136,7 +131,7 @@ export const Settings = ({
                   className="flex items-center gap-2 bg-secondary px-3 py-1 rounded-full"
                 >
                   <span>{type}</span>
-                  {/* Remove the delete button for media types */}
+                  {/* Media types cannot be deleted */}
                 </div>
               ))}
             </div>
@@ -187,7 +182,19 @@ export const Settings = ({
       </div>
 
       <div>
-        <h3 className="text-lg font-medium mb-4">Your Visible Media Types</h3>
+        <h3 className="flex items-center gap-2 text-lg font-medium mb-4">
+          Your Visible Media Types
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="h-4 w-4 text-muted-foreground" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Select which media types to display in your timesheet</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <Label htmlFor="media-select">Select media type to add</Label>

@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Info } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -15,6 +15,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import * as db from "../integrations/supabase/database";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface MediaType {
   id: string;
@@ -23,41 +25,54 @@ interface MediaType {
 }
 
 const MediaTypeManagement = () => {
-  const [mediaTypes, setMediaTypes] = useState<MediaType[]>([]);
   const [newMediaType, setNewMediaType] = useState({ name: "", description: "" });
-  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    fetchMediaTypes();
-  }, []);
-
-  const fetchMediaTypes = async () => {
-    try {
-      setLoading(true);
+  // Fetch media types using React Query
+  const { data: mediaTypes = [], isLoading } = useQuery({
+    queryKey: ['mediaTypes'],
+    queryFn: async () => {
+      console.log("Fetching media types...");
       const { data, error } = await db.getMediaTypes();
       
       if (error) {
+        console.error("Error fetching media types:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load media types",
+          variant: "destructive",
+        });
         throw error;
       }
       
-      if (data) {
-        console.log("Fetched media types:", data);
-        setMediaTypes(data);
-      }
-    } catch (error) {
-      console.error("Error fetching media types:", error);
+      console.log("Fetched media types:", data);
+      return data || [];
+    }
+  });
+
+  // Create media type mutation
+  const createMediaTypeMutation = useMutation({
+    mutationFn: db.createMediaType,
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Media type created successfully",
+      });
+      setNewMediaType({ name: "", description: "" });
+      queryClient.invalidateQueries({ queryKey: ['mediaTypes'] });
+    },
+    onError: (error) => {
+      console.error("Error creating media type:", error);
       toast({
         title: "Error",
-        description: "Failed to load media types",
+        description: "Failed to create media type",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
-  };
+  });
 
-  const handleCreateMediaType = async (e: React.FormEvent) => {
+  const handleCreateMediaType = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!newMediaType.name.trim()) {
@@ -69,29 +84,7 @@ const MediaTypeManagement = () => {
       return;
     }
     
-    try {
-      const { data, error } = await db.createMediaType(newMediaType);
-      
-      if (error) {
-        throw error;
-      }
-      
-      if (data) {
-        setMediaTypes([...mediaTypes, data]);
-        setNewMediaType({ name: "", description: "" });
-        toast({
-          title: "Success",
-          description: "Media type created successfully",
-        });
-      }
-    } catch (error) {
-      console.error("Error creating media type:", error);
-      toast({
-        title: "Error",
-        description: "Failed to create media type",
-        variant: "destructive",
-      });
-    }
+    createMediaTypeMutation.mutate(newMediaType);
   };
 
   return (
@@ -138,17 +131,34 @@ const MediaTypeManagement = () => {
                   />
                 </div>
               </div>
-              <Button type="submit">Add Media Type</Button>
+              <Button type="submit" disabled={createMediaTypeMutation.isPending}>
+                {createMediaTypeMutation.isPending ? "Adding..." : "Add Media Type"}
+              </Button>
             </form>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader>
-            <CardTitle>Media Types</CardTitle>
+            <CardTitle className="flex items-center justify-between">
+              <span>Media Types</span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Info className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>These media types will be available for selection in timesheets.</p>
+                    <p>Deletion is disabled to maintain data integrity.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            {loading ? (
+            {isLoading ? (
               <div className="text-center py-4">Loading media types...</div>
             ) : mediaTypes.length === 0 ? (
               <div className="text-center py-4">No media types found</div>
