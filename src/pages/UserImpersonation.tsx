@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -131,7 +130,7 @@ const UserImpersonation = ({ clients }: UserImpersonationProps) => {
           </Card>
         )}
         
-        {/* Timesheet with admin privileges - now with defaultToLatestWeek set to true */}
+        {/* Timesheet with admin privileges */}
         <div>
           <h2 className="text-xl font-semibold mb-4">Timesheet Management</h2>
           <p className="text-sm text-muted-foreground mb-4">
@@ -148,7 +147,6 @@ const UserImpersonation = ({ clients }: UserImpersonationProps) => {
             impersonatedUser={selectedUser}
             adminOverride={true}
             customWeeks={customWeeks}
-            defaultToLatestWeek={true}
           />
         </div>
       </div>

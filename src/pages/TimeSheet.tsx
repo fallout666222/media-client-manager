@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parse, format, isAfter, isBefore, addWeeks, startOfWeek, isEqual, isSameDay } from 'date-fns';
@@ -45,7 +46,6 @@ interface TimeSheetProps {
   impersonatedUser?: User;
   adminOverride?: boolean;
   customWeeks?: any[];
-  defaultToLatestWeek?: boolean;
 }
 
 const TimeSheet = ({ 
@@ -56,9 +56,7 @@ const TimeSheet = ({
   clients, 
   readOnly = false,
   impersonatedUser,
-  adminOverride = false,
-  customWeeks: propCustomWeeks,
-  defaultToLatestWeek = false
+  adminOverride = false
 }: TimeSheetProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [customWeeks, setCustomWeeks] = useState<any[]>([]);
@@ -79,51 +77,15 @@ const TimeSheet = ({
   useEffect(() => {
     const fetchCustomWeeks = async () => {
       try {
-        if (propCustomWeeks && propCustomWeeks.length > 0) {
-          setCustomWeeks(propCustomWeeks);
+        const { data } = await getCustomWeeks();
+        if (data) {
+          setCustomWeeks(data);
           
-          if (defaultToLatestWeek) {
-            const sortedWeeks = [...propCustomWeeks].sort((a, b) => {
-              const dateA = parse(a.period_from, 'yyyy-MM-dd', new Date());
-              const dateB = parse(b.period_from, 'yyyy-MM-dd', new Date());
-              return dateB.getTime() - dateA.getTime();
-            });
-            
-            if (sortedWeeks.length > 0) {
-              const latestWeek = sortedWeeks[0];
-              setCurrentDate(parse(latestWeek.period_from, 'yyyy-MM-dd', new Date()));
-              setCurrentCustomWeek(latestWeek);
-            }
-          } else if (currentUser.firstCustomWeekId) {
-            const userFirstWeek = propCustomWeeks.find(week => week.id === currentUser.firstCustomWeekId);
+          if (currentUser.firstCustomWeekId) {
+            const userFirstWeek = data.find(week => week.id === currentUser.firstCustomWeekId);
             if (userFirstWeek) {
               setCurrentDate(parse(userFirstWeek.period_from, 'yyyy-MM-dd', new Date()));
               setCurrentCustomWeek(userFirstWeek);
-            }
-          }
-        } else {
-          const { data } = await getCustomWeeks();
-          if (data) {
-            setCustomWeeks(data);
-            
-            if (defaultToLatestWeek) {
-              const sortedWeeks = [...data].sort((a, b) => {
-                const dateA = parse(a.period_from, 'yyyy-MM-dd', new Date());
-                const dateB = parse(b.period_from, 'yyyy-MM-dd', new Date());
-                return dateB.getTime() - dateA.getTime();
-              });
-              
-              if (sortedWeeks.length > 0) {
-                const latestWeek = sortedWeeks[0];
-                setCurrentDate(parse(latestWeek.period_from, 'yyyy-MM-dd', new Date()));
-                setCurrentCustomWeek(latestWeek);
-              }
-            } else if (currentUser.firstCustomWeekId) {
-              const userFirstWeek = data.find(week => week.id === currentUser.firstCustomWeekId);
-              if (userFirstWeek) {
-                setCurrentDate(parse(userFirstWeek.period_from, 'yyyy-MM-dd', new Date()));
-                setCurrentCustomWeek(userFirstWeek);
-              }
             }
           }
         }
@@ -133,7 +95,7 @@ const TimeSheet = ({
     };
     
     fetchCustomWeeks();
-  }, [currentUser.firstCustomWeekId, propCustomWeeks, defaultToLatestWeek]);
+  }, [currentUser.firstCustomWeekId]);
 
   useEffect(() => {
     const fetchUserVisibles = async () => {
@@ -971,7 +933,6 @@ const TimeSheet = ({
         weekPercentage={weekPercentage}
         customWeeks={customWeeks}
         adminOverride={adminOverride}
-        defaultToLatestWeek={defaultToLatestWeek}
       />
 
       <TimeSheetContent
