@@ -538,7 +538,12 @@ const App = () => {
               path="/client-tree"
               element={
                 user?.role === 'admin' ? (
-                  <ClientTree />
+                  <ClientTree 
+                    clients={clients}
+                    onAddClient={handleAddClient}
+                    onUpdateClient={handleUpdateClient}
+                    onDeleteClient={handleDeleteClient}
+                  />
                 ) : (
                   <Navigate to="/" replace />
                 )

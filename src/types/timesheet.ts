@@ -1,4 +1,3 @@
-
 export type TimeSheetStatus = 'unconfirmed' | 'under-review' | 'accepted' | 'needs-revision';
 
 export interface TimeEntry {
@@ -21,16 +20,13 @@ export interface Department {
 export interface Client {
   id: string;
   name: string;
-  parent_id?: string | null;
+  parentId?: string | null;
   hidden?: boolean;
   isDefault?: boolean;
   client_id?: string;
   ts_code?: string;
   description?: string;
   deletion_mark?: boolean;
-  created_at?: string;
-  // Frontend use only properties
-  parentId?: string | null;
 }
 
 export interface Employee {

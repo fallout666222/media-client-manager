@@ -55,33 +55,16 @@ export const deleteDepartment = async (id: string) => {
   return await supabase.from('departments').delete().eq('id', id);
 };
 
-// Week Status Names
-export const getWeekStatusNames = async () => {
-  return await supabase.from('week_status_names').select('*');
-};
-
 // Clients
 export const getClients = async () => {
   return await supabase.from('clients').select('*').eq('deletion_mark', false);
 };
 
-export const createClient = async (client: { 
-  name: string, 
-  client_id?: string, 
-  ts_code?: string, 
-  description?: string, 
-  parent_id?: string | null 
-}) => {
+export const createClient = async (client: { name: string, client_id?: string, ts_code?: string, description?: string }) => {
   return await supabase.from('clients').insert(client).select().single();
 };
 
 export const updateClient = async (id: string, client: any) => {
-  // Convert parentId to parent_id if it exists in the client object
-  if (client.parentId !== undefined) {
-    client.parent_id = client.parentId;
-    delete client.parentId;
-  }
-  
   return await supabase.from('clients').update(client).eq('id', id).select().single();
 };
 
@@ -103,6 +86,10 @@ export const assignManagerToUser = async (userId: string, managerId: string) => 
 };
 
 // Week Statuses
+export const getWeekStatusNames = async () => {
+  return await supabase.from('week_status_names').select('*');
+};
+
 export const getWeekStatuses = async (userId: string) => {
   return await supabase.from('week_statuses').select(`
     *,
