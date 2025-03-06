@@ -136,12 +136,7 @@ export const Settings = ({
                   className="flex items-center gap-2 bg-secondary px-3 py-1 rounded-full"
                 >
                   <span>{type}</span>
-                  <button
-                    onClick={() => onRemoveMediaType(type)}
-                    className="text-muted-foreground hover:text-destructive"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+                  {/* Remove the delete button for media types */}
                 </div>
               ))}
             </div>
