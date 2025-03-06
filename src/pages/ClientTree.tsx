@@ -50,9 +50,9 @@ const ClientTree: React.FC = () => {
       return data?.map(client => ({
         ...client,
         parentId: client.parent_id,
-        // Add default values for UI fields if they don't exist in the database
-        hidden: client.hidden || false,
-        isDefault: client.isDefault || false
+        // Add UI-specific fields that aren't in the database
+        hidden: Boolean(client.deletion_mark),
+        isDefault: false // Assuming no client is default by default
       })) || [];
     }
   });
@@ -159,7 +159,7 @@ const ClientTree: React.FC = () => {
   const handleToggleHidden = (id: string, currentValue: boolean) => {
     updateClientMutation.mutate({
       id,
-      data: { hidden: !currentValue }
+      data: { deletion_mark: !currentValue }
     });
   };
 
@@ -186,7 +186,7 @@ const ClientTree: React.FC = () => {
 
     updateClientMutation.mutate({
       id,
-      data: { parentId }
+      data: { parent_id: parentId }
     });
   };
 
@@ -350,7 +350,7 @@ const ClientTree: React.FC = () => {
                     <Checkbox 
                       id={`hide-${client.id}`}
                       checked={client.hidden}
-                      onCheckedChange={() => handleToggleHidden(client.id, client.hidden || false)}
+                      onCheckedChange={() => handleToggleHidden(client.id, client.hidden)}
                       disabled={updateClientMutation.isPending}
                     />
                     <label

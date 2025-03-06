@@ -29,7 +29,7 @@ export interface Client {
   description?: string;
   deletion_mark?: boolean;
   created_at?: string;
-  // Add these for frontend use
+  // Frontend use only properties
   parentId?: string | null;
 }
 
