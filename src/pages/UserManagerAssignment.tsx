@@ -104,40 +104,6 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
     }
   };
 
-  const handleUserHeadChange = async (user: User, userHeadId: string | undefined) => {
-    if (!user.id) {
-      toast({
-        title: "Error",
-        description: "User ID not found",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    try {
-      await updateUser(user.id, { user_head_id: userHeadId });
-      
-      // Update the users state to reflect the changes immediately
-      setUsers(prevUsers => 
-        prevUsers.map(u => 
-          u.id === user.id ? { ...u, user_head_id: userHeadId } : u
-        )
-      );
-      
-      toast({
-        title: "User Head Updated",
-        description: `User Head updated for ${user.login || user.username}`,
-      });
-    } catch (error) {
-      console.error('Error updating user head:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update user head",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleDepartmentChange = async (user: User, departmentId: string | undefined) => {
     if (!user.id) {
       toast({
@@ -247,7 +213,6 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
               <TableHead>Role</TableHead>
               <TableHead>Department</TableHead>
               <TableHead>Manager</TableHead>
-              <TableHead>User Head</TableHead>
               <TableHead>Hide from Manager View</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
@@ -295,28 +260,6 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
                         .map((manager) => (
                           <SelectItem key={manager.id} value={manager.id}>
                             {manager.login || manager.username} ({manager.type || manager.role})
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <Select
-                    value={user.user_head_id || "none"}
-                    onValueChange={(value) => {
-                      handleUserHeadChange(user, value === "none" ? undefined : value);
-                    }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select a user head" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No User Head</SelectItem>
-                      {users
-                        .filter((head) => head.id !== user.id || user.user_head_id === user.id) // Allow self-assignment if already self-assigned
-                        .map((head) => (
-                          <SelectItem key={head.id} value={head.id}>
-                            {head.login || head.username} ({head.type || head.role})
                           </SelectItem>
                         ))}
                     </SelectContent>
