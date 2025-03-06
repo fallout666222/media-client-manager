@@ -45,7 +45,15 @@ const ClientTree: React.FC = () => {
         });
         return [];
       }
-      return data || [];
+      
+      // Convert database fields to frontend format for compatibility
+      return data?.map(client => ({
+        ...client,
+        parentId: client.parent_id,
+        // Add default values for UI fields if they don't exist in the database
+        hidden: client.hidden || false,
+        isDefault: client.isDefault || false
+      })) || [];
     }
   });
 
@@ -342,7 +350,7 @@ const ClientTree: React.FC = () => {
                     <Checkbox 
                       id={`hide-${client.id}`}
                       checked={client.hidden}
-                      onCheckedChange={() => handleToggleHidden(client.id, client.hidden)}
+                      onCheckedChange={() => handleToggleHidden(client.id, client.hidden || false)}
                       disabled={updateClientMutation.isPending}
                     />
                     <label
