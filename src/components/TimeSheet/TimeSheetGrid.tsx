@@ -97,6 +97,22 @@ export const TimeSheetGrid = ({
     
     // Skip if value hasn't changed
     if (hours === currentValue) return;
+
+    // Skip saving zero values to the database
+    if (hours === 0) {
+      // Only update the local state
+      setLocalTimeEntries(prev => {
+        const newEntries = { ...prev };
+        if (newEntries[client] && type in newEntries[client]) {
+          delete newEntries[client][type];
+          if (Object.keys(newEntries[client]).length === 0) {
+            delete newEntries[client];
+          }
+        }
+        return newEntries;
+      });
+      return;
+    }
     
     // Calculate totals to check if we exceed limits
     const currentTotal = calculateTotalHours(client, type);
@@ -121,7 +137,7 @@ export const TimeSheetGrid = ({
       return;
     }
     
-    // Now save to database
+    // Now save to database (only if hours > 0)
     onTimeUpdate(client, type, hours);
     
     // Clear this entry from local changes after saving
