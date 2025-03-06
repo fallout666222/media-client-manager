@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -109,7 +108,6 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
         currentUser={userForTimesheet}
         users={users}
         impersonatedUser={userForTimesheet} // Changed from viewingUser to impersonatedUser
-        isUserHead={true} // Keep for backward compatibility, if needed
         clients={clients}
       />
     );
