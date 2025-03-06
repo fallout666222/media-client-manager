@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 
 // Custom Weeks
@@ -15,6 +16,13 @@ export const getUsers = async () => {
     *,
     department:departments(name)
   `).eq('deletion_mark', false);
+};
+
+export const getUsersByUserHeadId = async (userHeadId: string) => {
+  return await supabase.from('users').select(`
+    *,
+    department:departments(name)
+  `).eq('user_head_id', userHeadId).eq('deletion_mark', false);
 };
 
 export const getUserById = async (id: string) => {

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Table,
@@ -28,12 +27,14 @@ interface UserManagerAssignmentProps {
   onUpdateUserManager: (username: string, managerId: string | undefined) => void;
   onUpdateUserDepartment: (username: string, departmentId: string | undefined) => void;
   onToggleUserHidden: (username: string, hidden: boolean) => void;
+  onUpdateUserHead?: (username: string, userHeadId: string | undefined) => void;
 }
 
 const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
   onUpdateUserManager,
   onUpdateUserDepartment,
-  onToggleUserHidden
+  onToggleUserHidden,
+  onUpdateUserHead
 }) => {
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
@@ -99,6 +100,44 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
       toast({
         title: "Error",
         description: "Failed to update manager",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUserHeadChange = async (user: User, userHeadId: string | undefined) => {
+    if (!user.id) {
+      toast({
+        title: "Error",
+        description: "User ID not found",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      await updateUser(user.id, { user_head_id: userHeadId });
+      
+      if (onUpdateUserHead) {
+        onUpdateUserHead(user.login || user.username || '', userHeadId);
+      }
+      
+      // Update the users state to reflect the changes immediately
+      setUsers(prevUsers => 
+        prevUsers.map(u => 
+          u.id === user.id ? { ...u, user_head_id: userHeadId } : u
+        )
+      );
+      
+      toast({
+        title: "User Head Updated",
+        description: `User Head assignment updated for ${user.login || user.username}`,
+      });
+    } catch (error) {
+      console.error('Error updating user head:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update user head",
         variant: "destructive",
       });
     }
@@ -206,13 +245,14 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
       
       <div className="rounded-md border">
         <Table>
-          <TableCaption>Manage user and manager relationships</TableCaption>
+          <TableCaption>Manage user relationships</TableCaption>
           <TableHeader>
             <TableRow>
               <TableHead>User</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Department</TableHead>
               <TableHead>Manager</TableHead>
+              <TableHead>User Head</TableHead>
               <TableHead>Hide from Manager View</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
@@ -265,6 +305,29 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
                     </SelectContent>
                   </Select>
                 </TableCell>
+                <TableCell>
+                  <Select
+                    value={user.user_head_id || "none"}
+                    onValueChange={(value) => {
+                      handleUserHeadChange(user, value === "none" ? undefined : value);
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a user head" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No User Head</SelectItem>
+                      <SelectItem value={user.id}>Self-Managed</SelectItem>
+                      {users
+                        .filter((head) => head.id !== user.id)
+                        .map((head) => (
+                          <SelectItem key={head.id} value={head.id}>
+                            {head.login || head.username} ({head.type || head.role})
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
                 <TableCell className="text-center">
                   <div className="flex items-center justify-center">
                     <Checkbox 
@@ -277,13 +340,22 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleManagerChange(user, undefined)}
-                  >
-                    Clear Manager
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleManagerChange(user, undefined)}
+                    >
+                      Clear Manager
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleUserHeadChange(user, undefined)}
+                    >
+                      Clear Head
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

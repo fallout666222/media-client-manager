@@ -47,6 +47,7 @@ export interface User {
   firstWeek?: string;
   firstCustomWeekId?: string;
   managerId?: string;
+  userHeadId?: string; // Add this field
   selectedClients?: string[];
   selectedMediaTypes?: string[];
   weekPercentages?: { weekId: string; percentage: number }[];
@@ -64,6 +65,7 @@ export interface User {
   login?: string;
   department_id?: string;
   manager_id?: string;
+  user_head_id?: string; // Add this field
   deletion_mark?: boolean;
   
   // Added field for department name

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { TimeSheetStatus } from '@/types/timesheet';
@@ -7,18 +6,20 @@ import { Check, X, Send, RotateCcw } from "lucide-react";
 interface ApprovalActionsProps {
   status?: TimeSheetStatus;
   isManager?: boolean;
+  isUserHead?: boolean;
   isViewingOwnTimesheet?: boolean;
   onSubmitForReview?: () => void;
   onApprove: () => void;
   onReject: () => void;
   disabled?: boolean;
   weekId?: string;
-  adminOverride?: boolean; // Add this prop for admin override
+  adminOverride?: boolean;
 }
 
 export const ApprovalActions = ({
   status,
   isManager,
+  isUserHead = false,
   isViewingOwnTimesheet,
   onSubmitForReview,
   onApprove,
@@ -31,7 +32,6 @@ export const ApprovalActions = ({
     onReject();
   };
 
-  // For admin override, show all possible actions based on current status
   if (adminOverride) {
     return (
       <div className="flex gap-2 flex-wrap">
@@ -70,8 +70,7 @@ export const ApprovalActions = ({
     );
   }
 
-  // Original logic for non-admin users
-  if (isManager && !isViewingOwnTimesheet && status === 'under-review') {
+  if ((isManager || isUserHead) && !isViewingOwnTimesheet && status === 'under-review') {
     return (
       <div className="flex gap-2">
         <Button onClick={onApprove} variant="default" disabled={disabled}>
