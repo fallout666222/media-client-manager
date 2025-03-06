@@ -72,8 +72,10 @@ export const TimeSheetGrid = ({
                     onChange={(e) => {
                       const hours = parseInt(e.target.value) || 0;
                       const currentTotal = calculateTotalHours(client, type);
+                      const currentValue = timeEntries[client]?.[type]?.hours || 0;
+                      const newTotal = currentTotal + hours - currentValue;
                       
-                      if (currentTotal + hours > effectiveWeekHours) {
+                      if (newTotal > effectiveWeekHours) {
                         toast({
                           title: "Cannot Add Hours",
                           description: `Total hours cannot exceed ${effectiveWeekHours} for the week (${weekPercentage}% of ${weekHours})`,

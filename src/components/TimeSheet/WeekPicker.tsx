@@ -108,9 +108,8 @@ export const WeekPicker = ({
       const date = parse(selectedWeek.startDate, "yyyy-MM-dd", new Date());
       onWeekChange(date);
       
-      // Apply percentage to hours - this is where we update the required hours based on percentage
-      const effectiveHours = Math.round(selectedWeek.hours * (weekPercentage / 100));
-      onWeekHoursChange(effectiveHours);
+      // Pass the base hours (not adjusted by percentage) - the TimeSheet component will apply the percentage
+      onWeekHoursChange(selectedWeek.hours);
     }
   };
 
@@ -131,16 +130,15 @@ export const WeekPicker = ({
     const date = parse(newWeek.startDate, "yyyy-MM-dd", new Date());
     onWeekChange(date);
     
-    // Apply percentage to hours
-    const effectiveHours = Math.round(newWeek.hours * (weekPercentage / 100));
-    onWeekHoursChange(effectiveHours);
+    // Pass the base hours (not adjusted by percentage)
+    onWeekHoursChange(newWeek.hours);
   };
 
   const formatWeekLabel = (week: CustomWeek) => {
     const start = format(parse(week.startDate, "yyyy-MM-dd", new Date()), "MMM dd, yyyy");
     const end = format(parse(week.endDate, "yyyy-MM-dd", new Date()), "MMM dd, yyyy");
     
-    // Calculate effective hours based on percentage
+    // Calculate effective hours based on percentage for display only
     const effectiveHours = Math.round(week.hours * (weekPercentage / 100));
     
     return `${week.name}: ${start} - ${end} (${effectiveHours}h)`;
