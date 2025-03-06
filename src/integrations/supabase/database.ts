@@ -70,7 +70,8 @@ export const createClient = async (client: {
   client_id?: string, 
   ts_code?: string, 
   description?: string, 
-  parent_id?: string | null 
+  parent_id?: string | null,
+  hidden?: boolean
 }) => {
   return await supabase.from('clients').insert(client).select().single();
 };

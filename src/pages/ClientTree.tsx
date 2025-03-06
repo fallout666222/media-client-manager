@@ -50,8 +50,7 @@ const ClientTree: React.FC = () => {
       return data?.map(client => ({
         ...client,
         parentId: client.parent_id,
-        // Add UI-specific fields that aren't in the database
-        hidden: Boolean(client.deletion_mark),
+        // Use the actual hidden field from the database now
         isDefault: false // Assuming no client is default by default
       })) || [];
     }
@@ -62,7 +61,8 @@ const ClientTree: React.FC = () => {
     mutationFn: async (clientData: { name: string, parentId: string | null }) => {
       const { data, error } = await db.createClient({
         name: clientData.name,
-        parent_id: clientData.parentId
+        parent_id: clientData.parentId,
+        hidden: false // New clients are not hidden by default
       });
       
       if (error) throw error;
@@ -157,9 +157,10 @@ const ClientTree: React.FC = () => {
   };
 
   const handleToggleHidden = (id: string, currentValue: boolean) => {
+    // Now we're updating the actual hidden field, not deletion_mark
     updateClientMutation.mutate({
       id,
-      data: { deletion_mark: !currentValue }
+      data: { hidden: !currentValue }
     });
   };
 
