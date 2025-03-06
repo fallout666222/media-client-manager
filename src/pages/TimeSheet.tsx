@@ -708,30 +708,6 @@ const TimeSheet = ({
   const handleTimeUpdate = async (client: string, mediaType: string, hours: number) => {
     if ((readOnly || !isViewingOwnTimesheet) && !adminOverride) return;
     
-    if (hours === 0) {
-      const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
-      
-      setTimeEntries(prev => {
-        const newEntries = { ...prev };
-        
-        if (newEntries[currentWeekKey]) {
-          if (newEntries[currentWeekKey][client]) {
-            if (newEntries[currentWeekKey][client][mediaType]) {
-              delete newEntries[currentWeekKey][client][mediaType];
-              
-              if (Object.keys(newEntries[currentWeekKey][client]).length === 0) {
-                delete newEntries[currentWeekKey][client];
-              }
-            }
-          }
-        }
-        
-        return newEntries;
-      });
-      
-      return;
-    }
-    
     const currentTotal = getTotalHoursForWeek();
     const existingHours = timeEntries[format(currentDate, 'yyyy-MM-dd')]?.[client]?.[mediaType]?.hours || 0;
     const newTotalHours = currentTotal - existingHours + hours;
