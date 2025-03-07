@@ -37,6 +37,7 @@ export const WeekPicker = ({
   const [availableWeeks, setAvailableWeeks] = useState<CustomWeek[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
 
   // Get unique years from available weeks
   const availableYears = useMemo(() => {
@@ -119,15 +120,36 @@ export const WeekPicker = ({
 
   const filteredWeeks = getFilteredWeeks();
 
-  // Find the current week based on the currentDate
-  const getCurrentWeek = () => {
-    // Try to load the saved week on initial load
+  // Handle initial load and week selection
+  useEffect(() => {
+    if (!initialLoadDone && filteredWeeks.length > 0) {
+      const savedWeekId = localStorage.getItem(STORAGE_KEY);
+      
+      if (savedWeekId) {
+        const savedWeek = filteredWeeks.find(week => week.id === savedWeekId);
+        if (savedWeek) {
+          // Apply the saved week on initial load
+          const date = parse(savedWeek.startDate, "yyyy-MM-dd", new Date());
+          onWeekChange(date);
+          onWeekHoursChange(savedWeek.hours);
+          setInitialLoadDone(true);
+          return;
+        }
+      }
+      
+      // Fall back to default behavior if no saved week found
+      setInitialLoadDone(true);
+    }
+  }, [filteredWeeks, initialLoadDone, onWeekChange, onWeekHoursChange]);
+
+  // Find the current week ID based on the selected week or default
+  const getCurrentWeekId = () => {
+    // First check localStorage for saved week ID
     const savedWeekId = localStorage.getItem(STORAGE_KEY);
-    
     if (savedWeekId) {
       const savedWeek = filteredWeeks.find(week => week.id === savedWeekId);
       if (savedWeek) {
-        return savedWeek;
+        return savedWeek.id;
       }
     }
     
@@ -135,14 +157,15 @@ export const WeekPicker = ({
     for (const week of filteredWeeks) {
       const weekStartDate = parse(week.startDate, "yyyy-MM-dd", new Date());
       if (isSameDay(weekStartDate, currentDate)) {
-        return week;
+        return week.id;
       }
     }
-    return filteredWeeks[0]; // Default to the first available week if no match
+    
+    // Default to first week if nothing else matches
+    return filteredWeeks.length > 0 ? filteredWeeks[0].id : undefined;
   };
 
-  const currentWeek = getCurrentWeek();
-  const currentWeekId = currentWeek?.id || filteredWeeks[0]?.id;
+  const currentWeekId = getCurrentWeekId();
 
   // Save current week ID to localStorage whenever it changes
   useEffect(() => {
@@ -238,7 +261,7 @@ export const WeekPicker = ({
         </Button>
 
         <Select
-          value={currentWeekId}
+          value={currentWeekId || ''}
           onValueChange={handleCustomWeekSelect}
         >
           <SelectTrigger className="flex-1">
