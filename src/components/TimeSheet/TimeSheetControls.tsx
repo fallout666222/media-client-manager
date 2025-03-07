@@ -23,6 +23,7 @@ interface TimeSheetControlsProps {
   weekPercentage?: number;
   customWeeks?: any[];
   adminOverride?: boolean;
+  viewedUserId?: string;
 }
 
 export const TimeSheetControls = ({
@@ -41,7 +42,8 @@ export const TimeSheetControls = ({
   weekId,
   weekPercentage = 100,
   customWeeks = [],
-  adminOverride = false
+  adminOverride = false,
+  viewedUserId
 }: TimeSheetControlsProps) => {
   const [redirectApplied, setRedirectApplied] = useState(false);
   
@@ -133,6 +135,7 @@ export const TimeSheetControls = ({
           firstWeek={firstWeek}
           weekPercentage={weekPercentage}
           customWeeks={customWeeks}
+          viewedUserId={viewedUserId}
         />
       </div>
       
