@@ -24,6 +24,19 @@ interface TimeSheetControlsProps {
   customWeeks?: any[];
   adminOverride?: boolean;
   currentUserId?: string;
+  
+  // Add these new props to match what's being passed in TimeSheet.tsx
+  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
+  weekHours: number;
+  userWeeks: any[];
+  hasUnsubmittedEarlierWeek: () => boolean;
+  onReturnToFirstUnsubmitted: () => void;
+  isFormDisabled: boolean;
+  setCurrentCustomWeek: React.Dispatch<React.SetStateAction<any>>;
+  currentCustomWeek: any;
+  setWeekPercentage: React.Dispatch<React.SetStateAction<number>>;
+  userName: string;
+  userRole: string;
 }
 
 export const TimeSheetControls = ({
@@ -43,7 +56,19 @@ export const TimeSheetControls = ({
   weekPercentage = 100,
   customWeeks = [],
   adminOverride = false,
-  currentUserId
+  currentUserId,
+  // Map these new props
+  setCurrentDate,
+  weekHours,
+  userWeeks,
+  hasUnsubmittedEarlierWeek,
+  onReturnToFirstUnsubmitted,
+  isFormDisabled,
+  setCurrentCustomWeek,
+  currentCustomWeek,
+  setWeekPercentage,
+  userName,
+  userRole
 }: TimeSheetControlsProps) => {
   const [redirectApplied, setRedirectApplied] = useState(false);
   

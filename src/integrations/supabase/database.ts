@@ -492,5 +492,3 @@ export const updateVisibleTypesOrder = async (userId: string, typeNames: string[
   
   return { data: true };
 };
-
-export { updateHours };

@@ -892,60 +892,83 @@ const TimeSheet = ({
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <TimeSheetHeader 
-        user={viewedUser} 
-        users={users} 
-        onUserChange={setViewedUser} 
-        userRole={userRole} 
-        status={getCurrentWeekStatus()} 
-        currentUser={currentUser} 
+        userRole={userRole}
+        status={getCurrentWeekStatus()}
+        remainingHours={Math.round(weekHours * (weekPercentage / 100)) - getTotalHoursForWeek()}
+        weekHours={weekHours}
+        weekPercentage={weekPercentage}
+        onReturnToFirstUnsubmittedWeek={handleReturnToFirstUnsubmittedWeek}
+        onToggleSettings={() => setShowSettings(!showSettings)}
+        hasCustomWeeks={customWeeks.length > 0}
+        user={viewedUser}
+        users={users}
+        onUserChange={setViewedUser}
+        currentUser={currentUser}
         readOnly={readOnly}
         adminOverride={adminOverride}
         isUserHead={isUserHead}
       />
       
       <TimeSheetControls 
-        currentDate={currentDate} 
-        setCurrentDate={setCurrentDate} 
-        weekHours={weekHours} 
-        onHoursChange={handleWeekHoursChange} 
-        onSubmitForReview={handleSubmitForReview} 
-        onApprove={handleApprove} 
-        onReject={handleReject} 
-        status={getCurrentWeekStatus()} 
-        userRole={userRole} 
-        readOnly={readOnly && !adminOverride && !isUserHead}
-        userWeeks={userWeeks}
+        currentDate={currentDate}
+        onWeekChange={(date) => {
+          setCurrentDate(date);
+          const customWeek = customWeeks.find(w => 
+            w.period_from === format(date, 'yyyy-MM-dd')
+          );
+          if (customWeek) {
+            setCurrentCustomWeek(customWeek);
+            setWeekHours(customWeek.required_hours);
+          } else {
+            setCurrentCustomWeek(null);
+          }
+        }}
+        onWeekHoursChange={handleWeekHoursChange}
+        status={getCurrentWeekStatus()}
+        isManager={userRole === 'manager' || userRole === 'admin'}
         isViewingOwnTimesheet={isViewingOwnTimesheet}
+        isUserHead={isUserHead}
+        onSubmitForReview={handleSubmitForReview}
+        onApprove={handleApprove}
+        onReject={handleReject}
+        readOnly={readOnly && !adminOverride && !isUserHead}
+        firstWeek={firstWeek}
+        weekId={currentCustomWeek?.id}
+        weekPercentage={weekPercentage}
+        customWeeks={customWeeks}
+        adminOverride={adminOverride}
+        currentUserId={viewedUser.id}
+        setCurrentDate={setCurrentDate}
+        weekHours={weekHours}
+        userWeeks={userWeeks}
         hasUnsubmittedEarlierWeek={hasUnsubmittedEarlierWeek}
         onReturnToFirstUnsubmitted={handleReturnToFirstUnsubmittedWeek}
         isFormDisabled={isCurrentWeekSubmitted() && !adminOverride && !isUserHead}
-        adminOverride={adminOverride}
-        customWeeks={customWeeks}
         setCurrentCustomWeek={setCurrentCustomWeek}
         currentCustomWeek={currentCustomWeek}
-        weekPercentage={weekPercentage}
         setWeekPercentage={setWeekPercentage}
         userName={viewedUser.name || viewedUser.username || ''}
+        userRole={userRole}
       />
       
       <TimeSheetContent 
-        clients={availableClients} 
-        selectedClients={selectedClients} 
-        mediaTypes={availableMediaTypes} 
-        selectedMediaTypes={selectedMediaTypes} 
-        timeEntries={timeEntries[format(currentDate, 'yyyy-MM-dd')] || {}} 
-        onTimeUpdate={handleTimeUpdate} 
-        onSelectClient={handleSelectClient} 
-        onSelectMediaType={handleSelectMediaType} 
-        onRemoveClient={handleRemoveClient} 
-        onRemoveMediaType={handleRemoveMediaType} 
-        status={getCurrentWeekStatus()} 
+        clients={availableClients}
+        selectedClients={selectedClients}
+        mediaTypes={availableMediaTypes}
+        selectedMediaTypes={selectedMediaTypes}
+        timeEntries={timeEntries[format(currentDate, 'yyyy-MM-dd')] || {}}
+        onTimeUpdate={handleTimeUpdate}
+        onSelectClient={handleSelectClient}
+        onSelectMediaType={handleSelectMediaType}
+        onRemoveClient={handleRemoveClient}
+        onRemoveMediaType={handleRemoveMediaType}
+        status={getCurrentWeekStatus()}
         readOnly={readOnly && !adminOverride && !isUserHead}
         userRole={userRole}
         onAddClient={handleAddClient}
         onAddMediaType={handleAddMediaType}
         showSettings={showSettings}
-        setShowSettings={setShowSettings}
+        onToggleSettings={() => setShowSettings(!showSettings)}
         weekHours={weekHours}
         onSaveVisibleClients={handleSaveVisibleClients}
         onSaveVisibleMediaTypes={handleSaveVisibleMediaTypes}
