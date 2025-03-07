@@ -121,14 +121,12 @@ export const WeekPicker = ({
 
   // Find the current week based on the currentDate
   const getCurrentWeek = () => {
-    // First try to load the saved week if we're starting up
+    // Try to load the saved week on initial load
     const savedWeekId = localStorage.getItem(STORAGE_KEY);
     
     if (savedWeekId) {
       const savedWeek = filteredWeeks.find(week => week.id === savedWeekId);
       if (savedWeek) {
-        // Only return the saved week on initial load
-        localStorage.removeItem(STORAGE_KEY); // Clear after use
         return savedWeek;
       }
     }
@@ -146,10 +144,17 @@ export const WeekPicker = ({
   const currentWeek = getCurrentWeek();
   const currentWeekId = currentWeek?.id || filteredWeeks[0]?.id;
 
+  // Save current week ID to localStorage whenever it changes
+  useEffect(() => {
+    if (currentWeekId) {
+      localStorage.setItem(STORAGE_KEY, currentWeekId);
+    }
+  }, [currentWeekId]);
+
   const handleCustomWeekSelect = (weekId: string) => {
     const selectedWeek = filteredWeeks.find(week => week.id === weekId);
     if (selectedWeek) {
-      // Save selected week ID to localStorage for persistence
+      // Update localStorage with the selected week ID
       localStorage.setItem(STORAGE_KEY, selectedWeek.id);
       
       const date = parse(selectedWeek.startDate, "yyyy-MM-dd", new Date());
