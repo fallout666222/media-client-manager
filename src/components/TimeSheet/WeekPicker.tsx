@@ -70,6 +70,7 @@ export const WeekPicker = ({
     fetchWeeks();
   }, [propCustomWeeks]);
 
+  // Filter weeks to only include those on or after the user's first week
   const getFilteredWeeks = () => {
     if (availableWeeks.length === 0) return [];
     
@@ -84,6 +85,9 @@ export const WeekPicker = ({
     });
   };
 
+  const filteredWeeks = getFilteredWeeks();
+
+  // Find the current week based on the currentDate
   const getCurrentWeek = () => {
     for (const week of filteredWeeks) {
       const weekStartDate = parse(week.startDate, "yyyy-MM-dd", new Date());
@@ -94,7 +98,6 @@ export const WeekPicker = ({
     return filteredWeeks[0]; // Default to the first available week if no match
   };
 
-  const filteredWeeks = getFilteredWeeks();
   const currentWeek = getCurrentWeek();
   const currentWeekId = currentWeek?.id || filteredWeeks[0]?.id;
 

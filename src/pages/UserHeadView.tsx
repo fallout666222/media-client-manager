@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Select,
@@ -12,11 +12,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import TimeSheet from "./TimeSheet";
-import { User, TimeSheetStatus } from '@/types/timesheet';
-import { getUsers, getWeekStatuses, updateWeekStatus, getWeekStatusNames, getUserFirstUnconfirmedWeek } from '@/integrations/supabase/database';
+import { User } from '@/types/timesheet';
+import { getUsers } from '@/integrations/supabase/database';
 import { useQuery } from '@tanstack/react-query';
 import SearchBar from '@/components/SearchBar';
-import { format } from 'date-fns';
 
 interface UserHeadViewProps {
   currentUser: User;
@@ -26,7 +25,6 @@ interface UserHeadViewProps {
 const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => {
   const [selectedTeamMember, setSelectedTeamMember] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [firstUnconfirmedWeek, setFirstUnconfirmedWeek] = useState<any>(null);
   const { toast } = useToast();
 
   // Fetch all users using React Query
@@ -56,30 +54,11 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
 
   const handleTeamMemberSelect = (userId: string) => {
     setSelectedTeamMember(userId);
-    // When selecting a new team member, check for their first unconfirmed week
-    fetchFirstUnconfirmedWeek(userId);
-  };
-
-  const fetchFirstUnconfirmedWeek = async (userId: string) => {
-    try {
-      const week = await getUserFirstUnconfirmedWeek(userId);
-      setFirstUnconfirmedWeek(week);
-      
-      if (week) {
-        toast({
-          title: "First Unconfirmed Week Found",
-          description: `${week.name} needs attention`,
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching first unconfirmed week:', error);
-    }
   };
 
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
     setSelectedTeamMember(null); // Reset selection when searching
-    setFirstUnconfirmedWeek(null); // Reset unconfirmed week
   };
 
   useEffect(() => {
@@ -91,90 +70,6 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       });
     }
   }, [error, toast]);
-
-  const handleSubmitForReview = async (userId: string, weekId: string) => {
-    try {
-      const { data: statusNames } = await getWeekStatusNames();
-      const underReviewStatus = statusNames?.find(status => status.name === 'under-review');
-      
-      if (underReviewStatus && userId) {
-        await updateWeekStatus(userId, weekId, underReviewStatus.id);
-        
-        toast({
-          title: "Timesheet Submitted",
-          description: "Timesheet has been submitted for review",
-        });
-        
-        // Refresh the timesheet view
-        if (selectedTeamMember) {
-          fetchFirstUnconfirmedWeek(selectedTeamMember);
-        }
-      }
-    } catch (error) {
-      console.error('Error submitting timesheet:', error);
-      toast({
-        title: "Error",
-        description: "Failed to submit timesheet",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleApprove = async (userId: string, weekId: string) => {
-    try {
-      const { data: statusNames } = await getWeekStatusNames();
-      const acceptedStatus = statusNames?.find(status => status.name === 'accepted');
-      
-      if (acceptedStatus && userId) {
-        await updateWeekStatus(userId, weekId, acceptedStatus.id);
-        
-        toast({
-          title: "Timesheet Approved",
-          description: "Timesheet has been approved",
-        });
-        
-        // Refresh the timesheet view
-        if (selectedTeamMember) {
-          fetchFirstUnconfirmedWeek(selectedTeamMember);
-        }
-      }
-    } catch (error) {
-      console.error('Error approving timesheet:', error);
-      toast({
-        title: "Error",
-        description: "Failed to approve timesheet",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleReject = async (userId: string, weekId: string) => {
-    try {
-      const { data: statusNames } = await getWeekStatusNames();
-      const needsRevisionStatus = statusNames?.find(status => status.name === 'needs-revision');
-      
-      if (needsRevisionStatus && userId) {
-        await updateWeekStatus(userId, weekId, needsRevisionStatus.id);
-        
-        toast({
-          title: "Timesheet Rejected",
-          description: "Timesheet has been rejected and needs revision",
-        });
-        
-        // Refresh the timesheet view
-        if (selectedTeamMember) {
-          fetchFirstUnconfirmedWeek(selectedTeamMember);
-        }
-      }
-    } catch (error) {
-      console.error('Error rejecting timesheet:', error);
-      toast({
-        title: "Error",
-        description: "Failed to reject timesheet",
-        variant: "destructive"
-      });
-    }
-  };
 
   const renderTeamMemberTimesheet = () => {
     if (!selectedTeamMember) {
@@ -226,36 +121,15 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       user_head_id: teamMember.user_head_id
     };
     
-    // For the timesheet, pass initialWeekId if we have an unconfirmed week
-    const initialWeekId = firstUnconfirmedWeek ? firstUnconfirmedWeek.id : null;
-    
     return (
-      <>
-        {firstUnconfirmedWeek && (
-          <div className="mb-4 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded">
-            <h3 className="font-medium">First Week Needing Attention</h3>
-            <p>Week: {firstUnconfirmedWeek.name} ({format(new Date(firstUnconfirmedWeek.period_from), 'MMM d')} - {format(new Date(firstUnconfirmedWeek.period_to), 'MMM d, yyyy')})</p>
-            <div className="mt-2 flex gap-2">
-              <Button 
-                size="sm" 
-                onClick={() => handleSubmitForReview(teamMember.id, firstUnconfirmedWeek.id)}
-              >
-                <Send className="h-4 w-4 mr-2" />
-                Submit for Review
-              </Button>
-            </div>
-          </div>
-        )}
-        <TimeSheet
-          userRole={teamMember.type as 'admin' | 'user' | 'manager'}
-          firstWeek={teamMember.first_week}
-          currentUser={currentUser}
-          users={users}
-          impersonatedUser={userForTimesheet}
-          clients={clients}
-          initialWeekId={initialWeekId}
-        />
-      </>
+      <TimeSheet
+        userRole={teamMember.type as 'admin' | 'user' | 'manager'}
+        firstWeek={teamMember.first_week}
+        currentUser={userForTimesheet}
+        users={users}
+        impersonatedUser={userForTimesheet}
+        clients={clients}
+      />
     );
   };
 

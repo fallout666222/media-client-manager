@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { TimeSheetGrid } from './TimeSheetGrid';
 import { Settings } from './Settings';
 import { TimeEntry, TimeSheetStatus, Client } from '@/types/timesheet';
@@ -188,25 +188,17 @@ export const TimeSheetContent = ({
         }}
         visibleClients={clientObjects}
         onReorderClients={(newOrder) => {
-          console.log("Reordering clients:", newOrder);
           if (onReorderClients) {
             onReorderClients(newOrder);
           }
-        }}
-        onReorderMediaTypes={(newOrder) => {
-          console.log("Reordering media types:", newOrder);
-          if (onReorderMediaTypes) {
-            onReorderMediaTypes(newOrder);
-          }
-        }}
-        onSaveVisibleClients={(newOrder) => {
-          console.log("Saving new client order:", newOrder);
           if (onSaveVisibleClients) {
             onSaveVisibleClients(newOrder);
           }
         }}
-        onSaveVisibleMediaTypes={(newOrder) => {
-          console.log("Saving new media type order:", newOrder);
+        onReorderMediaTypes={(newOrder) => {
+          if (onReorderMediaTypes) {
+            onReorderMediaTypes(newOrder);
+          }
           if (onSaveVisibleMediaTypes) {
             onSaveVisibleMediaTypes(newOrder);
           }
