@@ -73,19 +73,40 @@ export const ApprovalActions = ({
   }
 
   // User Head can approve/reject timesheets under review for their team members
-  if (isUserHead && !isViewingOwnTimesheet && status === 'under-review') {
-    return (
-      <div className="flex gap-2">
-        <Button onClick={onApprove} variant="default" disabled={disabled}>
-          <Check className="h-4 w-4 mr-2" />
-          Approve
+  if (isUserHead && !isViewingOwnTimesheet) {
+    if (status === 'under-review') {
+      return (
+        <div className="flex gap-2">
+          <Button onClick={onApprove} variant="default" disabled={disabled}>
+            <Check className="h-4 w-4 mr-2" />
+            Approve
+          </Button>
+          <Button onClick={handleReject} variant="destructive" disabled={disabled}>
+            <X className="h-4 w-4 mr-2" />
+            Reject
+          </Button>
+        </div>
+      );
+    } else if (status === 'unconfirmed' || status === 'needs-revision') {
+      return (
+        <Button onClick={onSubmitForReview} disabled={disabled}>
+          <Send className="h-4 w-4 mr-2" />
+          Submit for Review
         </Button>
-        <Button onClick={handleReject} variant="destructive" disabled={disabled}>
-          <X className="h-4 w-4 mr-2" />
-          Reject
+      );
+    } else if (status === 'accepted') {
+      return (
+        <Button 
+          onClick={handleReject} 
+          variant="outline" 
+          disabled={disabled}
+          className="border-amber-500 text-amber-500 hover:bg-amber-50"
+        >
+          <RotateCcw className="h-4 w-4 mr-2" />
+          Revert to Unconfirmed
         </Button>
-      </div>
-    );
+      );
+    }
   }
 
   // Original logic for managers
