@@ -32,7 +32,9 @@ export const TimeSheetGrid = ({
   const { toast } = useToast();
   const [localTimeEntries, setLocalTimeEntries] = useState<Record<string, Record<string, number>>>({});
   
+  // Update local entries whenever the timeEntries prop changes
   useEffect(() => {
+    console.log("TimeSheetGrid received timeEntries:", timeEntries);
     const initialEntries: Record<string, Record<string, number>> = {};
     
     Object.entries(timeEntries).forEach(([client, mediaEntries]) => {
@@ -59,7 +61,6 @@ export const TimeSheetGrid = ({
 
   const handleInputChange = (client: string, type: string, value: string) => {
     const hours = value === '' ? 0 : parseInt(value) || 0;
-    console.log(`Input change: ${client} - ${type} - ${hours}`);
     
     setLocalTimeEntries(prev => {
       const updated = { ...prev };
@@ -73,13 +74,9 @@ export const TimeSheetGrid = ({
     const hours = localTimeEntries[client]?.[type] || 0;
     const currentValue = timeEntries[client]?.[type]?.hours || 0;
     
-    console.log(`Input blur: ${client} - ${type} - hours: ${hours}, currentValue: ${currentValue}`);
-    
     if (hours !== currentValue) {
       const currentTotal = calculateTotalHours(client, type);
       const newTotal = currentTotal + hours;
-      
-      console.log(`Current total: ${currentTotal}, New total: ${newTotal}, Limit: ${effectiveWeekHours}`);
       
       if (newTotal > effectiveWeekHours) {
         toast({
@@ -97,7 +94,6 @@ export const TimeSheetGrid = ({
         return;
       }
       
-      console.log(`Calling onTimeUpdate with ${client}, ${type}, ${hours}`);
       // Always call onTimeUpdate to sync with database
       onTimeUpdate(client, type, hours);
     }

@@ -655,6 +655,7 @@ const TimeSheet = ({
       if (viewedUser.id) {
         try {
           const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
+          console.log(`Loading data for week starting on: ${currentWeekKey}`);
           
           let weekId = null;
           const customWeek = customWeeks.find(week => 
@@ -663,12 +664,14 @@ const TimeSheet = ({
           
           if (customWeek) {
             weekId = customWeek.id;
+            console.log(`Found custom week with ID: ${weekId}`);
           } else {
             const defaultWeek = userWeeks.find(w => 
               format(parse(w.startDate, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === currentWeekKey
             );
             if (defaultWeek) {
               weekId = defaultWeek.id;
+              console.log(`Found default week with ID: ${weekId}`);
             }
           }
           
@@ -677,7 +680,8 @@ const TimeSheet = ({
             const { data: hourEntries } = await getWeekHours(viewedUser.id, weekId);
             
             if (hourEntries && hourEntries.length > 0) {
-              console.log(`Found ${hourEntries.length} time entries`);
+              console.log(`Found ${hourEntries.length} time entries for week ${weekId}`);
+              
               const entries: Record<string, TimeSheetData> = {};
               entries[currentWeekKey] = {};
               
@@ -701,6 +705,11 @@ const TimeSheet = ({
                 [currentWeekKey]: {}
               });
             }
+          } else {
+            console.log('No week ID found for the current date');
+            setTimeEntries({
+              [currentWeekKey]: {}
+            });
           }
         } catch (error) {
           console.error('Error loading timesheet data:', error);
@@ -708,8 +717,13 @@ const TimeSheet = ({
       }
     };
     
+    const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
+    setTimeEntries({
+      [currentWeekKey]: {}
+    });
+    
     loadUserData();
-  }, [viewedUser, currentDate]);
+  }, [viewedUser, currentDate, customWeeks]);
 
   const handleTimeUpdate = async (client: string, mediaType: string, hours: number) => {
     if ((readOnly || !isViewingOwnTimesheet) && !adminOverride && !isUserHead) return;
