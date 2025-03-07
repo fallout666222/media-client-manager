@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 
 // Custom Weeks
@@ -236,13 +237,25 @@ export const updateWeekHours = async (
     .eq('media_type_id', mediaTypeId)
     .maybeSingle();
   
-  if (data) {
+  if (hours === 0) {
+    // Delete the record if hours is 0
+    if (data) {
+      console.log(`Deleting hours record for week ${weekId}, client ${clientId}, media ${mediaTypeId}`);
+      return await supabase.from('week_hours')
+        .delete()
+        .eq('id', data.id);
+    }
+    // If no record exists with 0 hours, nothing to do
+    return { data: null };
+  } else if (data) {
+    // Update existing record with non-zero hours
     return await supabase.from('week_hours')
       .update({ hours })
       .eq('id', data.id)
       .select()
       .single();
   } else {
+    // Insert new record with non-zero hours
     return await supabase.from('week_hours')
       .insert({ user_id: userId, week_id: weekId, client_id: clientId, media_type_id: mediaTypeId, hours })
       .select()
@@ -250,7 +263,7 @@ export const updateWeekHours = async (
   }
 };
 
-// Add this new function to updateHours directly
+// Update this function to handle zero hours by deleting records
 export const updateHours = async (userId: string, weekId: string, clientName: string, mediaTypeName: string, hours: number) => {
   try {
     // Get the client and media type IDs from their names

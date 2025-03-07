@@ -56,7 +56,7 @@ export const TimeSheetGrid = ({
   };
 
   const handleInputChange = (client: string, type: string, value: string) => {
-    const hours = parseInt(value) || 0;
+    const hours = value === '' ? 0 : parseInt(value) || 0;
     console.log(`Input change: ${client} - ${type} - ${hours}`);
     
     setLocalTimeEntries(prev => {
@@ -127,7 +127,9 @@ export const TimeSheetGrid = ({
                     max={effectiveWeekHours.toString()}
                     step="1"
                     className="text-center"
-                    value={localTimeEntries[client]?.[type] !== undefined ? localTimeEntries[client][type] : ''}
+                    value={localTimeEntries[client]?.[type] !== undefined ? 
+                      (localTimeEntries[client][type] === 0 ? '' : localTimeEntries[client][type]) : 
+                      ''}
                     onChange={(e) => handleInputChange(client, type, e.target.value)}
                     onBlur={() => handleInputBlur(client, type)}
                     disabled={isFormDisabled}
