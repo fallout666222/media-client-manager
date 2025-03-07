@@ -1,8 +1,8 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { differenceInDays, parse, format } from "date-fns";
+import { differenceInDays, parse, format, getYear } from "date-fns";
 import {
   Table,
   TableBody,
@@ -11,6 +11,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -24,6 +31,7 @@ const CustomWeeks = () => {
   const [hours, setHours] = useState<number>(0);
   const [weeks, setWeeks] = useState<CustomWeek[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedYear, setSelectedYear] = useState<string>("all");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -62,6 +70,22 @@ const CustomWeeks = () => {
       setLoading(false);
     }
   };
+
+  // Extract unique years from weeks
+  const availableYears = useMemo(() => {
+    if (weeks.length === 0) return [];
+    
+    const years = new Set<string>();
+    
+    weeks.forEach(week => {
+      if (week.startDate) {
+        const year = getYear(parse(week.startDate, "yyyy-MM-dd", new Date())).toString();
+        years.add(year);
+      }
+    });
+    
+    return Array.from(years).sort();
+  }, [weeks]);
 
   const calculateHours = (start: string, end: string) => {
     try {
@@ -175,6 +199,19 @@ const CustomWeeks = () => {
     }
   };
 
+  // Filter weeks by selected year
+  const filteredWeeks = useMemo(() => {
+    if (selectedYear === "all") {
+      return weeks;
+    }
+    
+    return weeks.filter(week => {
+      if (!week.startDate) return false;
+      const year = getYear(parse(week.startDate, "yyyy-MM-dd", new Date())).toString();
+      return year === selectedYear;
+    });
+  }, [weeks, selectedYear]);
+
   return (
     <div className="container mx-auto p-4 space-y-6 pt-16">
       <div className="flex items-center justify-between">
@@ -251,47 +288,71 @@ const CustomWeeks = () => {
         {loading ? (
           <div className="text-center p-4">Loading custom weeks...</div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Start Date</TableHead>
-                <TableHead>End Date</TableHead>
-                <TableHead>Hours</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {weeks.length === 0 ? (
+          <>
+            <div className="flex items-center gap-2 mb-4">
+              <label className="text-sm font-medium">Filter by year:</label>
+              <Select
+                value={selectedYear}
+                onValueChange={setSelectedYear}
+              >
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="All years" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All years</SelectItem>
+                  {availableYears.map(year => (
+                    <SelectItem key={year} value={year}>{year}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center">No custom weeks found</TableCell>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Start Date</TableHead>
+                  <TableHead>End Date</TableHead>
+                  <TableHead>Hours</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ) : (
-                weeks.map((week) => (
-                  <TableRow key={week.id}>
-                    <TableCell className="font-medium">{week.name}</TableCell>
-                    <TableCell>
-                      {format(parse(week.startDate, "yyyy-MM-dd", new Date()), "MMM dd, yyyy")}
-                    </TableCell>
-                    <TableCell>
-                      {format(parse(week.endDate, "yyyy-MM-dd", new Date()), "MMM dd, yyyy")}
-                    </TableCell>
-                    <TableCell>{week.hours}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(week.id)}
-                        className="text-destructive hover:text-destructive/90"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+              </TableHeader>
+              <TableBody>
+                {filteredWeeks.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center">
+                      {selectedYear !== "all" 
+                        ? `No custom weeks found for year ${selectedYear}` 
+                        : "No custom weeks found"}
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : (
+                  filteredWeeks.map((week) => (
+                    <TableRow key={week.id}>
+                      <TableCell className="font-medium">{week.name}</TableCell>
+                      <TableCell>
+                        {format(parse(week.startDate, "yyyy-MM-dd", new Date()), "MMM dd, yyyy")}
+                      </TableCell>
+                      <TableCell>
+                        {format(parse(week.endDate, "yyyy-MM-dd", new Date()), "MMM dd, yyyy")}
+                      </TableCell>
+                      <TableCell>{week.hours}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(week.id)}
+                          className="text-destructive hover:text-destructive/90"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </>
         )}
       </div>
     </div>

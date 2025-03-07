@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Select,
   SelectContent,
@@ -8,7 +9,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { format, parse, isSameDay, isBefore } from 'date-fns';
+import { format, parse, isSameDay, isBefore, getYear } from 'date-fns';
 import { CustomWeek } from '@/types/timesheet';
 import { getCustomWeeks } from '@/integrations/supabase/database';
 
@@ -19,6 +20,7 @@ interface WeekPickerProps {
   weekPercentage?: number;
   firstWeek?: string;
   customWeeks?: any[];
+  viewedUserId?: string;
 }
 
 export const WeekPicker = ({ 
@@ -27,10 +29,26 @@ export const WeekPicker = ({
   onWeekHoursChange,
   weekPercentage = 100,
   firstWeek = "2025-01-01", // Default to the earliest week if not specified
-  customWeeks: propCustomWeeks = []
+  customWeeks: propCustomWeeks = [],
+  viewedUserId
 }: WeekPickerProps) => {
   const [availableWeeks, setAvailableWeeks] = useState<CustomWeek[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedYear, setSelectedYear] = useState<string>('all');
+
+  // Get unique years from available weeks
+  const availableYears = useMemo(() => {
+    if (availableWeeks.length === 0) return [];
+    
+    const years = new Set<string>();
+    
+    availableWeeks.forEach(week => {
+      const year = getYear(parse(week.startDate, 'yyyy-MM-dd', new Date())).toString();
+      years.add(year);
+    });
+    
+    return Array.from(years).sort();
+  }, [availableWeeks]);
 
   useEffect(() => {
     const fetchWeeks = async () => {
@@ -70,15 +88,27 @@ export const WeekPicker = ({
     fetchWeeks();
   }, [propCustomWeeks]);
 
-  // Filter weeks to only include those on or after the user's first week
+  // Filter weeks by year if a year is selected
   const getFilteredWeeks = () => {
     if (availableWeeks.length === 0) return [];
     
+    // First filter by firstWeek
     const firstWeekDate = parse(firstWeek, 'yyyy-MM-dd', new Date());
-    return availableWeeks.filter(week => {
+    let filtered = availableWeeks.filter(week => {
       const weekStartDate = parse(week.startDate, 'yyyy-MM-dd', new Date());
       return !isBefore(weekStartDate, firstWeekDate);
-    }).sort((a, b) => {
+    });
+    
+    // Then filter by year if a specific year is selected
+    if (selectedYear !== 'all') {
+      filtered = filtered.filter(week => {
+        const weekYear = getYear(parse(week.startDate, 'yyyy-MM-dd', new Date())).toString();
+        return weekYear === selectedYear;
+      });
+    }
+    
+    // Sort by date
+    return filtered.sort((a, b) => {
       const dateA = parse(a.startDate, 'yyyy-MM-dd', new Date());
       const dateB = parse(b.startDate, 'yyyy-MM-dd', new Date());
       return dateA.getTime() - dateB.getTime();
@@ -148,40 +178,64 @@ export const WeekPicker = ({
   }
 
   return (
-    <div className="w-full max-w-md mb-4 flex items-center gap-2">
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={() => handleNavigateWeek('prev')}
-        disabled={!filteredWeeks.length || currentWeekId === filteredWeeks[0].id}
-      >
-        <ChevronLeft className="h-4 w-4" />
-      </Button>
+    <div className="w-full max-w-md mb-4 space-y-2">
+      {/* Year filter */}
+      <div className="flex items-center gap-2 mb-2">
+        <label className="text-sm font-medium whitespace-nowrap">Filter by year:</label>
+        <Select
+          value={selectedYear}
+          onValueChange={setSelectedYear}
+        >
+          <SelectTrigger className="h-8 flex-1">
+            <SelectValue placeholder="All years" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All years</SelectItem>
+            {availableYears.map((year) => (
+              <SelectItem key={year} value={year}>
+                {year}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-      <Select
-        value={currentWeekId}
-        onValueChange={handleCustomWeekSelect}
-      >
-        <SelectTrigger className="flex-1">
-          <SelectValue placeholder="Select a custom week" />
-        </SelectTrigger>
-        <SelectContent>
-          {filteredWeeks.map((week) => (
-            <SelectItem key={week.id} value={week.id}>
-              {formatWeekLabel(week)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {/* Week picker controls */}
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => handleNavigateWeek('prev')}
+          disabled={!filteredWeeks.length || currentWeekId === filteredWeeks[0].id}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
 
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={() => handleNavigateWeek('next')}
-        disabled={!filteredWeeks.length || currentWeekId === filteredWeeks[filteredWeeks.length - 1].id}
-      >
-        <ChevronRight className="h-4 w-4" />
-      </Button>
+        <Select
+          value={currentWeekId}
+          onValueChange={handleCustomWeekSelect}
+        >
+          <SelectTrigger className="flex-1">
+            <SelectValue placeholder="Select a custom week" />
+          </SelectTrigger>
+          <SelectContent>
+            {filteredWeeks.map((week) => (
+              <SelectItem key={week.id} value={week.id}>
+                {formatWeekLabel(week)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => handleNavigateWeek('next')}
+          disabled={!filteredWeeks.length || currentWeekId === filteredWeeks[filteredWeeks.length - 1].id}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
 };

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { User, CustomWeek, WeekPercentage } from "@/types/timesheet";
 import {
   Table,
@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { getUsers, getCustomWeeks, getWeekPercentages, updateWeekPercentage } from "@/integrations/supabase/database";
+import { getYear, parse } from "date-fns";
 
 const DEFAULT_WEEKS: CustomWeek[] = [
   { id: "1", name: "Week 1", startDate: "2025-01-01", endDate: "2025-01-06", hours: 48 },
@@ -33,6 +34,8 @@ const UserWeekPercentage = () => {
   const [loading, setLoading] = useState(true);
   // Track the last modified week as a reference for subsequent weeks
   const [lastModifiedWeek, setLastModifiedWeek] = useState<string | null>(null);
+  // Add year filter state
+  const [selectedYear, setSelectedYear] = useState<string>("all");
   const { toast } = useToast();
 
   // Define the structure for week percentage entries
@@ -69,6 +72,23 @@ const UserWeekPercentage = () => {
     
     fetchData();
   }, [toast]);
+
+  // Extract unique years from custom weeks
+  const availableYears = useMemo(() => {
+    const years = new Set<string>();
+    
+    const weeks = customWeeks.length > 0 ? customWeeks : DEFAULT_WEEKS;
+    
+    weeks.forEach(week => {
+      const startDate = week.period_from || week.startDate;
+      if (startDate) {
+        const year = getYear(parse(startDate, "yyyy-MM-dd", new Date())).toString();
+        years.add(year);
+      }
+    });
+    
+    return Array.from(years).sort();
+  }, [customWeeks]);
 
   // Fetch week percentages when a user is selected
   useEffect(() => {
@@ -205,7 +225,25 @@ const UserWeekPercentage = () => {
   };
 
   const selectedUserData = users.find((user) => user.id === selectedUser);
-  const weeksToDisplay = customWeeks.length > 0 ? customWeeks : DEFAULT_WEEKS;
+  
+  // Filter weeks by selected year
+  const getFilteredWeeks = () => {
+    const weeksToFilter = customWeeks.length > 0 ? customWeeks : DEFAULT_WEEKS;
+    
+    if (selectedYear === "all") {
+      return weeksToFilter;
+    }
+    
+    return weeksToFilter.filter(week => {
+      const startDate = week.period_from || week.startDate;
+      if (!startDate) return false;
+      
+      const year = getYear(parse(startDate, "yyyy-MM-dd", new Date())).toString();
+      return year === selectedYear;
+    });
+  };
+
+  const weeksToDisplay = getFilteredWeeks();
 
   if (loading) {
     return (
@@ -228,28 +266,53 @@ const UserWeekPercentage = () => {
       </div>
       
       <div className="mb-6">
-        <label className="block text-sm font-medium mb-2">Select a user:</label>
-        <Select
-          value={selectedUser}
-          onValueChange={setSelectedUser}
-        >
-          <SelectTrigger className="w-full md:w-[300px]">
-            <SelectValue placeholder="Select a user" />
-          </SelectTrigger>
-          <SelectContent>
-            {users.map((user) => (
-              <SelectItem key={user.id} value={user.id || ""}>
-                {user.login || user.username} ({user.type || user.role})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex flex-col md:flex-row gap-4 items-start md:items-end">
+          <div className="w-full md:w-auto">
+            <label className="block text-sm font-medium mb-2">Select a user:</label>
+            <Select
+              value={selectedUser}
+              onValueChange={setSelectedUser}
+            >
+              <SelectTrigger className="w-full md:w-[300px]">
+                <SelectValue placeholder="Select a user" />
+              </SelectTrigger>
+              <SelectContent>
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={user.id || ""}>
+                    {user.login || user.username} ({user.type || user.role})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {selectedUser && availableYears.length > 0 && (
+            <div className="w-full md:w-auto">
+              <label className="block text-sm font-medium mb-2">Filter by year:</label>
+              <Select
+                value={selectedYear}
+                onValueChange={setSelectedYear}
+              >
+                <SelectTrigger className="w-full md:w-[150px]">
+                  <SelectValue placeholder="All years" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All years</SelectItem>
+                  {availableYears.map(year => (
+                    <SelectItem key={year} value={year}>{year}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
       </div>
 
       {selectedUser && (
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold mb-4">
             Week Percentages for {selectedUserData?.login || selectedUserData?.username}
+            {selectedYear !== "all" && ` - ${selectedYear}`}
           </h2>
           
           <Table>
@@ -263,47 +326,55 @@ const UserWeekPercentage = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {weeksToDisplay.map((week) => {
-                const weekId = week.id;
-                const startDate = week.period_from || week.startDate || '';
-                const endDate = week.period_to || week.endDate || '';
-                const baseHours = week.required_hours || week.hours || 40;
-                
-                const percentage = getWeekPercentage(selectedUser, weekId);
-                const effectiveHours = Math.round(baseHours * (percentage / 100));
-                
-                return (
-                  <TableRow key={weekId}>
-                    <TableCell>Week {week.name || weekId}</TableCell>
-                    <TableCell>
-                      {startDate} to {endDate}
-                    </TableCell>
-                    <TableCell>{baseHours}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Input
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={percentage}
-                          onChange={(e) =>
-                            handlePercentageChange(
-                              selectedUser,
-                              weekId,
-                              parseInt(e.target.value) || 0
-                            )
-                          }
-                          className="w-20"
-                        />
-                        <span>%</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {effectiveHours} hours
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+              {weeksToDisplay.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-4">
+                    No weeks found for {selectedYear !== "all" ? `year ${selectedYear}` : "any year"}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                weeksToDisplay.map((week) => {
+                  const weekId = week.id;
+                  const startDate = week.period_from || week.startDate || '';
+                  const endDate = week.period_to || week.endDate || '';
+                  const baseHours = week.required_hours || week.hours || 40;
+                  
+                  const percentage = getWeekPercentage(selectedUser, weekId);
+                  const effectiveHours = Math.round(baseHours * (percentage / 100));
+                  
+                  return (
+                    <TableRow key={weekId}>
+                      <TableCell>Week {week.name || weekId}</TableCell>
+                      <TableCell>
+                        {startDate} to {endDate}
+                      </TableCell>
+                      <TableCell>{baseHours}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={percentage}
+                            onChange={(e) =>
+                              handlePercentageChange(
+                                selectedUser,
+                                weekId,
+                                parseInt(e.target.value) || 0
+                              )
+                            }
+                            className="w-20"
+                          />
+                          <span>%</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {effectiveHours} hours
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
             </TableBody>
           </Table>
         </div>
