@@ -1,3 +1,4 @@
+
 import React, { useMemo, useEffect } from 'react';
 import { TimeSheetGrid } from './TimeSheetGrid';
 import { Settings } from './Settings';
@@ -106,13 +107,17 @@ export const TimeSheetContent = ({
     return Array.from(result);
   }, [timeEntries]);
   
-  // Filter out hidden clients for regular users
+  // UPDATED: Filter out hidden clients for regular users, EXCEPT those with time entries
   const visibleClientObjects = useMemo(() => {
     if (userRole === 'admin' || adminOverride) {
       return clientObjects;
     }
-    return clientObjects.filter(client => !client.hidden);
-  }, [clientObjects, userRole, adminOverride]);
+    
+    // We want to include hidden clients if they have time entries
+    return clientObjects.filter(client => 
+      !client.hidden || clientsWithEntries.includes(client.name)
+    );
+  }, [clientObjects, userRole, adminOverride, clientsWithEntries]);
 
   // Get list of visible client names
   const visibleClientNames = useMemo(() => {
@@ -121,10 +126,11 @@ export const TimeSheetContent = ({
   
   // Combine selected clients/media types with those that have entries
   const effectiveClients = useMemo(() => {
-    // Get unique clients, filtering out hidden ones for regular users
+    // Get unique clients, filtering out hidden ones for regular users EXCEPT those with entries
     const uniqueClients = [...new Set([
       ...selectedClients.filter(client => 
-        userRole === 'admin' || adminOverride || 
+        userRole === 'admin' || 
+        adminOverride || 
         visibleClientNames.includes(client)
       ), 
       ...clientsWithEntries
@@ -132,14 +138,15 @@ export const TimeSheetContent = ({
     
     // Keep the order of selectedClients (user's preferred order)
     const orderedClients = [...selectedClients].filter(client => 
-      userRole === 'admin' || adminOverride || 
+      userRole === 'admin' || 
+      adminOverride || 
       visibleClientNames.includes(client)
     );
     
     // Add any clients with entries that aren't already in the ordered list
     clientsWithEntries.forEach(client => {
-      const isClientVisible = userRole === 'admin' || adminOverride || visibleClientNames.includes(client);
-      if (!orderedClients.includes(client) && isClientVisible) {
+      // UPDATED: Include client if admin, override, OR the client is visible OR has entries
+      if (!orderedClients.includes(client) && visibleClientNames.includes(client)) {
         orderedClients.push(client);
       }
     });
