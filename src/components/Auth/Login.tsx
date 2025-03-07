@@ -22,6 +22,8 @@ export const Login = ({
   const [loading, setLoading] = useState(false);
   const [kerberosLoading, setKerberosLoading] = useState(false);
   const [kerberosError, setKerberosError] = useState<string | null>(null);
+  const [adfsLoading, setAdfsLoading] = useState(false);
+  const [adfsError, setAdfsError] = useState<string | null>(null);
 
   const handleFormSubmit = async (event: React.SyntheticEvent) => {
     event.preventDefault();
@@ -185,6 +187,45 @@ export const Login = ({
     }
   };
 
+  const handleAdfsLogin = async () => {
+    try {
+      setAdfsLoading(true);
+      setAdfsError(null);
+
+      // In a real implementation, this would redirect to the ADFS authentication endpoint
+      console.log('Initiating ADFS authentication');
+      
+      // The ADFS authentication is typically initiated by redirecting to the ADFS server
+      // This configuration should be set in the .env file and the URL should be constructed 
+      // as per the ADFS requirements
+      
+      const adfsUrl = import.meta.env.VITE_ADFS_URL || 'https://adfs.example.org/adfs';
+      const clientId = import.meta.env.VITE_ADFS_CLIENT_ID || 'your-client-id';
+      const redirectUri = encodeURIComponent(window.location.origin + '/auth/adfs-callback');
+      
+      // Construct the authorization URL
+      const authUrl = `${adfsUrl}/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&resource=https://timesheet.app&scope=openid profile email`;
+      
+      // Redirect the user to the ADFS login page
+      window.location.href = authUrl;
+      
+      // The actual authentication will happen on the ADFS server and the user will be
+      // redirected back to the specified redirect_uri with an authorization code
+      // This code is then exchanged for tokens in a separate callback handler
+      
+    } catch (error) {
+      console.error('ADFS login error:', error);
+      setAdfsError('ADFS authentication failed. Please check your network connection and try again.');
+      toast({
+        title: "ADFS Authentication Failed",
+        description: "There was a problem with single sign-on. Please try again or use password authentication.",
+        variant: "destructive"
+      });
+    } finally {
+      setAdfsLoading(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-lg">
@@ -196,9 +237,10 @@ export const Login = ({
         </div>
         
         <Tabs defaultValue="password" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="password">Password</TabsTrigger>
             <TabsTrigger value="kerberos">Kerberos SSO</TabsTrigger>
+            <TabsTrigger value="adfs">ADFS SSO</TabsTrigger>
           </TabsList>
           
           <TabsContent value="password">
@@ -239,6 +281,33 @@ export const Login = ({
                 disabled={kerberosLoading}
               >
                 {kerberosLoading ? "Authenticating..." : "Sign in with Kerberos"}
+              </Button>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="adfs">
+            <div className="mt-8 space-y-6">
+              <Alert className="bg-blue-50 border-blue-200">
+                <InfoIcon className="h-4 w-4 text-blue-500" />
+                <AlertDescription>
+                  ADFS single sign-on allows you to authenticate using your organization's
+                  Active Directory Federation Services. You will be redirected to your
+                  organization's login page.
+                </AlertDescription>
+              </Alert>
+              
+              {adfsError && (
+                <Alert variant="destructive">
+                  <AlertDescription>{adfsError}</AlertDescription>
+                </Alert>
+              )}
+              
+              <Button 
+                className="w-full"
+                onClick={handleAdfsLogin}
+                disabled={adfsLoading}
+              >
+                {adfsLoading ? "Redirecting..." : "Sign in with ADFS"}
               </Button>
             </div>
           </TabsContent>
