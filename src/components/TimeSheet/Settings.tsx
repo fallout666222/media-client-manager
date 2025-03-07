@@ -35,6 +35,8 @@ import {
   verticalListSortingStrategy,
   horizontalListSortingStrategy,
 } from '@dnd-kit/sortable';
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const DEFAULT_SYSTEM_CLIENTS = [
   "Administrative",
@@ -90,6 +92,7 @@ export const Settings = ({
   const [selectedClientToAdd, setSelectedClientToAdd] = useState('');
   const [selectedClientsToAdd, setSelectedClientsToAdd] = useState<string[]>([]);
   const [selectedMediaTypeToAdd, setSelectedMediaTypeToAdd] = useState('');
+  const [selectedMediaTypesToAdd, setSelectedMediaTypesToAdd] = useState<string[]>([]);
   const [clientSearchTerm, setClientSearchTerm] = useState('');
   const [mediaTypeSearchTerm, setMediaTypeSearchTerm] = useState('');
   const { toast } = useToast();
@@ -123,6 +126,7 @@ export const Settings = ({
     enabled: true,
   });
 
+  // Filter out hidden clients for non-admin users
   const filteredAvailableClients = isAdmin 
     ? availableClients 
     : visibleClients.filter(client => !client.hidden).map(client => client.name);
@@ -219,18 +223,26 @@ export const Settings = ({
   };
 
   const handleSelectMultipleMediaTypes = () => {
-    if (selectedClientsToAdd.length > 0) {
-      selectedClientsToAdd.forEach(type => {
+    if (selectedMediaTypesToAdd.length > 0) {
+      selectedMediaTypesToAdd.forEach(type => {
         if (!selectedMediaTypes.includes(type)) {
           onSelectMediaType(type);
         }
       });
-      setSelectedClientsToAdd([]);
+      setSelectedMediaTypesToAdd([]);
       setMediaTypeSearchTerm('');
       toast({
         title: "Media Types Added",
-        description: `Added ${selectedClientsToAdd.length} media types to your visible media types`,
+        description: `Added ${selectedMediaTypesToAdd.length} media types to your visible media types`,
       });
+    }
+  };
+
+  const handleToggleMediaTypeSelection = (mediaType: string, checked: boolean) => {
+    if (checked) {
+      setSelectedMediaTypesToAdd(prev => [...prev, mediaType]);
+    } else {
+      setSelectedMediaTypesToAdd(prev => prev.filter(t => t !== mediaType));
     }
   };
 
@@ -304,6 +316,16 @@ export const Settings = ({
     <div className="space-y-8">
       <div>
         <h3 className="text-lg font-medium mb-4">Your Visible Clients</h3>
+        
+        {filteredClients.length === 0 && selectedClients.length === 0 && (
+          <Alert className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              No clients are available. Please contact your administrator to add clients.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <Label htmlFor="client-select">Select clients to add</Label>
@@ -355,32 +377,36 @@ export const Settings = ({
           <div className="mb-2 text-sm text-muted-foreground">
             Drag items to reorder. Items at the top of the list will appear first in your timesheet.
           </div>
-          <DndContext 
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEndClients}
-          >
-            <SortableContext 
-              items={selectedClients} 
-              strategy={horizontalListSortingStrategy}
+          {selectedClients.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No clients selected. Please select clients from the list above.</p>
+          ) : (
+            <DndContext 
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEndClients}
             >
-              <div className="flex flex-wrap gap-2">
-                {selectedClients.map((client) => (
-                  <SortableItem
-                    key={client}
-                    id={client}
-                    onRemove={() => onRemoveClient(client)}
-                    isSystemItem={DEFAULT_SYSTEM_CLIENTS.includes(client)}
-                  >
-                    {client}
-                    {DEFAULT_SYSTEM_CLIENTS.includes(client) && (
-                      <span className="ml-1 text-xs font-medium">(System)</span>
-                    )}
-                  </SortableItem>
-                ))}
-              </div>
-            </SortableContext>
-          </DndContext>
+              <SortableContext 
+                items={selectedClients} 
+                strategy={horizontalListSortingStrategy}
+              >
+                <div className="flex flex-wrap gap-2">
+                  {selectedClients.map((client) => (
+                    <SortableItem
+                      key={client}
+                      id={client}
+                      onRemove={() => onRemoveClient(client)}
+                      isSystemItem={DEFAULT_SYSTEM_CLIENTS.includes(client)}
+                    >
+                      {client}
+                      {DEFAULT_SYSTEM_CLIENTS.includes(client) && (
+                        <span className="ml-1 text-xs font-medium">(System)</span>
+                      )}
+                    </SortableItem>
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          )}
         </div>
       </div>
 
@@ -398,9 +424,19 @@ export const Settings = ({
             </Tooltip>
           </TooltipProvider>
         </h3>
+        
+        {filteredMediaTypes.length === 0 && selectedMediaTypes.length === 0 && (
+          <Alert className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              No media types are available. Please contact your administrator to add media types.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
-            <Label htmlFor="media-select">Select media type to add</Label>
+            <Label htmlFor="media-select">Select media types to add</Label>
             <div className="flex flex-col gap-2 mt-1">
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -411,22 +447,32 @@ export const Settings = ({
                   className="pl-8"
                 />
               </div>
-              <Select value={selectedMediaTypeToAdd} onValueChange={setSelectedMediaTypeToAdd}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select media type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {isLoadingMediaTypes ? (
-                    <SelectItem value="loading" disabled>Loading media types...</SelectItem>
-                  ) : (
-                    filteredMediaTypes.map(type => (
-                      <SelectItem key={type} value={type}>{type}</SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-              <Button onClick={handleSelectMediaType} disabled={!selectedMediaTypeToAdd || isLoadingMediaTypes}>
-                Add Selected Media Type
+              <ScrollArea className="h-48 border rounded-md p-2">
+                {filteredMediaTypes.length === 0 ? (
+                  <p className="text-sm text-muted-foreground p-2">No matching media types found</p>
+                ) : (
+                  <div className="space-y-2">
+                    {filteredMediaTypes.map(type => (
+                      <div key={type} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`media-type-${type}`} 
+                          checked={selectedMediaTypesToAdd.includes(type)}
+                          onCheckedChange={(checked) => handleToggleMediaTypeSelection(type, checked === true)}
+                        />
+                        <label htmlFor={`media-type-${type}`} className="text-sm flex-1 cursor-pointer">
+                          {type}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+              <Button 
+                onClick={handleSelectMultipleMediaTypes} 
+                disabled={selectedMediaTypesToAdd.length === 0 || isLoadingMediaTypes}
+                className="w-full"
+              >
+                Add {selectedMediaTypesToAdd.length > 0 ? `Selected Media Types (${selectedMediaTypesToAdd.length})` : 'Media Types'}
               </Button>
             </div>
           </div>
@@ -435,28 +481,33 @@ export const Settings = ({
         <div className="mb-2 text-sm text-muted-foreground">
           Drag items to reorder. Items at the top of the list will appear first in your timesheet.
         </div>
-        <DndContext 
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEndMediaTypes}
-        >
-          <SortableContext 
-            items={selectedMediaTypes} 
-            strategy={horizontalListSortingStrategy}
+        
+        {selectedMediaTypes.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No media types selected. Please select media types from the list above.</p>
+        ) : (
+          <DndContext 
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEndMediaTypes}
           >
-            <div className="flex flex-wrap gap-2">
-              {selectedMediaTypes.map((type) => (
-                <SortableItem
-                  key={type}
-                  id={type}
-                  onRemove={() => onRemoveMediaType(type)}
-                >
-                  {type}
-                </SortableItem>
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
+            <SortableContext 
+              items={selectedMediaTypes} 
+              strategy={horizontalListSortingStrategy}
+            >
+              <div className="flex flex-wrap gap-2">
+                {selectedMediaTypes.map((type) => (
+                  <SortableItem
+                    key={type}
+                    id={type}
+                    onRemove={() => onRemoveMediaType(type)}
+                  >
+                    {type}
+                  </SortableItem>
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        )}
       </div>
     </div>
   );

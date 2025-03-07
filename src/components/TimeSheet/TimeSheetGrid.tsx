@@ -4,6 +4,8 @@ import { Input } from "@/components/ui/input";
 import { TimeEntry, TimeSheetStatus } from '@/types/timesheet';
 import { useToast } from "@/hooks/use-toast";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface TimeSheetGridProps {
   clients: string[];
@@ -100,6 +102,23 @@ export const TimeSheetGrid = ({
       onTimeUpdate(client, type, hours);
     }
   };
+
+  // Display a message if no clients or media types are available
+  if (clients.length === 0 || mediaTypes.length === 0) {
+    return (
+      <Alert className="mb-4">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          {clients.length === 0 && mediaTypes.length === 0 
+            ? "No clients or media types are selected. Please go to settings to select clients and media types."
+            : clients.length === 0 
+              ? "No clients are selected. Please go to settings to select clients." 
+              : "No media types are selected. Please go to settings to select media types."
+          }
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
     <div className="overflow-x-auto">

@@ -106,24 +106,47 @@ export const TimeSheetContent = ({
     return Array.from(result);
   }, [timeEntries]);
   
+  // Filter out hidden clients for regular users
+  const visibleClientObjects = useMemo(() => {
+    if (userRole === 'admin' || adminOverride) {
+      return clientObjects;
+    }
+    return clientObjects.filter(client => !client.hidden);
+  }, [clientObjects, userRole, adminOverride]);
+
+  // Get list of visible client names
+  const visibleClientNames = useMemo(() => {
+    return visibleClientObjects.map(client => client.name);
+  }, [visibleClientObjects]);
+  
   // Combine selected clients/media types with those that have entries
   const effectiveClients = useMemo(() => {
-    // Get unique clients
-    const uniqueClients = [...new Set([...selectedClients, ...clientsWithEntries])];
+    // Get unique clients, filtering out hidden ones for regular users
+    const uniqueClients = [...new Set([
+      ...selectedClients.filter(client => 
+        userRole === 'admin' || adminOverride || 
+        visibleClientNames.includes(client)
+      ), 
+      ...clientsWithEntries
+    ])];
     
     // Keep the order of selectedClients (user's preferred order)
-    const orderedClients = [...selectedClients];
+    const orderedClients = [...selectedClients].filter(client => 
+      userRole === 'admin' || adminOverride || 
+      visibleClientNames.includes(client)
+    );
     
     // Add any clients with entries that aren't already in the ordered list
     clientsWithEntries.forEach(client => {
-      if (!orderedClients.includes(client)) {
+      const isClientVisible = userRole === 'admin' || adminOverride || visibleClientNames.includes(client);
+      if (!orderedClients.includes(client) && isClientVisible) {
         orderedClients.push(client);
       }
     });
     
     // Filter to only include unique clients that are in our combined set
     return orderedClients.filter(client => uniqueClients.includes(client));
-  }, [selectedClients, clientsWithEntries]);
+  }, [selectedClients, clientsWithEntries, userRole, adminOverride, visibleClientNames]);
   
   const effectiveMediaTypes = useMemo(() => {
     // Get unique media types
@@ -165,7 +188,8 @@ export const TimeSheetContent = ({
           }
         }}
         userRole={userRole}
-        availableClients={availableClients}
+        // Filter out hidden clients for non-admin users
+        availableClients={userRole === 'admin' ? availableClients : visibleClientNames}
         availableMediaTypes={availableMediaTypes}
         selectedClients={selectedClients}
         selectedMediaTypes={selectedMediaTypes}
@@ -190,7 +214,7 @@ export const TimeSheetContent = ({
             onSaveVisibleMediaTypes([...selectedMediaTypes, type]);
           }
         }}
-        visibleClients={clientObjects}
+        visibleClients={visibleClientObjects}
         onReorderClients={(newOrder) => {
           if (onReorderClients) {
             onReorderClients(newOrder);
