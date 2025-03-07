@@ -23,6 +23,8 @@ interface WeekPickerProps {
   viewedUserId?: string;
 }
 
+const STORAGE_KEY = 'selectedWeekId';
+
 export const WeekPicker = ({ 
   currentDate, 
   onWeekChange, 
@@ -119,6 +121,19 @@ export const WeekPicker = ({
 
   // Find the current week based on the currentDate
   const getCurrentWeek = () => {
+    // First try to load the saved week if we're starting up
+    const savedWeekId = localStorage.getItem(STORAGE_KEY);
+    
+    if (savedWeekId) {
+      const savedWeek = filteredWeeks.find(week => week.id === savedWeekId);
+      if (savedWeek) {
+        // Only return the saved week on initial load
+        localStorage.removeItem(STORAGE_KEY); // Clear after use
+        return savedWeek;
+      }
+    }
+    
+    // Default behavior: find week based on current date
     for (const week of filteredWeeks) {
       const weekStartDate = parse(week.startDate, "yyyy-MM-dd", new Date());
       if (isSameDay(weekStartDate, currentDate)) {
@@ -134,6 +149,9 @@ export const WeekPicker = ({
   const handleCustomWeekSelect = (weekId: string) => {
     const selectedWeek = filteredWeeks.find(week => week.id === weekId);
     if (selectedWeek) {
+      // Save selected week ID to localStorage for persistence
+      localStorage.setItem(STORAGE_KEY, selectedWeek.id);
+      
       const date = parse(selectedWeek.startDate, "yyyy-MM-dd", new Date());
       onWeekChange(date);
       
@@ -156,6 +174,9 @@ export const WeekPicker = ({
     }
 
     const newWeek = filteredWeeks[newIndex];
+    // Save the newly selected week to localStorage
+    localStorage.setItem(STORAGE_KEY, newWeek.id);
+    
     const date = parse(newWeek.startDate, "yyyy-MM-dd", new Date());
     onWeekChange(date);
     
