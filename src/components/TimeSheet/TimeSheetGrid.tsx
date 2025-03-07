@@ -16,6 +16,28 @@ interface TimeSheetGridProps {
   weekHours?: number;
   readOnly?: boolean;
   weekPercentage?: number;
+  // Add missing properties
+  showSettings?: boolean;
+  onAddClient?: (client: string) => void;
+  onRemoveClient?: (client: string) => void;
+  onAddMediaType?: (type: string) => void;
+  onRemoveMediaType?: (type: string) => void;
+  onSaveVisibleClients?: (clients: string[]) => void;
+  onSaveVisibleMediaTypes?: (types: string[]) => void;
+  userRole?: 'admin' | 'user' | 'manager';
+  availableClients?: string[];
+  availableMediaTypes?: string[];
+  selectedClients?: string[];
+  selectedMediaTypes?: string[];
+  onSelectClient?: (client: string) => void;
+  onSelectMediaType?: (type: string) => void;
+  isViewingOwnTimesheet?: boolean;
+  clientObjects?: any[];
+  adminOverride?: boolean;
+  onReorderClients?: (newOrder: string[]) => void;
+  onReorderMediaTypes?: (newOrder: string[]) => void;
+  currentUserId?: string;
+  isUserHead?: boolean;
 }
 
 export const TimeSheetGrid = ({ 

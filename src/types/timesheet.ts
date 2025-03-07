@@ -1,3 +1,4 @@
+
 export type TimeSheetStatus = 'unconfirmed' | 'under-review' | 'accepted' | 'needs-revision';
 
 export interface TimeEntry {
@@ -97,4 +98,22 @@ export interface CustomWeek {
   period_to?: string;
   required_hours?: number;
   created_at?: string;
+}
+
+// Add TimeSheet component props interface
+export interface TimeSheetProps {
+  userRole: 'admin' | 'user' | 'manager';
+  firstWeek: string;
+  currentUser: User | null;
+  users: User[];
+  clients: Client[] | any[];
+  
+  // Add missing properties
+  impersonatedUser?: User;
+  adminOverride?: boolean;
+  customWeeks?: any[];
+  initialWeekId?: string | null;
+  isUserHead?: boolean;
+  readOnly?: boolean;
+  onTimeUpdate?: (weekId: string, client: string, mediaType: string, hours: number) => void;
 }
