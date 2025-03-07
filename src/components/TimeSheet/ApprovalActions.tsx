@@ -73,6 +73,7 @@ export const ApprovalActions = ({
   }
 
   // User Head can approve/reject timesheets under review for their team members
+  // REMOVED: Revert to Unconfirmed button for User Heads
   if (isUserHead && !isViewingOwnTimesheet) {
     if (status === 'under-review') {
       return (
@@ -94,19 +95,8 @@ export const ApprovalActions = ({
           Submit for Review
         </Button>
       );
-    } else if (status === 'accepted') {
-      return (
-        <Button 
-          onClick={handleReject} 
-          variant="outline" 
-          disabled={disabled}
-          className="border-amber-500 text-amber-500 hover:bg-amber-50"
-        >
-          <RotateCcw className="h-4 w-4 mr-2" />
-          Revert to Unconfirmed
-        </Button>
-      );
     }
+    // REMOVED: User Head can no longer revert accepted weeks
   }
 
   // Original logic for managers

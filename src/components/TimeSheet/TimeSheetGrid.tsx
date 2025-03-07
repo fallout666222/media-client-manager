@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { TimeEntry, TimeSheetStatus } from '@/types/timesheet';
@@ -30,7 +29,6 @@ export const TimeSheetGrid = ({
   const { toast } = useToast();
   const [localTimeEntries, setLocalTimeEntries] = useState<Record<string, Record<string, number>>>({});
   
-  // Initialize local time entries from props
   useEffect(() => {
     const initialEntries: Record<string, Record<string, number>> = {};
     
@@ -44,7 +42,6 @@ export const TimeSheetGrid = ({
     setLocalTimeEntries(initialEntries);
   }, [timeEntries]);
   
-  // Calculate effective hours based on week percentage
   const effectiveWeekHours = Math.round(weekHours * (weekPercentage / 100));
 
   const calculateTotalHours = (excludingClient?: string, excludingType?: string): number => {
@@ -60,7 +57,6 @@ export const TimeSheetGrid = ({
   const handleInputChange = (client: string, type: string, value: string) => {
     const hours = parseInt(value) || 0;
     
-    // Update local state immediately for responsive UI
     setLocalTimeEntries(prev => {
       const updated = { ...prev };
       if (!updated[client]) updated[client] = {};
@@ -73,7 +69,6 @@ export const TimeSheetGrid = ({
     const hours = localTimeEntries[client]?.[type] || 0;
     const currentValue = timeEntries[client]?.[type]?.hours || 0;
     
-    // Only update if value has changed
     if (hours !== currentValue) {
       const currentTotal = calculateTotalHours(client, type);
       const newTotal = currentTotal + hours - currentValue;
@@ -85,7 +80,6 @@ export const TimeSheetGrid = ({
           variant: "destructive"
         });
         
-        // Reset to previous value
         setLocalTimeEntries(prev => {
           const updated = { ...prev };
           if (!updated[client]) updated[client] = {};
@@ -95,13 +89,7 @@ export const TimeSheetGrid = ({
         return;
       }
       
-      // Don't save zero values to database
-      if (hours > 0) {
-        onTimeUpdate(client, type, hours);
-      } else if (currentValue > 0) {
-        // If current value in DB is > 0 and new value is 0, remove it from DB
-        onTimeUpdate(client, type, 0);
-      }
+      onTimeUpdate(client, type, hours);
     }
   };
 
