@@ -16,28 +16,6 @@ interface TimeSheetGridProps {
   weekHours?: number;
   readOnly?: boolean;
   weekPercentage?: number;
-  // Add missing properties
-  showSettings?: boolean;
-  onAddClient?: (client: string) => void;
-  onRemoveClient?: (client: string) => void;
-  onAddMediaType?: (type: string) => void;
-  onRemoveMediaType?: (type: string) => void;
-  onSaveVisibleClients?: (clients: string[]) => void;
-  onSaveVisibleMediaTypes?: (types: string[]) => void;
-  userRole?: 'admin' | 'user' | 'manager';
-  availableClients?: string[];
-  availableMediaTypes?: string[];
-  selectedClients?: string[];
-  selectedMediaTypes?: string[];
-  onSelectClient?: (client: string) => void;
-  onSelectMediaType?: (type: string) => void;
-  isViewingOwnTimesheet?: boolean;
-  clientObjects?: any[];
-  adminOverride?: boolean;
-  onReorderClients?: (newOrder: string[]) => void;
-  onReorderMediaTypes?: (newOrder: string[]) => void;
-  currentUserId?: string;
-  isUserHead?: boolean;
 }
 
 export const TimeSheetGrid = ({ 
@@ -54,23 +32,17 @@ export const TimeSheetGrid = ({
   const { toast } = useToast();
   const [localTimeEntries, setLocalTimeEntries] = useState<Record<string, Record<string, number>>>({});
   
-  // Update local entries whenever the timeEntries prop changes
   useEffect(() => {
-    console.log("TimeSheetGrid received timeEntries:", timeEntries);
+    const initialEntries: Record<string, Record<string, number>> = {};
     
-    // Only update local entries if timeEntries is not empty
-    if (timeEntries && Object.keys(timeEntries).length > 0) {
-      const initialEntries: Record<string, Record<string, number>> = {};
-      
-      Object.entries(timeEntries).forEach(([client, mediaEntries]) => {
-        initialEntries[client] = {};
-        Object.entries(mediaEntries).forEach(([type, entry]) => {
-          initialEntries[client][type] = entry.hours || 0;
-        });
+    Object.entries(timeEntries).forEach(([client, mediaEntries]) => {
+      initialEntries[client] = {};
+      Object.entries(mediaEntries).forEach(([type, entry]) => {
+        initialEntries[client][type] = entry.hours || 0;
       });
-      
-      setLocalTimeEntries(initialEntries);
-    }
+    });
+    
+    setLocalTimeEntries(initialEntries);
   }, [timeEntries]);
   
   const effectiveWeekHours = Math.round(weekHours * (weekPercentage / 100));
@@ -87,6 +59,7 @@ export const TimeSheetGrid = ({
 
   const handleInputChange = (client: string, type: string, value: string) => {
     const hours = value === '' ? 0 : parseInt(value) || 0;
+    console.log(`Input change: ${client} - ${type} - ${hours}`);
     
     setLocalTimeEntries(prev => {
       const updated = { ...prev };
@@ -100,9 +73,13 @@ export const TimeSheetGrid = ({
     const hours = localTimeEntries[client]?.[type] || 0;
     const currentValue = timeEntries[client]?.[type]?.hours || 0;
     
+    console.log(`Input blur: ${client} - ${type} - hours: ${hours}, currentValue: ${currentValue}`);
+    
     if (hours !== currentValue) {
       const currentTotal = calculateTotalHours(client, type);
       const newTotal = currentTotal + hours;
+      
+      console.log(`Current total: ${currentTotal}, New total: ${newTotal}, Limit: ${effectiveWeekHours}`);
       
       if (newTotal > effectiveWeekHours) {
         toast({
@@ -120,6 +97,7 @@ export const TimeSheetGrid = ({
         return;
       }
       
+      console.log(`Calling onTimeUpdate with ${client}, ${type}, ${hours}`);
       // Always call onTimeUpdate to sync with database
       onTimeUpdate(client, type, hours);
     }
