@@ -48,6 +48,7 @@ interface TimeSheetProps {
   adminOverride?: boolean;
   customWeeks?: any[];
   initialWeekId?: string | null;
+  isUserHead?: boolean;
 }
 
 const TimeSheet = ({ 
@@ -60,7 +61,8 @@ const TimeSheet = ({
   impersonatedUser,
   adminOverride = false,
   customWeeks: propCustomWeeks,
-  initialWeekId = null
+  initialWeekId = null,
+  isUserHead = false
 }: TimeSheetProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [customWeeks, setCustomWeeks] = useState<any[]>([]);
@@ -967,12 +969,13 @@ const TimeSheet = ({
         onSubmitForReview={handleSubmitForReview}
         onApprove={handleApprove}
         onReject={handleReject}
-        readOnly={readOnly || (!isViewingOwnTimesheet && userRole !== 'manager' && userRole !== 'admin' && !adminOverride)}
+        readOnly={readOnly || (!isViewingOwnTimesheet && userRole !== 'manager' && userRole !== 'admin' && !adminOverride && !isUserHead)}
         firstWeek={viewedUser.firstWeek || firstWeek}
         weekId={currentCustomWeek?.id}
         weekPercentage={weekPercentage}
         customWeeks={customWeeks}
         adminOverride={adminOverride}
+        isUserHead={isUserHead}
       />
 
       <TimeSheetContent
@@ -988,7 +991,7 @@ const TimeSheet = ({
         onRemoveMediaType={handleRemoveMediaType}
         onSaveVisibleClients={handleSaveVisibleClients}
         onSaveVisibleMediaTypes={handleSaveVisibleMediaTypes}
-        readOnly={readOnly || (!isViewingOwnTimesheet && !adminOverride)}
+        readOnly={readOnly || (!isViewingOwnTimesheet && !adminOverride && !isUserHead)}
         weekHours={weekHours}
         weekPercentage={weekPercentage}
         userRole={userRole}
@@ -998,12 +1001,13 @@ const TimeSheet = ({
         selectedMediaTypes={selectedMediaTypes}
         onSelectClient={handleSelectClient}
         onSelectMediaType={handleSelectMediaType}
-        isViewingOwnTimesheet={isViewingOwnTimesheet || adminOverride}
+        isViewingOwnTimesheet={isViewingOwnTimesheet || adminOverride || isUserHead}
         clientObjects={clients}
         adminOverride={adminOverride}
         onReorderClients={handleReorderClients}
         onReorderMediaTypes={handleReorderMediaTypes}
         currentUserId={currentUser.id}
+        isUserHead={isUserHead}
       />
     </div>
   );

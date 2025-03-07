@@ -1,4 +1,3 @@
-
 import React, { useMemo, useEffect } from 'react';
 import { TimeSheetGrid } from './TimeSheetGrid';
 import { Settings } from './Settings';
@@ -44,6 +43,7 @@ interface TimeSheetContentProps {
   onReorderClients?: (clients: string[]) => void;
   onReorderMediaTypes?: (types: string[]) => void;
   currentUserId?: string;
+  isUserHead?: boolean;
 }
 
 export const TimeSheetContent = ({
@@ -74,7 +74,8 @@ export const TimeSheetContent = ({
   adminOverride = false,
   onReorderClients,
   onReorderMediaTypes,
-  currentUserId
+  currentUserId,
+  isUserHead = false
 }: TimeSheetContentProps) => {
   // Get all clients and media types that have entries with hours > 0
   const clientsWithEntries = useMemo(() => {
@@ -211,6 +212,12 @@ export const TimeSheetContent = ({
     );
   }
 
+  // Updated logic: Allow User Head to edit non-accepted weeks of team members
+  const isReadOnly = readOnly || 
+    (!isViewingOwnTimesheet && !adminOverride && !isUserHead) || // Not own timesheet and not admin or user head
+    (!adminOverride && status === 'accepted') || // Accepted weeks can't be edited unless admin override
+    (!adminOverride && !isUserHead && status === 'under-review'); // Under review weeks can only be edited by user head or admin
+
   return (
     <TimeSheetGrid
       clients={effectiveClients}
@@ -220,7 +227,7 @@ export const TimeSheetContent = ({
       status={status}
       weekHours={weekHours}
       weekPercentage={weekPercentage}
-      readOnly={readOnly || !isViewingOwnTimesheet || (!adminOverride && (status === 'under-review' || status === 'accepted'))}
+      readOnly={isReadOnly}
     />
   );
 };
