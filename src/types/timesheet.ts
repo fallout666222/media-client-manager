@@ -1,3 +1,4 @@
+
 export type TimeSheetStatus = 'unconfirmed' | 'under-review' | 'accepted' | 'needs-revision';
 
 export interface TimeEntry {
@@ -97,4 +98,30 @@ export interface CustomWeek {
   period_to?: string;
   required_hours?: number;
   created_at?: string;
+}
+
+export interface TimeSheetProps {
+  userRole: 'admin' | 'user' | 'manager';
+  firstWeek: string;
+  currentUser: User;
+  users: User[];
+  clients: Client[];
+  readOnly?: boolean;
+  impersonatedUser?: User;
+  adminOverride?: boolean;
+  customWeeks?: any[];
+  initialWeekId?: string | null;
+  isUserHead?: boolean;
+  onTimeUpdate?: (weekId: string, client: string, mediaType: string, hours: number) => void;
+}
+
+export interface TimeSheetGridProps {
+  clients: string[];
+  mediaTypes: string[];
+  timeEntries: Record<string, Record<string, TimeEntry>>;
+  onTimeUpdate: (client: string, mediaType: string, hours: number) => void;
+  status: TimeSheetStatus;
+  weekHours?: number;
+  readOnly?: boolean;
+  weekPercentage?: number;
 }

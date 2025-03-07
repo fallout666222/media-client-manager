@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parse, format, isAfter, isBefore, addWeeks, startOfWeek, isEqual, isSameDay } from 'date-fns';
-import { TimeSheetStatus, TimeSheetData, User, Client, TimeEntry } from '@/types/timesheet';
+import { TimeSheetStatus, TimeSheetData, User, Client, TimeEntry, TimeSheetProps } from '@/types/timesheet';
 import { TimeSheetHeader } from '@/components/TimeSheet/TimeSheetHeader';
 import { TimeSheetControls } from '@/components/TimeSheet/TimeSheetControls';
 import { TimeSheetContent } from '@/components/TimeSheet/TimeSheetContent';
@@ -36,21 +36,6 @@ const DEFAULT_WEEKS = [
 ];
 
 const DEFAULT_AVAILABLE_MEDIA_TYPES = ['TV', 'Radio', 'Print', 'Digital'];
-
-interface TimeSheetProps {
-  userRole: 'admin' | 'user' | 'manager';
-  firstWeek: string;
-  currentUser: User;
-  users: User[];
-  clients: Client[];
-  readOnly?: boolean;
-  impersonatedUser?: User;
-  adminOverride?: boolean;
-  customWeeks?: any[];
-  initialWeekId?: string | null;
-  isUserHead?: boolean;
-  onTimeUpdate?: (weekId: string, client: string, mediaType: string, hours: number) => void;
-}
 
 const TimeSheet = ({ 
   userRole, 
@@ -213,6 +198,7 @@ const TimeSheet = ({
   const [timeEntries, setTimeEntries] = useState<Record<string, TimeSheetData>>({});
   const [submittedWeeks, setSubmittedWeeks] = useState<string[]>([]);
   const [weekStatuses, setWeekStatuses] = useState<Record<string, TimeSheetStatus>>({});
+  const [allWeekStatusesData, setAllWeekStatusesData] = useState<any[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -224,6 +210,7 @@ const TimeSheet = ({
           if (data && data.length > 0) {
             const statuses: Record<string, TimeSheetStatus> = {};
             const submitted: string[] = [];
+            const allStatuses: any[] = [];
             
             data.forEach(statusEntry => {
               if (statusEntry.week && statusEntry.status) {
@@ -233,11 +220,19 @@ const TimeSheet = ({
                 if (statusEntry.status.name === 'under-review' || statusEntry.status.name === 'accepted') {
                   submitted.push(weekKey);
                 }
+                
+                allStatuses.push({
+                  weekId: statusEntry.week.id,
+                  weekName: statusEntry.week.name,
+                  startDate: statusEntry.week.period_from,
+                  status: statusEntry.status.name
+                });
               }
             });
             
             setWeekStatuses(statuses);
             setSubmittedWeeks(submitted);
+            setAllWeekStatusesData(allStatuses);
           }
         } catch (error) {
           console.error('Error loading week statuses:', error);
@@ -938,6 +933,26 @@ const TimeSheet = ({
         weekPercentage={weekPercentage}
         weekHours={weekHours}
         hasCustomWeeks={customWeeks.length > 0}
+        weekStatuses={allWeekStatusesData}
+        onWeekSelect={(date) => {
+          setCurrentDate(date);
+          const selectedWeek = customWeeks.find(week => 
+            isSameDay(parse(week.period_from, 'yyyy-MM-dd', new Date()), date)
+          );
+          
+          if (selectedWeek) {
+            setWeekHours(selectedWeek.required_hours);
+            setCurrentCustomWeek(selectedWeek);
+          } else {
+            const defaultWeek = userWeeks.find(w => 
+              isSameDay(parse(w.startDate, 'yyyy-MM-dd', new Date()), date)
+            );
+            if (defaultWeek) {
+              setWeekHours(defaultWeek.hours);
+              setCurrentCustomWeek(null);
+            }
+          }
+        }}
       />
 
       {hasUnsubmittedEarlierWeek() && !readOnly && !isCurrentWeekSubmitted() && !adminOverride && (
