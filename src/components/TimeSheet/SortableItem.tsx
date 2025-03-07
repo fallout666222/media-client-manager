@@ -11,6 +11,7 @@ interface SortableItemProps {
   onRemove?: () => void;
   className?: string;
   isSystemItem?: boolean;
+  displayOrder?: number; // Add display order prop
 }
 
 export function SortableItem({ 
@@ -18,7 +19,8 @@ export function SortableItem({
   children, 
   onRemove, 
   className, 
-  isSystemItem = false 
+  isSystemItem = false,
+  displayOrder
 }: SortableItemProps) {
   const {
     attributes,
@@ -27,7 +29,7 @@ export function SortableItem({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id });
+  } = useSortable({ id, data: { displayOrder } });
 
   const style = {
     transform: CSS.Transform.toString(transform),

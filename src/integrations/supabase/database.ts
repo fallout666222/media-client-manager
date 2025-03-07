@@ -256,11 +256,29 @@ export const getUserVisibleClients = async (userId: string) => {
   return await supabase.from('visible_clients').select(`
     *,
     client:clients(*)
-  `).eq('user_id', userId);
+  `).eq('user_id', userId)
+   .order('display_order', { ascending: true });
 };
 
-export const addUserVisibleClient = async (userId: string, clientId: string) => {
-  return await supabase.from('visible_clients').insert({ user_id: userId, client_id: clientId }).select().single();
+export const addUserVisibleClient = async (userId: string, clientId: string, displayOrder?: number) => {
+  // Get highest display order if not specified
+  let order = displayOrder;
+  if (order === undefined) {
+    const { data: existingClients } = await supabase
+      .from('visible_clients')
+      .select('display_order')
+      .eq('user_id', userId)
+      .order('display_order', { ascending: false })
+      .limit(1);
+    
+    order = existingClients && existingClients.length > 0 ? (existingClients[0].display_order || 0) + 1 : 0;
+  }
+  
+  return await supabase
+    .from('visible_clients')
+    .insert({ user_id: userId, client_id: clientId, display_order: order })
+    .select()
+    .single();
 };
 
 export const removeUserVisibleClient = async (id: string) => {
@@ -271,13 +289,109 @@ export const getUserVisibleTypes = async (userId: string) => {
   return await supabase.from('visible_types').select(`
     *,
     type:media_types(*)
-  `).eq('user_id', userId);
+  `).eq('user_id', userId)
+   .order('display_order', { ascending: true });
 };
 
-export const addUserVisibleType = async (userId: string, typeId: string) => {
-  return await supabase.from('visible_types').insert({ user_id: userId, type_id: typeId }).select().single();
+export const addUserVisibleType = async (userId: string, typeId: string, displayOrder?: number) => {
+  // Get highest display order if not specified
+  let order = displayOrder;
+  if (order === undefined) {
+    const { data: existingTypes } = await supabase
+      .from('visible_types')
+      .select('display_order')
+      .eq('user_id', userId)
+      .order('display_order', { ascending: false })
+      .limit(1);
+    
+    order = existingTypes && existingTypes.length > 0 ? (existingTypes[0].display_order || 0) + 1 : 0;
+  }
+  
+  return await supabase
+    .from('visible_types')
+    .insert({ user_id: userId, type_id: typeId, display_order: order })
+    .select()
+    .single();
 };
 
 export const removeUserVisibleType = async (id: string) => {
   return await supabase.from('visible_types').delete().eq('id', id);
+};
+
+// Update display order for visible clients
+export const updateVisibleClientsOrder = async (userId: string, clientIds: string[]) => {
+  // First, get all existing visible clients for this user
+  const { data: existingClientRecords } = await supabase
+    .from('visible_clients')
+    .select('id, client_id, client:clients(id, name)')
+    .eq('user_id', userId);
+  
+  if (!existingClientRecords) return;
+  
+  // Create a map of client names to their record IDs for easier lookup
+  const clientNameToRecordMap = new Map();
+  existingClientRecords.forEach(record => {
+    if (record.client) {
+      clientNameToRecordMap.set(record.client.name, {
+        id: record.id,
+        clientId: record.client_id
+      });
+    }
+  });
+  
+  // Update each client's display order
+  const updates = clientIds.map((clientName, index) => {
+    const record = clientNameToRecordMap.get(clientName);
+    if (record) {
+      return supabase
+        .from('visible_clients')
+        .update({ display_order: index })
+        .eq('id', record.id);
+    }
+    return null;
+  }).filter(Boolean);
+  
+  // Execute all updates
+  await Promise.all(updates);
+  
+  return { success: true };
+};
+
+// Update display order for visible media types
+export const updateVisibleMediaTypesOrder = async (userId: string, typeNames: string[]) => {
+  // First, get all existing visible types for this user
+  const { data: existingTypeRecords } = await supabase
+    .from('visible_types')
+    .select('id, type_id, type:media_types(id, name)')
+    .eq('user_id', userId);
+  
+  if (!existingTypeRecords) return;
+  
+  // Create a map of type names to their record IDs for easier lookup
+  const typeNameToRecordMap = new Map();
+  existingTypeRecords.forEach(record => {
+    if (record.type) {
+      typeNameToRecordMap.set(record.type.name, {
+        id: record.id,
+        typeId: record.type_id
+      });
+    }
+  });
+  
+  // Update each type's display order
+  const updates = typeNames.map((typeName, index) => {
+    const record = typeNameToRecordMap.get(typeName);
+    if (record) {
+      return supabase
+        .from('visible_types')
+        .update({ display_order: index })
+        .eq('id', record.id);
+    }
+    return null;
+  }).filter(Boolean);
+  
+  // Execute all updates
+  await Promise.all(updates);
+  
+  return { success: true };
 };

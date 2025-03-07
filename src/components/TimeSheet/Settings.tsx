@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -242,7 +243,9 @@ export const Settings = ({
       
       if (oldIndex !== -1 && newIndex !== -1) {
         const newOrder = arrayMove(selectedClients, oldIndex, newIndex);
+        console.log('Drag end clients - new order:', newOrder);
         if (onReorderClients) {
+          console.log('Reordering clients:', newOrder);
           onReorderClients(newOrder);
         }
       }
@@ -258,7 +261,9 @@ export const Settings = ({
       
       if (oldIndex !== -1 && newIndex !== -1) {
         const newOrder = arrayMove(selectedMediaTypes, oldIndex, newIndex);
+        console.log('Drag end media types - new order:', newOrder);
         if (onReorderMediaTypes) {
+          console.log('Reordering media types:', newOrder);
           onReorderMediaTypes(newOrder);
         }
       }
@@ -368,12 +373,13 @@ export const Settings = ({
               strategy={horizontalListSortingStrategy}
             >
               <div className="flex flex-wrap gap-2">
-                {selectedClients.map((client) => (
+                {selectedClients.map((client, index) => (
                   <SortableItem
                     key={client}
                     id={client}
                     onRemove={() => onRemoveClient(client)}
                     isSystemItem={DEFAULT_SYSTEM_CLIENTS.includes(client)}
+                    displayOrder={index}
                   >
                     {client}
                     {DEFAULT_SYSTEM_CLIENTS.includes(client) && (
@@ -448,11 +454,12 @@ export const Settings = ({
             strategy={horizontalListSortingStrategy}
           >
             <div className="flex flex-wrap gap-2">
-              {selectedMediaTypes.map((type) => (
+              {selectedMediaTypes.map((type, index) => (
                 <SortableItem
                   key={type}
                   id={type}
                   onRemove={() => onRemoveMediaType(type)}
+                  displayOrder={index}
                 >
                   {type}
                 </SortableItem>
