@@ -57,6 +57,7 @@ export const TimeSheetGrid = ({
 
   const handleInputChange = (client: string, type: string, value: string) => {
     const hours = parseInt(value) || 0;
+    console.log(`Input change: ${client} - ${type} - ${hours}`);
     
     setLocalTimeEntries(prev => {
       const updated = { ...prev };
@@ -70,9 +71,13 @@ export const TimeSheetGrid = ({
     const hours = localTimeEntries[client]?.[type] || 0;
     const currentValue = timeEntries[client]?.[type]?.hours || 0;
     
+    console.log(`Input blur: ${client} - ${type} - hours: ${hours}, currentValue: ${currentValue}`);
+    
     if (hours !== currentValue) {
       const currentTotal = calculateTotalHours(client, type);
-      const newTotal = currentTotal + hours - currentValue;
+      const newTotal = currentTotal + hours;
+      
+      console.log(`Current total: ${currentTotal}, New total: ${newTotal}, Limit: ${effectiveWeekHours}`);
       
       if (newTotal > effectiveWeekHours) {
         toast({
@@ -90,13 +95,9 @@ export const TimeSheetGrid = ({
         return;
       }
       
-      // Don't save zero values to database
-      if (hours > 0) {
-        onTimeUpdate(client, type, hours);
-      } else if (currentValue > 0) {
-        // If current value in DB is > 0 and new value is 0, remove it from DB
-        onTimeUpdate(client, type, 0);
-      }
+      console.log(`Calling onTimeUpdate with ${client}, ${type}, ${hours}`);
+      // Always call onTimeUpdate to sync with database
+      onTimeUpdate(client, type, hours);
     }
   };
 

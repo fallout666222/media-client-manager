@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,14 @@ import {
 } from "@/components/ui/select";
 import TimeSheet from "./TimeSheet";
 import { User, TimeSheetStatus } from '@/types/timesheet';
-import { getUsers, getWeekStatuses, updateWeekStatus, getWeekStatusNames, getUserFirstUnconfirmedWeek } from '@/integrations/supabase/database';
+import { 
+  getUsers, 
+  getWeekStatuses, 
+  updateWeekStatus, 
+  getWeekStatusNames, 
+  getUserFirstUnconfirmedWeek,
+  updateHours
+} from '@/integrations/supabase/database';
 import { useQuery } from '@tanstack/react-query';
 import SearchBar from '@/components/SearchBar';
 import { format } from 'date-fns';
@@ -168,6 +176,26 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
     }
   };
 
+  // Add this new function to handle updating hours
+  const handleTimeUpdate = async (userId: string, weekId: string, client: string, mediaType: string, hours: number) => {
+    try {
+      console.log(`Updating hours for user ${userId}, week ${weekId}, client ${client}, mediaType ${mediaType}, hours ${hours}`);
+      await updateHours(userId, weekId, client, mediaType, hours);
+      
+      toast({
+        title: "Hours Updated",
+        description: "Time entry has been updated successfully",
+      });
+    } catch (error) {
+      console.error('Error updating hours:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update time entry",
+        variant: "destructive"
+      });
+    }
+  };
+
   const renderTeamMemberTimesheet = () => {
     if (!selectedTeamMember) {
       return null;
@@ -243,6 +271,9 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
           clients={clients}
           initialWeekId={initialWeekId}
           isUserHead={true}
+          onTimeUpdate={(weekId, client, mediaType, hours) => 
+            handleTimeUpdate(teamMember.id, weekId, client, mediaType, hours)
+          }
         />
       </>
     );
