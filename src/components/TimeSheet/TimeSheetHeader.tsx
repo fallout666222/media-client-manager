@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { RotateCcw, Settings2, Download } from "lucide-react";
+import { RotateCcw, Settings2 } from "lucide-react";
 
 interface TimeSheetHeaderProps {
   userRole: string;
@@ -9,7 +9,7 @@ interface TimeSheetHeaderProps {
   status: string;
   onReturnToFirstUnsubmittedWeek: () => void;
   onToggleSettings: () => void;
-  onExportToExcel?: () => void;
+  onExportToExcel?: () => void;  // Made optional
   firstWeek?: string;
   weekPercentage?: number;
   weekHours?: number;
@@ -22,7 +22,6 @@ export const TimeSheetHeader = ({
   status,
   onReturnToFirstUnsubmittedWeek,
   onToggleSettings,
-  onExportToExcel,
   firstWeek,
   weekPercentage = 100,
   weekHours = 40,
@@ -61,16 +60,6 @@ export const TimeSheetHeader = ({
           >
             <RotateCcw className="h-4 w-4" />
             Return to First Unsubmitted Week
-          </Button>
-        )}
-        {onExportToExcel && (
-          <Button
-            variant="outline"
-            onClick={onExportToExcel}
-            className="flex items-center gap-2"
-          >
-            <Download className="h-4 w-4" />
-            Export to Excel
           </Button>
         )}
         <Button

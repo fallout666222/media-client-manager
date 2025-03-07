@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format, parse, isSameDay, isBefore } from 'date-fns';
 import { CustomWeek } from '@/types/timesheet';
-import { getCustomWeeks, getWeekPercentages } from '@/integrations/supabase/database';
+import { getCustomWeeks } from '@/integrations/supabase/database';
 
 interface WeekPickerProps {
   currentDate: Date;
@@ -19,7 +19,6 @@ interface WeekPickerProps {
   weekPercentage?: number;
   firstWeek?: string;
   customWeeks?: any[];
-  viewedUserId?: string;
 }
 
 export const WeekPicker = ({ 
@@ -28,12 +27,10 @@ export const WeekPicker = ({
   onWeekHoursChange,
   weekPercentage = 100,
   firstWeek = "2025-01-01", // Default to the earliest week if not specified
-  customWeeks: propCustomWeeks = [],
-  viewedUserId
+  customWeeks: propCustomWeeks = []
 }: WeekPickerProps) => {
   const [availableWeeks, setAvailableWeeks] = useState<CustomWeek[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userWeekPercentages, setUserWeekPercentages] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const fetchWeeks = async () => {
@@ -72,36 +69,6 @@ export const WeekPicker = ({
 
     fetchWeeks();
   }, [propCustomWeeks]);
-
-  // Fetch user's week percentages if we have a viewedUserId
-  useEffect(() => {
-    const fetchUserWeekPercentages = async () => {
-      if (viewedUserId) {
-        try {
-          console.log(`Fetching week percentages for user: ${viewedUserId}`);
-          const { data, error } = await getWeekPercentages(viewedUserId);
-          
-          if (error) {
-            console.error('Error fetching week percentages:', error);
-            return;
-          }
-          
-          if (data && data.length > 0) {
-            const percentagesMap: Record<string, number> = {};
-            data.forEach(item => {
-              percentagesMap[item.week_id] = Number(item.percentage);
-            });
-            console.log('User week percentages:', percentagesMap);
-            setUserWeekPercentages(percentagesMap);
-          }
-        } catch (error) {
-          console.error('Error fetching user week percentages:', error);
-        }
-      }
-    };
-    
-    fetchUserWeekPercentages();
-  }, [viewedUserId]);
 
   // Filter weeks to only include those on or after the user's first week
   const getFilteredWeeks = () => {
@@ -166,25 +133,12 @@ export const WeekPicker = ({
     onWeekHoursChange(newWeek.hours);
   };
 
-  const getWeekPercentage = (weekId: string): number => {
-    // If we have a specific percentage for this week, use it
-    if (userWeekPercentages[weekId] !== undefined) {
-      return userWeekPercentages[weekId];
-    }
-    
-    // Otherwise use the provided weekPercentage prop
-    return weekPercentage;
-  };
-
   const formatWeekLabel = (week: CustomWeek) => {
     const start = format(parse(week.startDate, "yyyy-MM-dd", new Date()), "MMM dd, yyyy");
     const end = format(parse(week.endDate, "yyyy-MM-dd", new Date()), "MMM dd, yyyy");
     
-    // Use the user-specific percentage if available
-    const effectivePercentage = getWeekPercentage(week.id);
-    
     // Calculate effective hours based on percentage for display only
-    const effectiveHours = Math.round(week.hours * (effectivePercentage / 100));
+    const effectiveHours = Math.round(week.hours * (weekPercentage / 100));
     
     return `${week.name}: ${start} - ${end} (${effectiveHours}h)`;
   };
