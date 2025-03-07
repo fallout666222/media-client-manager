@@ -855,4 +855,104 @@ const TimeSheet = ({
       
       const typeMap = new Map(mediaTypesData.map(t => [t.name, t.id]));
       
-      for (
+      for (const typeName of types) {
+        const typeId = typeMap.get(typeName);
+        
+        if (typeId && !currentVisible?.some(v => v.type_id === typeId)) {
+          await addUserVisibleType(currentUser.id, typeId);
+        }
+      }
+      
+      if (currentVisible) {
+        for (const visible of currentVisible) {
+          const type = mediaTypesData.find(t => t.id === visible.type_id);
+          
+          if (type && !types.includes(type.name)) {
+            await removeUserVisibleType(visible.id);
+          }
+        }
+      }
+      
+      await updateVisibleTypesOrder(currentUser.id, types);
+      
+      toast({
+        title: "Visible Media Types Updated",
+        description: "Your visible media types have been updated",
+      });
+    } catch (error) {
+      console.error('Error updating visible media types:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update visible media types",
+        variant: "destructive"
+      });
+    }
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <TimeSheetHeader 
+        user={viewedUser} 
+        users={users} 
+        onUserChange={setViewedUser} 
+        userRole={userRole} 
+        status={getCurrentWeekStatus()} 
+        currentUser={currentUser} 
+        readOnly={readOnly}
+        adminOverride={adminOverride}
+        isUserHead={isUserHead}
+      />
+      
+      <TimeSheetControls 
+        currentDate={currentDate} 
+        setCurrentDate={setCurrentDate} 
+        weekHours={weekHours} 
+        onHoursChange={handleWeekHoursChange} 
+        onSubmitForReview={handleSubmitForReview} 
+        onApprove={handleApprove} 
+        onReject={handleReject} 
+        status={getCurrentWeekStatus()} 
+        userRole={userRole} 
+        readOnly={readOnly && !adminOverride && !isUserHead}
+        userWeeks={userWeeks}
+        isViewingOwnTimesheet={isViewingOwnTimesheet}
+        hasUnsubmittedEarlierWeek={hasUnsubmittedEarlierWeek}
+        onReturnToFirstUnsubmitted={handleReturnToFirstUnsubmittedWeek}
+        isFormDisabled={isCurrentWeekSubmitted() && !adminOverride && !isUserHead}
+        adminOverride={adminOverride}
+        customWeeks={customWeeks}
+        setCurrentCustomWeek={setCurrentCustomWeek}
+        currentCustomWeek={currentCustomWeek}
+        weekPercentage={weekPercentage}
+        setWeekPercentage={setWeekPercentage}
+        userName={viewedUser.name || viewedUser.username || ''}
+      />
+      
+      <TimeSheetContent 
+        clients={availableClients} 
+        selectedClients={selectedClients} 
+        mediaTypes={availableMediaTypes} 
+        selectedMediaTypes={selectedMediaTypes} 
+        timeEntries={timeEntries[format(currentDate, 'yyyy-MM-dd')] || {}} 
+        onTimeUpdate={handleTimeUpdate} 
+        onSelectClient={handleSelectClient} 
+        onSelectMediaType={handleSelectMediaType} 
+        onRemoveClient={handleRemoveClient} 
+        onRemoveMediaType={handleRemoveMediaType} 
+        status={getCurrentWeekStatus()} 
+        readOnly={readOnly && !adminOverride && !isUserHead}
+        userRole={userRole}
+        onAddClient={handleAddClient}
+        onAddMediaType={handleAddMediaType}
+        showSettings={showSettings}
+        setShowSettings={setShowSettings}
+        weekHours={weekHours}
+        onSaveVisibleClients={handleSaveVisibleClients}
+        onSaveVisibleMediaTypes={handleSaveVisibleMediaTypes}
+        weekPercentage={weekPercentage}
+      />
+    </div>
+  );
+};
+
+export default TimeSheet;
