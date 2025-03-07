@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -45,6 +46,32 @@ export function App() {
   const [clients, setClients] = useState<Client[]>([]);
   const { toast } = useToast();
 
+  // Load user session from localStorage on component mount
+  useEffect(() => {
+    const loadUserSession = () => {
+      try {
+        const storedUser = localStorage.getItem('userSession');
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          console.log('Retrieved user session from localStorage:', userData);
+          setUser(userData);
+        }
+      } catch (error) {
+        console.error('Error loading user session:', error);
+        // Clear potentially corrupt data
+        localStorage.removeItem('userSession');
+      } finally {
+        // Only set loading to false here if we were checking for a stored session
+        // The fetchInitialData function will set loading to false after it completes
+        if (!localStorage.getItem('userSession')) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadUserSession();
+  }, []);
+
   useEffect(() => {
     if (user) {
       fetchInitialData();
@@ -89,6 +116,9 @@ export function App() {
         };
         
         setUser(fullUserData);
+        
+        // Save user to localStorage for persistence
+        localStorage.setItem('userSession', JSON.stringify(fullUserData));
       }
     } catch (error) {
       console.error('Error getting user details:', error);
@@ -149,6 +179,10 @@ export function App() {
 
   const handleLogout = () => {
     setUser(null);
+    // Clear user session from localStorage
+    localStorage.removeItem('userSession');
+    // Clear any other related data
+    localStorage.removeItem('redirectToWeek');
     toast({
       title: "Logged out",
       description: "You have been successfully logged out",

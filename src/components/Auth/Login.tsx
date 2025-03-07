@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,6 +65,10 @@ export const Login = ({
           user_head_id: data.user_head_id,
           hidden: data.hidden
         };
+        
+        // Save user data to localStorage for session persistence
+        localStorage.setItem('userSession', JSON.stringify(appUser));
+        
         onLogin(appUser);
         toast({
           title: "Welcome back!",
