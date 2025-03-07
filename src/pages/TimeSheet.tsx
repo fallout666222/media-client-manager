@@ -49,6 +49,7 @@ interface TimeSheetProps {
   customWeeks?: any[];
   initialWeekId?: string | null;
   isUserHead?: boolean;
+  onTimeUpdate?: (weekId: string, client: string, mediaType: string, hours: number) => void;
 }
 
 const TimeSheet = ({ 
@@ -62,7 +63,8 @@ const TimeSheet = ({
   adminOverride = false,
   customWeeks: propCustomWeeks,
   initialWeekId = null,
-  isUserHead = false
+  isUserHead = false,
+  onTimeUpdate
 }: TimeSheetProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [customWeeks, setCustomWeeks] = useState<any[]>([]);
@@ -710,7 +712,7 @@ const TimeSheet = ({
   }, [viewedUser, currentDate]);
 
   const handleTimeUpdate = async (client: string, mediaType: string, hours: number) => {
-    if ((readOnly || !isViewingOwnTimesheet) && !adminOverride) return;
+    if ((readOnly || !isViewingOwnTimesheet) && !adminOverride && !isUserHead) return;
     
     const currentTotal = getTotalHoursForWeek();
     const existingHours = timeEntries[format(currentDate, 'yyyy-MM-dd')]?.[client]?.[mediaType]?.hours || 0;
@@ -747,17 +749,22 @@ const TimeSheet = ({
         
         if (weekId) {
           console.log(`Updating hours for week ${weekId}, client ${client}, media ${mediaType}: ${hours}`);
-          const { data: clientsData } = await getClients();
-          const { data: mediaTypesData } = await getMediaTypes();
           
-          const clientObj = clientsData?.find(c => c.name === client);
-          const mediaTypeObj = mediaTypesData?.find(m => m.name === mediaType);
-          
-          if (clientObj && mediaTypeObj) {
-            await updateWeekHours(viewedUser.id, weekId, clientObj.id, mediaTypeObj.id, hours);
-            console.log('Hours updated successfully');
+          if (onTimeUpdate && isUserHead) {
+            onTimeUpdate(weekId, client, mediaType, hours);
           } else {
-            console.error('Client or media type not found', { client, mediaType, clientObj, mediaTypeObj });
+            const { data: clientsData } = await getClients();
+            const { data: mediaTypesData } = await getMediaTypes();
+            
+            const clientObj = clientsData?.find(c => c.name === client);
+            const mediaTypeObj = mediaTypesData?.find(m => m.name === mediaType);
+            
+            if (clientObj && mediaTypeObj) {
+              await updateWeekHours(viewedUser.id, weekId, clientObj.id, mediaTypeObj.id, hours);
+              console.log('Hours updated successfully');
+            } else {
+              console.error('Client or media type not found', { client, mediaType, clientObj, mediaTypeObj });
+            }
           }
         }
       }
@@ -1014,4 +1021,3 @@ const TimeSheet = ({
 };
 
 export default TimeSheet;
-

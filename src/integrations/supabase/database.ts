@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 
 // Custom Weeks
@@ -251,6 +250,29 @@ export const updateWeekHours = async (
   }
 };
 
+// Add this new function to updateHours directly
+export const updateHours = async (userId: string, weekId: string, clientName: string, mediaTypeName: string, hours: number) => {
+  try {
+    // Get the client and media type IDs from their names
+    const { data: clientsData } = await getClients();
+    const { data: mediaTypesData } = await getMediaTypes();
+    
+    const clientObj = clientsData?.find(c => c.name === clientName);
+    const mediaTypeObj = mediaTypesData?.find(m => m.name === mediaTypeName);
+    
+    if (!clientObj || !mediaTypeObj) {
+      console.error('Client or media type not found', { clientName, mediaTypeName });
+      throw new Error('Client or media type not found');
+    }
+    
+    // Use the existing updateWeekHours function with the IDs
+    return await updateWeekHours(userId, weekId, clientObj.id, mediaTypeObj.id, hours);
+  } catch (error) {
+    console.error('Error in updateHours:', error);
+    throw error;
+  }
+};
+
 // Visible Clients & Types
 export const getUserVisibleClients = async (userId: string) => {
   return await supabase.from('visible_clients').select(`
@@ -413,3 +435,4 @@ export const updateVisibleTypesOrder = async (userId: string, typeNames: string[
   
   return { data: true };
 };
+
