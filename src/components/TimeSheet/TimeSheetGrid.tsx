@@ -35,16 +35,20 @@ export const TimeSheetGrid = ({
   // Update local entries whenever the timeEntries prop changes
   useEffect(() => {
     console.log("TimeSheetGrid received timeEntries:", timeEntries);
-    const initialEntries: Record<string, Record<string, number>> = {};
     
-    Object.entries(timeEntries).forEach(([client, mediaEntries]) => {
-      initialEntries[client] = {};
-      Object.entries(mediaEntries).forEach(([type, entry]) => {
-        initialEntries[client][type] = entry.hours || 0;
+    // Only update local entries if timeEntries is not empty
+    if (timeEntries && Object.keys(timeEntries).length > 0) {
+      const initialEntries: Record<string, Record<string, number>> = {};
+      
+      Object.entries(timeEntries).forEach(([client, mediaEntries]) => {
+        initialEntries[client] = {};
+        Object.entries(mediaEntries).forEach(([type, entry]) => {
+          initialEntries[client][type] = entry.hours || 0;
+        });
       });
-    });
-    
-    setLocalTimeEntries(initialEntries);
+      
+      setLocalTimeEntries(initialEntries);
+    }
   }, [timeEntries]);
   
   const effectiveWeekHours = Math.round(weekHours * (weekPercentage / 100));
