@@ -21,7 +21,8 @@ import {
   addUserVisibleType,
   removeUserVisibleClient,
   removeUserVisibleType,
-  getWeekStatuses
+  getWeekStatuses,
+  getWeekPercentages
 } from '@/integrations/supabase/database';
 
 const DEFAULT_WEEKS = [
@@ -41,11 +42,26 @@ interface TimeSheetProps {
   users: User[];
   clients: Client[];
   readOnly?: boolean;
+  impersonatedUser?: User;
+  adminOverride?: boolean;
+  customWeeks?: any[];
+  initialWeekId?: string | null;
 }
 
-const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly = false }: TimeSheetProps) => {
+const TimeSheet = ({ 
+  userRole, 
+  firstWeek, 
+  currentUser, 
+  users, 
+  clients, 
+  readOnly = false,
+  impersonatedUser,
+  adminOverride = false,
+  customWeeks: propCustomWeeks,
+  initialWeekId = null
+}: TimeSheetProps) => {
   const [showSettings, setShowSettings] = useState(false);
-  const [customWeeks, setCustomWeeks] = useState([]);
+  const [customWeeks, setCustomWeeks] = useState<any[]>([]);
   const [currentDate, setCurrentDate] = useState<Date>(() => {
     if (userRole === 'admin' && (!firstWeek || firstWeek === 'null') && !currentUser.firstCustomWeekId) {
       return parse("2024-01-01", 'yyyy-MM-dd', new Date());
@@ -56,22 +72,38 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
     return parse(firstWeek, 'yyyy-MM-dd', new Date());
   });
   const [currentCustomWeek, setCurrentCustomWeek] = useState<any>(null);
-  const [viewedUser, setViewedUser] = useState<User>(currentUser);
-  const isViewingOwnTimesheet = viewedUser.id === currentUser.id;
+  const [viewedUser, setViewedUser] = useState<User>(impersonatedUser || currentUser);
+  const [weekPercentage, setWeekPercentage] = useState<number>(100);
+  const isViewingOwnTimesheet = impersonatedUser ? adminOverride : viewedUser.id === currentUser.id;
 
   useEffect(() => {
     const fetchCustomWeeks = async () => {
       try {
-        const { data } = await getCustomWeeks();
-        if (data) {
-          setCustomWeeks(data);
-          
-          if (currentUser.firstCustomWeekId) {
-            const userFirstWeek = data.find(week => week.id === currentUser.firstCustomWeekId);
-            if (userFirstWeek) {
-              setCurrentDate(parse(userFirstWeek.period_from, 'yyyy-MM-dd', new Date()));
-              setCurrentCustomWeek(userFirstWeek);
-            }
+        let weeksData;
+        
+        if (propCustomWeeks && propCustomWeeks.length > 0) {
+          weeksData = propCustomWeeks;
+          console.log(`Using ${weeksData.length} custom weeks from props`);
+        } else {
+          const { data } = await getCustomWeeks();
+          weeksData = data || [];
+          console.log(`Fetched ${weeksData.length} custom weeks from database`);
+        }
+        
+        setCustomWeeks(weeksData);
+        
+        if (initialWeekId && weeksData.length > 0) {
+          const initialWeek = weeksData.find((week: any) => week.id === initialWeekId);
+          if (initialWeek) {
+            console.log(`Setting initial week to: ${initialWeek.name}`);
+            setCurrentDate(parse(initialWeek.period_from, 'yyyy-MM-dd', new Date()));
+            setCurrentCustomWeek(initialWeek);
+          }
+        } else if (currentUser.firstCustomWeekId) {
+          const userFirstWeek = weeksData.find((week: any) => week.id === currentUser.firstCustomWeekId);
+          if (userFirstWeek) {
+            setCurrentDate(parse(userFirstWeek.period_from, 'yyyy-MM-dd', new Date()));
+            setCurrentCustomWeek(userFirstWeek);
           }
         }
       } catch (error) {
@@ -80,7 +112,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
     };
     
     fetchCustomWeeks();
-  }, [currentUser.firstCustomWeekId]);
+  }, [currentUser.firstCustomWeekId, propCustomWeeks, initialWeekId]);
 
   useEffect(() => {
     const fetchUserVisibles = async () => {
@@ -105,6 +137,59 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
     
     fetchUserVisibles();
   }, [currentUser.id]);
+
+  useEffect(() => {
+    const fetchWeekPercentage = async () => {
+      if (!viewedUser.id || !currentCustomWeek) return;
+      
+      try {
+        const { data } = await getWeekPercentages(viewedUser.id);
+        if (data && data.length > 0) {
+          const currentWeekPercentage = data.find(wp => 
+            wp.week_id === currentCustomWeek.id
+          );
+          
+          if (currentWeekPercentage) {
+            setWeekPercentage(Number(currentWeekPercentage.percentage));
+          } else {
+            const weeks = customWeeks.length > 0 ? customWeeks : DEFAULT_WEEKS;
+            const sortedWeeks = [...weeks].sort((a, b) => {
+              const dateA = new Date(a.period_from || a.startDate);
+              const dateB = new Date(b.period_from || b.startDate);
+              return dateA.getTime() - dateB.getTime();
+            });
+            
+            const currentWeekIndex = sortedWeeks.findIndex(week => 
+              week.id === currentCustomWeek.id
+            );
+            
+            if (currentWeekIndex > 0) {
+              for (let i = currentWeekIndex - 1; i >= 0; i--) {
+                const prevWeek = sortedWeeks[i];
+                const prevWeekPercentage = data.find(wp => 
+                  wp.week_id === prevWeek.id
+                );
+                
+                if (prevWeekPercentage) {
+                  setWeekPercentage(Number(prevWeekPercentage.percentage));
+                  break;
+                }
+              }
+            } else {
+              setWeekPercentage(100);
+            }
+          }
+        } else {
+          setWeekPercentage(100);
+        }
+      } catch (error) {
+        console.error('Error fetching week percentage:', error);
+        setWeekPercentage(100);
+      }
+    };
+    
+    fetchWeekPercentage();
+  }, [viewedUser.id, currentCustomWeek, customWeeks]);
 
   const [weekHours, setWeekHours] = useState(() => {
     const initialWeek = DEFAULT_WEEKS.find(week => 
@@ -208,13 +293,16 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
       }
     }
     
-    for (const week of userWeeks) {
-      const weekKey = week.startDate;
-      if (!submittedWeeks.includes(weekKey)) {
-        return {
-          date: parse(weekKey, 'yyyy-MM-dd', new Date()),
-          weekData: week
-        };
+    if (!adminOverride) {
+      const userWeeks = getUserWeeks();
+      for (const week of userWeeks) {
+        const weekKey = week.startDate;
+        if (!submittedWeeks.includes(weekKey)) {
+          return {
+            date: parse(weekKey, 'yyyy-MM-dd', new Date()),
+            weekData: week
+          };
+        }
       }
     }
     
@@ -243,7 +331,9 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
     } else {
       toast({
         title: "No Unsubmitted Weeks",
-        description: "All your weeks have been submitted",
+        description: adminOverride 
+          ? "There are no unsubmitted weeks in the database for this user" 
+          : "All your weeks have been submitted",
       });
     }
   };
@@ -265,17 +355,19 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
   };
 
   const handleSubmitForReview = async () => {
-    if (readOnly) return;
+    if (readOnly && !adminOverride) return;
     
     const firstUnsubmittedWeek = findFirstUnsubmittedWeek();
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
     const totalHours = getTotalHoursForWeek();
-    const remainingHours = weekHours - totalHours;
+    
+    const effectiveHours = Math.round(weekHours * (weekPercentage / 100));
+    const remainingHours = effectiveHours - totalHours;
     
     if (remainingHours !== 0) {
       toast({
         title: "Cannot Submit Timesheet",
-        description: `You must fill in exactly ${weekHours} hours for this week. Remaining: ${remainingHours} hours`,
+        description: `You must fill in exactly ${effectiveHours} hours for this week (${weekPercentage}% of ${weekHours}). Remaining: ${remainingHours} hours`,
         variant: "destructive"
       });
       return;
@@ -382,7 +474,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
   };
 
   const handleApprove = async () => {
-    if (readOnly) return;
+    if (readOnly && !adminOverride) return;
     
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
     
@@ -419,9 +511,10 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
   };
 
   const handleReject = async () => {
-    if (readOnly) return;
+    if (readOnly && !adminOverride) return;
     
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
+    const currentStatus = getCurrentWeekStatus();
     
     try {
       const currentWeekData = currentCustomWeek || 
@@ -429,29 +522,37 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
       
       if (currentWeekData && viewedUser.id) {
         const { data: statusNames } = await getWeekStatusNames();
-        const needsRevisionStatus = statusNames?.find(status => status.name === 'needs-revision');
         
-        if (needsRevisionStatus) {
-          await updateWeekStatus(viewedUser.id, currentWeekData.id, needsRevisionStatus.id);
+        const targetStatusName = (currentStatus === 'accepted' && adminOverride) ? 'unconfirmed' : 'needs-revision';
+        const targetStatus = statusNames?.find(status => status.name === targetStatusName);
+        
+        if (targetStatus) {
+          await updateWeekStatus(viewedUser.id, currentWeekData.id, targetStatus.id);
           
           setWeekStatuses(prev => ({
             ...prev,
-            [currentWeekKey]: 'needs-revision'
+            [currentWeekKey]: targetStatusName as TimeSheetStatus
           }));
           
-          setSubmittedWeeks(prev => prev.filter(week => week !== currentWeekKey));
+          if (currentStatus === 'accepted' || currentStatus === 'under-review') {
+            setSubmittedWeeks(prev => prev.filter(week => week !== currentWeekKey));
+          }
+          
+          const message = currentStatus === 'accepted' ? 
+            `Week of ${format(currentDate, 'MMM d, yyyy')} reverted to unconfirmed` : 
+            `Week of ${format(currentDate, 'MMM d, yyyy')} needs revision`;
           
           toast({
-            title: "Timesheet Rejected",
-            description: `Week of ${format(currentDate, 'MMM d, yyyy')} needs revision`,
+            title: currentStatus === 'accepted' ? "Timesheet Reverted" : "Timesheet Rejected",
+            description: message,
           });
         }
       }
     } catch (error) {
-      console.error('Error rejecting timesheet:', error);
+      console.error('Error rejecting/reverting timesheet:', error);
       toast({
         title: "Error",
-        description: "Failed to reject timesheet",
+        description: "Failed to process timesheet action",
         variant: "destructive"
       });
     }
@@ -464,8 +565,8 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
     if (!userFirstWeek) return false;
     
     const sortedWeeks = [...customWeeks].sort((a, b) => {
-      const dateA = parse(a.period_from || '', 'yyyy-MM-dd', new Date());
-      const dateB = parse(b.period_from || '', 'yyyy-MM-dd', new Date());
+      const dateA = parse(a.period_from, 'yyyy-MM-dd', new Date());
+      const dateB = parse(b.period_from, 'yyyy-MM-dd', new Date());
       return dateA.getTime() - dateB.getTime();
     });
     
@@ -539,6 +640,10 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
     setSelectedMediaTypes(prev => prev.filter(t => t !== type));
   };
 
+  const handleWeekHoursChange = (hours: number) => {
+    setWeekHours(hours);
+  };
+
   useEffect(() => {
     const loadUserData = async () => {
       if (viewedUser.id) {
@@ -601,7 +706,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
   }, [viewedUser, currentDate]);
 
   const handleTimeUpdate = async (client: string, mediaType: string, hours: number) => {
-    if (readOnly || !isViewingOwnTimesheet) return;
+    if ((readOnly || !isViewingOwnTimesheet) && !adminOverride) return;
     
     const currentTotal = getTotalHoursForWeek();
     const existingHours = timeEntries[format(currentDate, 'yyyy-MM-dd')]?.[client]?.[mediaType]?.hours || 0;
@@ -771,7 +876,7 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
 
   return (
     <div className="space-y-6">
-      {userRole === 'manager' && (
+      {userRole === 'manager' && !impersonatedUser && (
         <div className="mb-4">
           <h3 className="text-sm font-medium mb-2">View Timesheet For:</h3>
           <TeamMemberSelector
@@ -783,22 +888,36 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
         </div>
       )}
 
+      {adminOverride && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-yellow-700">
+                <strong>Admin Override Mode:</strong> You have full control over this user's timesheet, including submitting, approving, rejecting, and modifying hours regardless of week status.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <TimeSheetHeader
         userRole={userRole}
-        remainingHours={weekHours - getTotalHoursForWeek()}
+        remainingHours={Math.round(weekHours * (weekPercentage / 100)) - getTotalHoursForWeek()}
         status={getCurrentWeekStatus()}
         onReturnToFirstUnsubmittedWeek={handleReturnToFirstUnsubmittedWeek}
         onToggleSettings={() => setShowSettings(!showSettings)}
-        onExportToExcel={() => {
-          toast({
-            title: "Export Started",
-            description: "Your timesheet is being exported to Excel",
-          });
-        }}
         firstWeek={viewedUser.firstWeek || firstWeek}
+        weekPercentage={weekPercentage}
+        weekHours={weekHours}
+        hasCustomWeeks={customWeeks.length > 0}
       />
 
-      {hasUnsubmittedEarlierWeek() && !readOnly && !isCurrentWeekSubmitted() && (
+      {hasUnsubmittedEarlierWeek() && !readOnly && !isCurrentWeekSubmitted() && !adminOverride && (
         <Alert variant="destructive" className="mb-4">
           <AlertDescription>
             You have unsubmitted timesheets from previous weeks. Please submit them in chronological order.
@@ -827,16 +946,19 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
             }
           }
         }}
-        onWeekHoursChange={setWeekHours}
+        onWeekHoursChange={handleWeekHoursChange}
         status={getCurrentWeekStatus()}
         isManager={userRole === 'manager' || userRole === 'admin'}
         isViewingOwnTimesheet={isViewingOwnTimesheet}
         onSubmitForReview={handleSubmitForReview}
         onApprove={handleApprove}
         onReject={handleReject}
-        readOnly={readOnly || (!isViewingOwnTimesheet && userRole !== 'manager' && userRole !== 'admin')}
+        readOnly={readOnly || (!isViewingOwnTimesheet && userRole !== 'manager' && userRole !== 'admin' && !adminOverride)}
         firstWeek={viewedUser.firstWeek || firstWeek}
         weekId={currentCustomWeek?.id}
+        weekPercentage={weekPercentage}
+        customWeeks={customWeeks}
+        adminOverride={adminOverride}
       />
 
       <TimeSheetContent
@@ -852,8 +974,9 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
         onRemoveMediaType={handleRemoveMediaType}
         onSaveVisibleClients={handleSaveVisibleClients}
         onSaveVisibleMediaTypes={handleSaveVisibleMediaTypes}
-        readOnly={readOnly || !isViewingOwnTimesheet}
+        readOnly={readOnly || (!isViewingOwnTimesheet && !adminOverride)}
         weekHours={weekHours}
+        weekPercentage={weekPercentage}
         userRole={userRole}
         availableClients={availableClients}
         availableMediaTypes={availableMediaTypes}
@@ -861,7 +984,9 @@ const TimeSheet = ({ userRole, firstWeek, currentUser, users, clients, readOnly 
         selectedMediaTypes={selectedMediaTypes}
         onSelectClient={handleSelectClient}
         onSelectMediaType={handleSelectMediaType}
-        isViewingOwnTimesheet={isViewingOwnTimesheet}
+        isViewingOwnTimesheet={isViewingOwnTimesheet || adminOverride}
+        clientObjects={clients}
+        adminOverride={adminOverride}
       />
     </div>
   );

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { TimeEntry, TimeSheetStatus } from '@/types/timesheet';
 import { useToast } from "@/hooks/use-toast";
@@ -13,6 +13,7 @@ interface TimeSheetGridProps {
   status: TimeSheetStatus;
   weekHours?: number;
   readOnly?: boolean;
+  weekPercentage?: number;
 }
 
 export const TimeSheetGrid = ({ 
@@ -22,10 +23,29 @@ export const TimeSheetGrid = ({
   onTimeUpdate,
   status,
   weekHours = 40,
-  readOnly = false
+  readOnly = false,
+  weekPercentage = 100
 }: TimeSheetGridProps) => {
   const isFormDisabled = readOnly || status === 'under-review' || status === 'accepted';
   const { toast } = useToast();
+  const [localTimeEntries, setLocalTimeEntries] = useState<Record<string, Record<string, number>>>({});
+  
+  // Initialize local time entries from props
+  useEffect(() => {
+    const initialEntries: Record<string, Record<string, number>> = {};
+    
+    Object.entries(timeEntries).forEach(([client, mediaEntries]) => {
+      initialEntries[client] = {};
+      Object.entries(mediaEntries).forEach(([type, entry]) => {
+        initialEntries[client][type] = entry.hours || 0;
+      });
+    });
+    
+    setLocalTimeEntries(initialEntries);
+  }, [timeEntries]);
+  
+  // Calculate effective hours based on week percentage
+  const effectiveWeekHours = Math.round(weekHours * (weekPercentage / 100));
 
   const calculateTotalHours = (excludingClient?: string, excludingType?: string): number => {
     return Object.entries(timeEntries).reduce((clientSum, [client, mediaEntries]) => {
@@ -35,6 +55,54 @@ export const TimeSheetGrid = ({
         return mediaSum + (entry.hours || 0);
       }, 0);
     }, 0);
+  };
+
+  const handleInputChange = (client: string, type: string, value: string) => {
+    const hours = parseInt(value) || 0;
+    
+    // Update local state immediately for responsive UI
+    setLocalTimeEntries(prev => {
+      const updated = { ...prev };
+      if (!updated[client]) updated[client] = {};
+      updated[client][type] = hours;
+      return updated;
+    });
+  };
+
+  const handleInputBlur = (client: string, type: string) => {
+    const hours = localTimeEntries[client]?.[type] || 0;
+    const currentValue = timeEntries[client]?.[type]?.hours || 0;
+    
+    // Only update if value has changed
+    if (hours !== currentValue) {
+      const currentTotal = calculateTotalHours(client, type);
+      const newTotal = currentTotal + hours - currentValue;
+      
+      if (newTotal > effectiveWeekHours) {
+        toast({
+          title: "Cannot Add Hours",
+          description: `Total hours cannot exceed ${effectiveWeekHours} for the week (${weekPercentage}% of ${weekHours})`,
+          variant: "destructive"
+        });
+        
+        // Reset to previous value
+        setLocalTimeEntries(prev => {
+          const updated = { ...prev };
+          if (!updated[client]) updated[client] = {};
+          updated[client][type] = currentValue;
+          return updated;
+        });
+        return;
+      }
+      
+      // Don't save zero values to database
+      if (hours > 0) {
+        onTimeUpdate(client, type, hours);
+      } else if (currentValue > 0) {
+        // If current value in DB is > 0 and new value is 0, remove it from DB
+        onTimeUpdate(client, type, 0);
+      }
+    }
   };
 
   return (
@@ -60,25 +128,12 @@ export const TimeSheetGrid = ({
                   <Input
                     type="number"
                     min="0"
-                    max={weekHours.toString()}
+                    max={effectiveWeekHours.toString()}
                     step="1"
                     className="text-center"
-                    value={timeEntries[client]?.[type]?.hours || ''}
-                    onChange={(e) => {
-                      const hours = parseInt(e.target.value) || 0;
-                      const currentTotal = calculateTotalHours(client, type);
-                      
-                      if (currentTotal + hours > weekHours) {
-                        toast({
-                          title: "Cannot Add Hours",
-                          description: `Total hours cannot exceed ${weekHours} for the week`,
-                          variant: "destructive"
-                        });
-                        return;
-                      }
-                      
-                      onTimeUpdate(client, type, hours);
-                    }}
+                    value={localTimeEntries[client]?.[type] !== undefined ? localTimeEntries[client][type] : ''}
+                    onChange={(e) => handleInputChange(client, type, e.target.value)}
+                    onBlur={() => handleInputBlur(client, type)}
                     disabled={isFormDisabled}
                   />
                 </TableCell>
@@ -100,7 +155,7 @@ export const TimeSheetGrid = ({
               </TableCell>
             ))}
             <TableCell className="font-bold text-center">
-              {calculateTotalHours()}
+              {calculateTotalHours()} / {effectiveWeekHours}
             </TableCell>
           </TableRow>
         </TableBody>

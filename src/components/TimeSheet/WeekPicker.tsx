@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Select,
@@ -19,6 +18,7 @@ interface WeekPickerProps {
   onWeekHoursChange: (hours: number) => void;
   weekPercentage?: number;
   firstWeek?: string;
+  customWeeks?: any[];
 }
 
 export const WeekPicker = ({ 
@@ -26,7 +26,8 @@ export const WeekPicker = ({
   onWeekChange, 
   onWeekHoursChange,
   weekPercentage = 100,
-  firstWeek = "2025-01-01" // Default to the earliest week if not specified
+  firstWeek = "2025-01-01", // Default to the earliest week if not specified
+  customWeeks: propCustomWeeks = []
 }: WeekPickerProps) => {
   const [availableWeeks, setAvailableWeeks] = useState<CustomWeek[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,17 +36,29 @@ export const WeekPicker = ({
     const fetchWeeks = async () => {
       try {
         setLoading(true);
-        const { data } = await getCustomWeeks();
-        if (data && data.length > 0) {
-          // Transform data to match CustomWeek interface
-          const formattedWeeks = data.map(week => ({
+        if (propCustomWeeks.length > 0) {
+          // Transform data to match CustomWeek interface if needed
+          const formattedWeeks = propCustomWeeks.map(week => ({
             id: week.id,
             name: week.name,
-            startDate: week.period_from,
-            endDate: week.period_to,
-            hours: week.required_hours
+            startDate: week.period_from || week.startDate,
+            endDate: week.period_to || week.endDate,
+            hours: week.required_hours || week.hours
           }));
           setAvailableWeeks(formattedWeeks);
+        } else {
+          const { data } = await getCustomWeeks();
+          if (data && data.length > 0) {
+            // Transform data to match CustomWeek interface
+            const formattedWeeks = data.map(week => ({
+              id: week.id,
+              name: week.name,
+              startDate: week.period_from,
+              endDate: week.period_to,
+              hours: week.required_hours
+            }));
+            setAvailableWeeks(formattedWeeks);
+          }
         }
       } catch (error) {
         console.error('Error fetching custom weeks:', error);
@@ -55,7 +68,7 @@ export const WeekPicker = ({
     };
 
     fetchWeeks();
-  }, []);
+  }, [propCustomWeeks]);
 
   // Filter weeks to only include those on or after the user's first week
   const getFilteredWeeks = () => {
@@ -94,9 +107,8 @@ export const WeekPicker = ({
       const date = parse(selectedWeek.startDate, "yyyy-MM-dd", new Date());
       onWeekChange(date);
       
-      // Apply percentage to hours
-      const effectiveHours = Math.round(selectedWeek.hours * (weekPercentage / 100));
-      onWeekHoursChange(effectiveHours);
+      // Pass the base hours (not adjusted by percentage) - the TimeSheet component will apply the percentage
+      onWeekHoursChange(selectedWeek.hours);
     }
   };
 
@@ -117,19 +129,18 @@ export const WeekPicker = ({
     const date = parse(newWeek.startDate, "yyyy-MM-dd", new Date());
     onWeekChange(date);
     
-    // Apply percentage to hours
-    const effectiveHours = Math.round(newWeek.hours * (weekPercentage / 100));
-    onWeekHoursChange(effectiveHours);
+    // Pass the base hours (not adjusted by percentage)
+    onWeekHoursChange(newWeek.hours);
   };
 
   const formatWeekLabel = (week: CustomWeek) => {
     const start = format(parse(week.startDate, "yyyy-MM-dd", new Date()), "MMM dd, yyyy");
     const end = format(parse(week.endDate, "yyyy-MM-dd", new Date()), "MMM dd, yyyy");
     
-    // Calculate effective hours based on percentage
+    // Calculate effective hours based on percentage for display only
     const effectiveHours = Math.round(week.hours * (weekPercentage / 100));
     
-    return `${week.name}: ${start} - ${end} (${effectiveHours}h / ${weekPercentage}%)`;
+    return `${week.name}: ${start} - ${end} (${effectiveHours}h)`;
   };
 
   if (loading || filteredWeeks.length === 0) {

@@ -31,6 +31,8 @@ const UserWeekPercentage = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [customWeeks, setCustomWeeks] = useState<CustomWeek[]>([]);
   const [loading, setLoading] = useState(true);
+  // Track the last modified week as a reference for subsequent weeks
+  const [lastModifiedWeek, setLastModifiedWeek] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Define the structure for week percentage entries
@@ -101,24 +103,37 @@ const UserWeekPercentage = () => {
   }, [selectedUser, toast]);
 
   const getWeekPercentage = (userId: string, weekId: string): number => {
-    const entry = weekPercentages.find(
+    // First check if this exact week has a stored percentage
+    const exactMatch = weekPercentages.find(
       (wp) => wp.userId === userId && wp.weekId === weekId
     );
     
-    if (entry) {
-      return entry.percentage;
+    if (exactMatch) {
+      return exactMatch.percentage;
     }
     
-    const weekIdNum = parseInt(weekId);
-    for (let i = weekIdNum - 1; i >= 1; i--) {
-      const previousEntry = weekPercentages.find(
-        (wp) => wp.userId === userId && wp.weekId === i.toString()
+    // No exact match, so let's find the most recent modified week before this one
+    const weeks = customWeeks.length > 0 ? customWeeks : DEFAULT_WEEKS;
+    
+    // Convert weeks to numeric IDs for comparison
+    const currentWeekIndex = weeks.findIndex(week => week.id === weekId);
+    if (currentWeekIndex === -1) return 100; // Default if week not found
+    
+    // Check all previous weeks in reverse order (from most recent to oldest)
+    const previousWeeks = weeks.slice(0, currentWeekIndex);
+    
+    for (let i = previousWeeks.length - 1; i >= 0; i--) {
+      const prevWeekId = previousWeeks[i].id;
+      const prevWeekPercentage = weekPercentages.find(
+        (wp) => wp.userId === userId && wp.weekId === prevWeekId
       );
-      if (previousEntry) {
-        return previousEntry.percentage;
+      
+      if (prevWeekPercentage) {
+        return prevWeekPercentage.percentage;
       }
     }
     
+    // If no previous week has a percentage, return default 100%
     return 100;
   };
 
@@ -136,34 +151,48 @@ const UserWeekPercentage = () => {
       return;
     }
 
-    // Update local state
-    const updatedPercentages = [...weekPercentages];
-    const existingIndex = updatedPercentages.findIndex(
-      (wp) => wp.userId === userId && wp.weekId === weekId
-    );
+    // Set this as the last modified week
+    setLastModifiedWeek(weekId);
 
-    if (existingIndex >= 0) {
-      updatedPercentages[existingIndex].percentage = percentage;
-    } else {
-      updatedPercentages.push({ userId, weekId, percentage });
-    }
-
-    setWeekPercentages(updatedPercentages);
-
-    // Update in the database
+    // Only update the database for the specific week being changed
     try {
-      await updateWeekPercentage(userId, weekId, percentage);
+      // Update local state for the specific changed week
+      const updatedPercentages = [...weekPercentages];
+      const existingIndex = updatedPercentages.findIndex(
+        (wp) => wp.userId === userId && wp.weekId === weekId
+      );
 
-      if (percentage === 100) {
-        const weekIdNum = parseInt(weekId);
-        setWeekPercentages(prev => 
-          prev.filter(wp => !(wp.userId === userId && parseInt(wp.weekId) > weekIdNum))
-        );
+      if (existingIndex >= 0) {
+        updatedPercentages[existingIndex].percentage = percentage;
+      } else {
+        updatedPercentages.push({ userId, weekId, percentage });
       }
+
+      // Remove any subsequent week entries from local state
+      // (they will be calculated dynamically by getWeekPercentage)
+      const weeks = customWeeks.length > 0 ? customWeeks : DEFAULT_WEEKS;
+      const currentWeekIndex = weeks.findIndex(week => week.id === weekId);
+      
+      if (currentWeekIndex !== -1) {
+        const subsequentWeekIds = weeks
+          .slice(currentWeekIndex + 1)
+          .map(week => week.id);
+          
+        const filteredPercentages = updatedPercentages.filter(
+          wp => !(wp.userId === userId && subsequentWeekIds.includes(wp.weekId))
+        );
+        
+        setWeekPercentages(filteredPercentages);
+      } else {
+        setWeekPercentages(updatedPercentages);
+      }
+
+      // Update in the database (only for the changed week)
+      await updateWeekPercentage(userId, weekId, percentage);
 
       toast({
         title: "Percentage Updated",
-        description: `Week ${weekId} updated to ${percentage}% for selected user`,
+        description: `Week ${weekId} updated to ${percentage}%. All subsequent weeks will inherit this value.`,
       });
     } catch (error) {
       console.error('Error updating week percentage:', error);

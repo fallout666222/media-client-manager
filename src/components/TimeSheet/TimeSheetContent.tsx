@@ -1,8 +1,18 @@
-
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { TimeSheetGrid } from './TimeSheetGrid';
 import { Settings } from './Settings';
-import { TimeEntry, TimeSheetStatus } from '@/types/timesheet';
+import { TimeEntry, TimeSheetStatus, Client } from '@/types/timesheet';
+
+// Define the system default clients - keep in sync with ClientTree.tsx
+const DEFAULT_SYSTEM_CLIENTS = [
+  "Administrative",
+  "Education/Training", 
+  "General Research",
+  "Network Requests",
+  "New Business",
+  "Sick Leave",
+  "VACATION"
+];
 
 interface TimeSheetContentProps {
   showSettings: boolean;
@@ -19,6 +29,7 @@ interface TimeSheetContentProps {
   onSaveVisibleMediaTypes?: (types: string[]) => void;
   readOnly?: boolean;
   weekHours?: number;
+  weekPercentage?: number;
   userRole: 'admin' | 'user' | 'manager';
   availableClients: string[];
   availableMediaTypes: string[];
@@ -27,6 +38,10 @@ interface TimeSheetContentProps {
   onSelectClient: (client: string) => void;
   onSelectMediaType: (type: string) => void;
   isViewingOwnTimesheet: boolean;
+  clientObjects?: Client[];
+  adminOverride?: boolean;
+  onReorderClients?: (clients: string[]) => void;
+  onReorderMediaTypes?: (types: string[]) => void;
 }
 
 export const TimeSheetContent = ({
@@ -44,6 +59,7 @@ export const TimeSheetContent = ({
   onSaveVisibleMediaTypes,
   readOnly = false,
   weekHours = 40,
+  weekPercentage = 100,
   userRole,
   availableClients,
   availableMediaTypes,
@@ -52,6 +68,10 @@ export const TimeSheetContent = ({
   onSelectClient,
   onSelectMediaType,
   isViewingOwnTimesheet,
+  clientObjects = [],
+  adminOverride = false,
+  onReorderClients,
+  onReorderMediaTypes
 }: TimeSheetContentProps) => {
   // Get all clients and media types that have entries with hours > 0
   const clientsWithEntries = useMemo(() => {
@@ -84,11 +104,39 @@ export const TimeSheetContent = ({
   
   // Combine selected clients/media types with those that have entries
   const effectiveClients = useMemo(() => {
-    return [...new Set([...selectedClients, ...clientsWithEntries])];
+    // Get unique clients
+    const uniqueClients = [...new Set([...selectedClients, ...clientsWithEntries])];
+    
+    // Keep the order of selectedClients (user's preferred order)
+    const orderedClients = [...selectedClients];
+    
+    // Add any clients with entries that aren't already in the ordered list
+    clientsWithEntries.forEach(client => {
+      if (!orderedClients.includes(client)) {
+        orderedClients.push(client);
+      }
+    });
+    
+    // Filter to only include unique clients that are in our combined set
+    return orderedClients.filter(client => uniqueClients.includes(client));
   }, [selectedClients, clientsWithEntries]);
   
   const effectiveMediaTypes = useMemo(() => {
-    return [...new Set([...selectedMediaTypes, ...mediaTypesWithEntries])];
+    // Get unique media types
+    const uniqueMediaTypes = [...new Set([...selectedMediaTypes, ...mediaTypesWithEntries])];
+    
+    // Keep the order of selectedMediaTypes (user's preferred order)
+    const orderedMediaTypes = [...selectedMediaTypes];
+    
+    // Add any media types with entries that aren't already in the ordered list
+    mediaTypesWithEntries.forEach(type => {
+      if (!orderedMediaTypes.includes(type)) {
+        orderedMediaTypes.push(type);
+      }
+    });
+    
+    // Filter to only include unique media types that are in our combined set
+    return orderedMediaTypes.filter(type => uniqueMediaTypes.includes(type));
   }, [selectedMediaTypes, mediaTypesWithEntries]);
 
   if (showSettings) {
@@ -119,6 +167,15 @@ export const TimeSheetContent = ({
         selectedMediaTypes={selectedMediaTypes}
         onSelectClient={(client) => {
           onSelectClient(client);
+          
+          // If the client is a system default client, automatically add "Administrative" media type
+          if (DEFAULT_SYSTEM_CLIENTS.includes(client) && !selectedMediaTypes.includes("Administrative")) {
+            onSelectMediaType("Administrative");
+            if (onSaveVisibleMediaTypes) {
+              onSaveVisibleMediaTypes([...selectedMediaTypes, "Administrative"]);
+            }
+          }
+          
           if (onSaveVisibleClients) {
             onSaveVisibleClients([...selectedClients, client]);
           }
@@ -127,6 +184,31 @@ export const TimeSheetContent = ({
           onSelectMediaType(type);
           if (onSaveVisibleMediaTypes) {
             onSaveVisibleMediaTypes([...selectedMediaTypes, type]);
+          }
+        }}
+        visibleClients={clientObjects}
+        onReorderClients={(newOrder) => {
+          console.log("Reordering clients:", newOrder);
+          if (onReorderClients) {
+            onReorderClients(newOrder);
+          }
+        }}
+        onReorderMediaTypes={(newOrder) => {
+          console.log("Reordering media types:", newOrder);
+          if (onReorderMediaTypes) {
+            onReorderMediaTypes(newOrder);
+          }
+        }}
+        onSaveVisibleClients={(newOrder) => {
+          console.log("Saving new client order:", newOrder);
+          if (onSaveVisibleClients) {
+            onSaveVisibleClients(newOrder);
+          }
+        }}
+        onSaveVisibleMediaTypes={(newOrder) => {
+          console.log("Saving new media type order:", newOrder);
+          if (onSaveVisibleMediaTypes) {
+            onSaveVisibleMediaTypes(newOrder);
           }
         }}
       />
@@ -141,7 +223,8 @@ export const TimeSheetContent = ({
       onTimeUpdate={onTimeUpdate}
       status={status}
       weekHours={weekHours}
-      readOnly={readOnly || !isViewingOwnTimesheet || status === 'under-review' || status === 'accepted'}
+      weekPercentage={weekPercentage}
+      readOnly={readOnly || !isViewingOwnTimesheet || (!adminOverride && (status === 'under-review' || status === 'accepted'))}
     />
   );
 };
