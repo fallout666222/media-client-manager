@@ -238,18 +238,21 @@ export type Database = {
         Row: {
           client_id: string
           created_at: string | null
+          display_order: number | null
           id: string
           user_id: string
         }
         Insert: {
           client_id: string
           created_at?: string | null
+          display_order?: number | null
           id?: string
           user_id: string
         }
         Update: {
           client_id?: string
           created_at?: string | null
+          display_order?: number | null
           id?: string
           user_id?: string
         }
@@ -273,18 +276,21 @@ export type Database = {
       visible_types: {
         Row: {
           created_at: string | null
+          display_order: number | null
           id: string
           type_id: string
           user_id: string
         }
         Insert: {
           created_at?: string | null
+          display_order?: number | null
           id?: string
           type_id: string
           user_id: string
         }
         Update: {
           created_at?: string | null
+          display_order?: number | null
           id?: string
           type_id?: string
           user_id?: string
