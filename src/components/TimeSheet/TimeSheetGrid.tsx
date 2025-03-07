@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { TimeEntry, TimeSheetStatus } from '@/types/timesheet';
@@ -89,7 +90,13 @@ export const TimeSheetGrid = ({
         return;
       }
       
-      onTimeUpdate(client, type, hours);
+      // Don't save zero values to database
+      if (hours > 0) {
+        onTimeUpdate(client, type, hours);
+      } else if (currentValue > 0) {
+        // If current value in DB is > 0 and new value is 0, remove it from DB
+        onTimeUpdate(client, type, 0);
+      }
     }
   };
 
