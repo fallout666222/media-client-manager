@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,6 +63,7 @@ interface SettingsProps {
   visibleClients?: Client[];
   onReorderClients?: (clients: string[]) => void;
   onReorderMediaTypes?: (types: string[]) => void;
+  currentUserId?: string;
 }
 
 export const Settings = ({
@@ -81,6 +83,7 @@ export const Settings = ({
   visibleClients = [],
   onReorderClients,
   onReorderMediaTypes,
+  currentUserId,
 }: SettingsProps) => {
   const [newClient, setNewClient] = useState('');
   const [newMediaType, setNewMediaType] = useState('');
@@ -231,7 +234,7 @@ export const Settings = ({
     }
   };
 
-  const handleDragEndClients = (event: DragEndEvent) => {
+  const handleDragEndClients = async (event: DragEndEvent) => {
     const { active, over } = event;
     
     if (over && active.id !== over.id) {
@@ -240,14 +243,31 @@ export const Settings = ({
       
       if (oldIndex !== -1 && newIndex !== -1) {
         const newOrder = arrayMove(selectedClients, oldIndex, newIndex);
+        
+        // Update the order in the UI through parent component
         if (onReorderClients) {
           onReorderClients(newOrder);
+        }
+        
+        // Update order in the database directly
+        if (currentUserId) {
+          try {
+            await db.updateVisibleClientsOrder(currentUserId, newOrder);
+            console.log('Client order updated in database');
+          } catch (error) {
+            console.error('Error updating client order:', error);
+            toast({
+              title: "Error",
+              description: "Failed to save client order",
+              variant: "destructive",
+            });
+          }
         }
       }
     }
   };
 
-  const handleDragEndMediaTypes = (event: DragEndEvent) => {
+  const handleDragEndMediaTypes = async (event: DragEndEvent) => {
     const { active, over } = event;
     
     if (over && active.id !== over.id) {
@@ -256,8 +276,25 @@ export const Settings = ({
       
       if (oldIndex !== -1 && newIndex !== -1) {
         const newOrder = arrayMove(selectedMediaTypes, oldIndex, newIndex);
+        
+        // Update the order in the UI through parent component
         if (onReorderMediaTypes) {
           onReorderMediaTypes(newOrder);
+        }
+        
+        // Update order in the database directly
+        if (currentUserId) {
+          try {
+            await db.updateVisibleTypesOrder(currentUserId, newOrder);
+            console.log('Media type order updated in database');
+          } catch (error) {
+            console.error('Error updating media type order:', error);
+            toast({
+              title: "Error",
+              description: "Failed to save media type order",
+              variant: "destructive",
+            });
+          }
         }
       }
     }

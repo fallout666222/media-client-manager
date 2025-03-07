@@ -1,3 +1,4 @@
+
 import React, { useMemo, useEffect } from 'react';
 import { TimeSheetGrid } from './TimeSheetGrid';
 import { Settings } from './Settings';
@@ -42,6 +43,7 @@ interface TimeSheetContentProps {
   adminOverride?: boolean;
   onReorderClients?: (clients: string[]) => void;
   onReorderMediaTypes?: (types: string[]) => void;
+  currentUserId?: string;
 }
 
 export const TimeSheetContent = ({
@@ -71,7 +73,8 @@ export const TimeSheetContent = ({
   clientObjects = [],
   adminOverride = false,
   onReorderClients,
-  onReorderMediaTypes
+  onReorderMediaTypes,
+  currentUserId
 }: TimeSheetContentProps) => {
   // Get all clients and media types that have entries with hours > 0
   const clientsWithEntries = useMemo(() => {
@@ -203,6 +206,7 @@ export const TimeSheetContent = ({
             onSaveVisibleMediaTypes(newOrder);
           }
         }}
+        currentUserId={currentUserId}
       />
     );
   }

@@ -22,7 +22,9 @@ import {
   removeUserVisibleClient,
   removeUserVisibleType,
   getWeekStatuses,
-  getWeekPercentages
+  getWeekPercentages,
+  updateVisibleClientsOrder,
+  updateVisibleTypesOrder
 } from '@/integrations/supabase/database';
 
 const DEFAULT_WEEKS = [
@@ -817,6 +819,8 @@ const TimeSheet = ({
         }
       }
       
+      await updateVisibleClientsOrder(currentUser.id, clients);
+      
       toast({
         title: "Visible Clients Updated",
         description: "Your visible clients have been updated",
@@ -860,6 +864,8 @@ const TimeSheet = ({
         }
       }
       
+      await updateVisibleTypesOrder(currentUser.id, types);
+      
       toast({
         title: "Visible Media Types Updated",
         description: "Your visible media types have been updated",
@@ -872,6 +878,14 @@ const TimeSheet = ({
         variant: "destructive"
       });
     }
+  };
+
+  const handleReorderClients = (newOrder: string[]) => {
+    setSelectedClients(newOrder);
+  };
+
+  const handleReorderMediaTypes = (newOrder: string[]) => {
+    setSelectedMediaTypes(newOrder);
   };
 
   return (
@@ -987,9 +1001,13 @@ const TimeSheet = ({
         isViewingOwnTimesheet={isViewingOwnTimesheet || adminOverride}
         clientObjects={clients}
         adminOverride={adminOverride}
+        onReorderClients={handleReorderClients}
+        onReorderMediaTypes={handleReorderMediaTypes}
+        currentUserId={currentUser.id}
       />
     </div>
   );
 };
 
 export default TimeSheet;
+
