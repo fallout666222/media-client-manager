@@ -49,8 +49,8 @@ const DEFAULT_SYSTEM_CLIENTS = [
 ];
 
 interface SettingsProps {
-  clients: string[];
-  mediaTypes: string[];
+  clients?: string[];
+  mediaTypes?: string[];
   onAddClient: (client: string) => void;
   onRemoveClient: (client: string) => void;
   onAddMediaType: (type: string) => void;
@@ -66,6 +66,12 @@ interface SettingsProps {
   onReorderClients?: (clients: string[]) => void;
   onReorderMediaTypes?: (types: string[]) => void;
   currentUserId?: string;
+  onSaveClients: (clients: string[]) => void;
+  onSaveMediaTypes: (types: string[]) => void;
+  readOnly?: boolean;
+  isViewingOwnTimesheet?: boolean;
+  clientObjects?: Client[];
+  adminOverride?: boolean;
 }
 
 export const Settings = ({
@@ -86,6 +92,12 @@ export const Settings = ({
   onReorderClients,
   onReorderMediaTypes,
   currentUserId,
+  onSaveClients,
+  onSaveMediaTypes,
+  readOnly = false,
+  isViewingOwnTimesheet = true,
+  clientObjects = [],
+  adminOverride = false,
 }: SettingsProps) => {
   const [newClient, setNewClient] = useState('');
   const [newMediaType, setNewMediaType] = useState('');
