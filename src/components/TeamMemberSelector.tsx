@@ -32,7 +32,7 @@ export function TeamMemberSelector({
 }: TeamMemberSelectorProps) {
   const [open, setOpen] = useState(false);
 
-  // Filter team members based on user role and user head status
+  // Filter team members based on user role
   const getTeamMembers = () => {
     if (currentUser.role === "admin") {
       // Admin can see all users
@@ -40,20 +40,18 @@ export function TeamMemberSelector({
     } else if (currentUser.role === "manager") {
       // Manager can see themselves and their team members (users who have this manager set as their manager)
       return users.filter(
-        (user) => user.managerId === currentUser.id || user.id === currentUser.id
+        (user) => user.managerId === currentUser.username || user.id === currentUser.id
       );
     } else {
-      // Regular users can see themselves and users who have them set as User Head
-      return users.filter(
-        (user) => user.id === currentUser.id || user.user_head_id === currentUser.id
-      );
+      // Regular users can only see themselves
+      return users.filter((user) => user.id === currentUser.id);
     }
   };
 
   const teamMembers = getTeamMembers();
   
-  // Disable the dropdown if there's only one team member (themselves)
-  const isDisabled = teamMembers.length === 1;
+  // Disable the dropdown if the user is not an admin and there's only one team member (themselves)
+  const isDisabled = currentUser.role !== "admin" && teamMembers.length === 1;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

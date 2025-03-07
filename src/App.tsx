@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, Link } from "react-router-dom";
 import TimeSheet from "./pages/TimeSheet";
 import { Login } from "./components/Auth/Login";
+import { FirstWeekManagement } from "./components/Auth/FirstWeekManagement";
 import DepartmentManagement from "./components/Admin/DepartmentManagement";
 import UserImpersonation from "./pages/UserImpersonation";
 import CustomWeeks from "./pages/CustomWeeks";
@@ -13,45 +14,82 @@ import UserFirstWeekManagement from "./pages/UserFirstWeekManagement";
 import UserWeekPercentage from "./pages/UserWeekPercentage";
 import ManagerView from "./pages/ManagerView";
 import ClientTree from "./pages/ClientTree";
-import MediaTypeManagement from "./pages/MediaTypeManagement";
-import { useState, useEffect } from "react";
-import { User, Client } from "./types/timesheet";
+import { useState } from "react";
+import { User, Department, Client } from "./types/timesheet";
 import { Button } from "./components/ui/button";
-import { 
-  LogOut, 
-  Users, 
-  Calendar, 
-  UserCog, 
-  CalendarDays, 
-  Percent, 
-  Eye, 
-  Building, 
-  ArrowLeft, 
-  TreeDeciduous,
-  Film
-} from "lucide-react";
+import { LogOut, Users, Calendar, UserCog, CalendarDays, Percent, Eye, Building, ArrowLeft, TreeDeciduous } from "lucide-react";
 import { useToast } from "./hooks/use-toast";
 import * as db from "./integrations/supabase/database";
-import UserHeadView from "./pages/UserHeadView";
-import { UserCircle } from "lucide-react";
 
 const queryClient = new QueryClient();
 
-export function App() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState<User[]>([]);
-  const [departments, setDepartments] = useState<any[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
-  const { toast } = useToast();
+const INITIAL_USERS: User[] = [
+  { 
+    id: "1",
+    username: "admin", 
+    password: "admin", 
+    role: "admin", 
+    firstWeek: "2024-01-01",
+    selectedClients: ["Client A", "Client B"],
+    selectedMediaTypes: ["TV", "Digital"],
+    login: "admin",
+    name: "Administrator",
+    type: "admin"
+  },
+  { 
+    id: "2",
+    username: "user", 
+    password: "user", 
+    role: "user",
+    managerId: "3",
+    selectedClients: ["Client A"],
+    selectedMediaTypes: ["TV"],
+    departmentId: "1",
+    login: "user",
+    name: "Regular User",
+    type: "user"
+  },
+  { 
+    id: "3",
+    username: "manager", 
+    password: "manager", 
+    role: "manager", 
+    firstWeek: "2024-01-01",
+    selectedClients: ["Client B"],
+    selectedMediaTypes: ["Digital"],
+    departmentId: "2",
+    login: "manager",
+    name: "Team Manager",
+    type: "manager"
+  },
+];
 
-  useEffect(() => {
-    if (user) {
-      fetchInitialData();
-    } else {
-      setLoading(false);
-    }
-  }, [user]);
+const INITIAL_DEPARTMENTS: Department[] = [
+  { id: "1", name: "Marketing" },
+  { id: "2", name: "Sales" },
+  { id: "3", name: "Finance" },
+];
+
+const INITIAL_CLIENTS: Client[] = [
+  { id: "1", name: "Client A", parentId: null, hidden: false },
+  { id: "2", name: "Client B", parentId: null, hidden: false },
+  { id: "3", name: "Client A-1", parentId: "1", hidden: false },
+  { id: "4", name: "Client B-1", parentId: "2", hidden: true },
+  { id: "5", name: "Administrative", parentId: null, hidden: false, isDefault: true },
+  { id: "6", name: "Education/Training", parentId: null, hidden: false, isDefault: true },
+  { id: "7", name: "General Research", parentId: null, hidden: false, isDefault: true },
+  { id: "8", name: "Network Requests", parentId: null, hidden: false, isDefault: true },
+  { id: "9", name: "New Business", parentId: null, hidden: false, isDefault: true },
+  { id: "10", name: "Sick Leave", parentId: null, hidden: false, isDefault: true },
+  { id: "11", name: "VACATION", parentId: null, hidden: false, isDefault: true },
+];
+
+const App = () => {
+  const [user, setUser] = useState<User | null>(null);
+  const [users, setUsers] = useState<User[]>(INITIAL_USERS);
+  const [departments, setDepartments] = useState<Department[]>(INITIAL_DEPARTMENTS);
+  const [clients, setClients] = useState<Client[]>(INITIAL_CLIENTS);
+  const { toast } = useToast();
 
   const handleLogin = async (userData: any) => {
     try {
@@ -89,6 +127,7 @@ export function App() {
         };
         
         setUser(fullUserData);
+        fetchInitialData();
       }
     } catch (error) {
       console.error('Error getting user details:', error);
@@ -97,13 +136,11 @@ export function App() {
         description: "Failed to get user details",
         variant: "destructive",
       });
-      setLoading(false);
     }
   };
 
   const fetchInitialData = async () => {
     try {
-      setLoading(true);
       const { data: usersData, error: usersError } = await db.getUsers();
       if (usersError) throw usersError;
       setUsers(usersData || []);
@@ -125,8 +162,6 @@ export function App() {
         description: "Failed to load initial data",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -266,9 +301,9 @@ export function App() {
     setClients((prevClients) => prevClients.filter((client) => client.id !== id));
   };
 
-  const handleAddDepartment = (departmentData: any) => {
+  const handleAddDepartment = (departmentData: Omit<Department, "id">) => {
     const newId = `${departments.length + 1}`;
-    const newDepartment = {
+    const newDepartment: Department = {
       id: newId,
       ...departmentData
     };
@@ -304,12 +339,6 @@ export function App() {
   const getVisibleClients = () => {
     return clients.filter(c => !c.hidden).map(c => c.name);
   };
-
-  const isUserHead = (user && users.some(u => u.user_head_id === user.id)) || false;
-
-  if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
-  }
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -366,12 +395,6 @@ export function App() {
                       Client Tree
                     </Button>
                   </Link>
-                  <Link to="/media-types">
-                    <Button variant="outline" size="sm" className="flex items-center gap-2">
-                      <Film className="h-4 w-4" />
-                      Media Types
-                    </Button>
-                  </Link>
                 </>
               )}
               {user.role === 'manager' && (
@@ -379,14 +402,6 @@ export function App() {
                   <Button variant="outline" size="sm" className="flex items-center gap-2">
                     <Eye className="h-4 w-4" />
                     View Team
-                  </Button>
-                </Link>
-              )}
-              {isUserHead && (
-                <Link to="/user-head-view">
-                  <Button variant="outline" size="sm" className="flex items-center gap-2">
-                    <UserCircle className="h-4 w-4" />
-                    User Head View
                   </Button>
                 </Link>
               )}
@@ -420,6 +435,19 @@ export function App() {
                         <h2 className="text-xl font-semibold mb-4">
                           Welcome! Please wait for an admin to set your first working week.
                         </h2>
+                      </div>
+                    )}
+                    {user.role === "admin" && (
+                      <div className="mt-8 space-y-8">
+                        <DepartmentManagement 
+                          departments={departments}
+                          onAddDepartment={handleAddDepartment}
+                          onDeleteDepartment={handleDeleteDepartment}
+                        />
+                        <FirstWeekManagement 
+                          onSetFirstWeek={handleSetFirstWeek}
+                          users={users}
+                        />
                       </div>
                     )}
                   </div>
@@ -510,7 +538,12 @@ export function App() {
               path="/client-tree"
               element={
                 user?.role === 'admin' ? (
-                  <ClientTree />
+                  <ClientTree 
+                    clients={clients}
+                    onAddClient={handleAddClient}
+                    onUpdateClient={handleUpdateClient}
+                    onDeleteClient={handleDeleteClient}
+                  />
                 ) : (
                   <Navigate to="/" replace />
                 )
@@ -541,34 +574,11 @@ export function App() {
                 )
               }
             />
-            <Route
-              path="/media-types"
-              element={
-                user?.role === 'admin' ? (
-                  <MediaTypeManagement />
-                ) : (
-                  <Navigate to="/" replace />
-                )
-              }
-            />
-            <Route
-              path="/user-head-view"
-              element={
-                user && isUserHead ? (
-                  <UserHeadView
-                    currentUser={user}
-                    clients={clients}
-                  />
-                ) : (
-                  <Navigate to="/" replace />
-                )
-              }
-            />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
   );
-}
+};
 
 export default App;

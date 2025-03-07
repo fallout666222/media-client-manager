@@ -1,275 +1,229 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search, UserCircle, Eye } from "lucide-react";
-import { getUsers, getCustomWeeks, getWeekHours } from '@/integrations/supabase/database';
-import { Client, User } from '@/types/timesheet';
-import TimeSheet from './TimeSheet';
-import { Link } from 'react-router-dom';
-import { parse } from 'date-fns';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from "@/components/ui/table";
+import { ArrowLeft } from "lucide-react";
+import { User, Client, UserFormData, CustomWeek } from "@/types/timesheet";
+import * as db from "@/integrations/supabase/database";
+import { useToast } from "@/hooks/use-toast";
+import { UserManagement } from "@/components/Auth/UserManagement";
 
 interface UserImpersonationProps {
-  clients: Client[];
+  users?: User[];
+  clients?: Client[];
 }
 
-const UserImpersonation = ({ clients }: UserImpersonationProps) => {
+const UserImpersonation: React.FC<UserImpersonationProps> = ({ clients }) => {
   const [users, setUsers] = useState<User[]>([]);
+  const [customWeeks, setCustomWeeks] = useState<CustomWeek[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [adminUser, setAdminUser] = useState<User | null>(null);
-  const [customWeeks, setCustomWeeks] = useState<any[]>([]);
-  const [initialWeekId, setInitialWeekId] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        
-        // Fetch users
-        const { data: usersData } = await getUsers();
-        
-        // Fetch custom weeks
-        const { data: weeksData } = await getCustomWeeks();
-        
-        if (weeksData) {
-          setCustomWeeks(weeksData);
-          console.log(`Loaded ${weeksData.length} custom weeks from database`);
-        }
-        
-        if (usersData) {
-          // Create admin user for context
-          const admin: User = {
-            id: 'admin',
-            username: 'admin',
-            login: 'admin',
-            name: 'Administrator',
-            role: 'admin',
-            type: 'admin',
-            password: '',
-          };
-          
-          setAdminUser(admin);
-          setUsers(usersData);
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchData();
+    fetchUsers();
+    fetchCustomWeeks();
   }, []);
 
-  const handleImpersonateUser = async (user: User) => {
+  const fetchUsers = async () => {
     try {
-      // Reset initial week ID
-      setInitialWeekId(null);
+      setLoading(true);
+      const { data, error } = await db.getUsers();
       
-      // Find most recent week with filled hours for this user
-      if (user.id && customWeeks.length > 0) {
-        let mostRecentWeekWithHours = null;
-        
-        // Check each week for hours data, start from the end (most recent)
-        for (const week of customWeeks) {
-          const { data: hoursData } = await getWeekHours(user.id, week.id);
-          
-          // If this week has hours entries, use it
-          if (hoursData && hoursData.length > 0) {
-            mostRecentWeekWithHours = week;
-            break;
-          }
-        }
-        
-        // If we found a week with hours, set it as initial
-        if (mostRecentWeekWithHours) {
-          console.log(`Found recent week with hours: ${mostRecentWeekWithHours.name}`);
-          setInitialWeekId(mostRecentWeekWithHours.id);
-        } else if (customWeeks.length > 0) {
-          // Otherwise, use the first week from custom_weeks
-          console.log(`No weeks with hours found, using first week: ${customWeeks[0].name}`);
-          setInitialWeekId(customWeeks[0].id);
-        }
+      if (error) {
+        throw error;
       }
       
-      // Set the selected user
-      setSelectedUser(user);
+      if (data) {
+        console.log("Fetched users:", data);
+        const mappedUsers = data.map(user => ({
+          id: user.id,
+          username: user.login,
+          name: user.name,
+          password: user.password,
+          role: user.type as 'admin' | 'user' | 'manager',
+          type: user.type,
+          login: user.login,
+          email: user.email,
+          job_position: user.job_position,
+          description: user.description,
+          department_id: user.department_id,
+          departmentId: user.department_id,
+          first_week: user.first_week,
+          firstWeek: user.first_week,
+          first_custom_week_id: user.first_custom_week_id,
+          firstCustomWeekId: user.first_custom_week_id,
+          deletion_mark: user.deletion_mark,
+          departmentName: user.department ? user.department.name : null
+        }));
+        setUsers(mappedUsers);
+      }
     } catch (error) {
-      console.error('Error finding week with hours:', error);
-      // Set the user anyway, we'll default to the first week
-      setSelectedUser(user);
+      console.error("Error fetching users:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch users",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleBackToUserList = () => {
-    setSelectedUser(null);
-    setInitialWeekId(null);
+  const fetchCustomWeeks = async () => {
+    try {
+      const { data, error } = await db.getCustomWeeks();
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data) {
+        setCustomWeeks(data);
+      }
+    } catch (error) {
+      console.error("Error fetching custom weeks:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch custom weeks",
+        variant: "destructive",
+      });
+    }
   };
 
-  const filteredUsers = users.filter(user => 
-    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.login?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const getCustomWeekName = (weekId?: string): string => {
+    if (!weekId) return "Not set";
+    const week = customWeeks.find(w => w.id === weekId);
+    return week ? week.name : "Unknown week";
+  };
 
-  if (selectedUser && adminUser) {
-    return (
-      <div className="container mx-auto p-4 pt-16">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Viewing User: {selectedUser.name}</h1>
-          <Button onClick={handleBackToUserList} variant="outline">
-            Back to User List
-          </Button>
-        </div>
+  const handleCreateUser = async (userData: UserFormData) => {
+    try {
+      const newUser = {
+        name: userData.username,
+        login: userData.username,
+        password: userData.password,
+        type: userData.role,
+      };
+      
+      const { data, error } = await db.createUser(newUser);
+      
+      if (error) {
+        console.error('Error creating user:', error);
+        throw error;
+      }
+      
+      if (data) {
+        // Map the new user to our User type and add to the state immediately
+        const newMappedUser: User = {
+          id: data.id,
+          username: data.login,
+          name: data.name,
+          password: data.password,
+          role: data.type as 'admin' | 'user' | 'manager',
+          type: data.type,
+          login: data.login,
+          departmentName: null,
+          // Add other fields with default values
+          email: data.email || null,
+          job_position: data.job_position || null,
+          description: data.description || null,
+          department_id: data.department_id || null,
+          departmentId: data.department_id || null,
+          first_week: data.first_week || null,
+          firstWeek: data.first_week || null,
+          first_custom_week_id: data.first_custom_week_id || null,
+          firstCustomWeekId: data.first_custom_week_id || null,
+          deletion_mark: data.deletion_mark || false
+        };
         
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>User Details</CardTitle>
-            <CardDescription>Information about the selected user</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p><strong>Name:</strong> {selectedUser.name}</p>
-                <p><strong>Login:</strong> {selectedUser.login}</p>
-                <p><strong>Email:</strong> {selectedUser.email || 'Not provided'}</p>
-              </div>
-              <div>
-                <p><strong>Role:</strong> {selectedUser.type}</p>
-                <p><strong>Job Position:</strong> {selectedUser.job_position || 'Not specified'}</p>
-                <p><strong>User ID:</strong> {selectedUser.id}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        setUsers(prevUsers => [...prevUsers, newMappedUser]);
         
-        {customWeeks.length === 0 && (
-          <Card className="mb-6 border-yellow-400 bg-yellow-50">
-            <CardContent className="pt-6">
-              <div className="flex items-start">
-                <div className="mr-2 mt-0.5 text-yellow-600">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                    <line x1="12" y1="9" x2="12" y2="13"></line>
-                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                  </svg>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-yellow-800">No Custom Weeks Found</h4>
-                  <p className="mt-1 text-sm text-yellow-700">
-                    No custom weeks are available in the database. The timesheet will display correctly,
-                    but "Return to First Unsubmitted Week" functionality will be limited.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-        
-        {/* Timesheet with admin privileges */}
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Timesheet Management</h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            As an administrator, you can view and edit this user's timesheet, submit weeks for review,
-            approve or reject weeks under review, and make changes regardless of the week's status.
-          </p>
-          
-          <TimeSheet 
-            userRole="admin" 
-            firstWeek={selectedUser.firstWeek || selectedUser.first_week || '2024-01-01'} 
-            currentUser={adminUser}
-            users={users}
-            clients={clients}
-            impersonatedUser={selectedUser}
-            adminOverride={true}
-            customWeeks={customWeeks}
-            initialWeekId={initialWeekId}
-          />
-        </div>
-      </div>
-    );
-  }
+        toast({
+          title: "User Created",
+          description: `New ${userData.role} account created: ${userData.username}`,
+        });
+      }
+    } catch (error) {
+      console.error('Error creating user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create user",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="container mx-auto p-4 pt-16">
-      <h1 className="text-2xl font-bold mb-6">User Management</h1>
-      
-      <div className="relative mb-6">
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          type="search"
-          placeholder="Search users..."
-          className="pl-8"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">User Management</h1>
+        <Link to="/">
+          <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Button>
+        </Link>
       </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Users</CardTitle>
-          <CardDescription>View and manage all users in the system</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Login</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center">Loading users...</TableCell>
-                  </TableRow>
-                ) : filteredUsers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center">No users found</TableCell>
-                  </TableRow>
-                ) : (
-                  filteredUsers.map(user => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.name}</TableCell>
-                      <TableCell>{user.login}</TableCell>
-                      <TableCell>{user.email || 'Not provided'}</TableCell>
-                      <TableCell className="capitalize">{user.type}</TableCell>
-                      <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleImpersonateUser(user)}
-                          className="flex items-center gap-1"
-                        >
-                          <Eye className="h-4 w-4" />
-                          Impersonate
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-        <CardFooter className="flex justify-between">
-          <div className="text-sm text-muted-foreground">
-            Showing {filteredUsers.length} of {users.length} users
-          </div>
-          <div>
-            <Link to="/">
-              <Button variant="outline">Back to Dashboard</Button>
-            </Link>
-          </div>
-        </CardFooter>
-      </Card>
+
+      {/* Add UserManagement component */}
+      <div className="mb-8">
+        <UserManagement onCreateUser={handleCreateUser} />
+      </div>
+
+      {loading ? (
+        <div className="text-center py-8">Loading users...</div>
+      ) : users.length === 0 ? (
+        <div className="text-center py-8">No users found</div>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Login</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Department</TableHead>
+              <TableHead>First Custom Week</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {users.map((user) => (
+              <TableRow key={user.id}>
+                <TableCell>{user.name}</TableCell>
+                <TableCell>{user.login}</TableCell>
+                <TableCell>{user.type}</TableCell>
+                <TableCell>
+                  {user.departmentName || "Not assigned"}
+                </TableCell>
+                <TableCell>{getCustomWeekName(user.first_custom_week_id)}</TableCell>
+                <TableCell>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Implement impersonation logic if needed
+                      toast({
+                        title: "Impersonation",
+                        description: `Impersonating ${user.name} (${user.login})`,
+                      });
+                    }}
+                  >
+                    Impersonate
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
     </div>
   );
 };
