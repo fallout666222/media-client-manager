@@ -188,17 +188,25 @@ export const TimeSheetContent = ({
         }}
         visibleClients={clientObjects}
         onReorderClients={(newOrder) => {
+          console.log("Reordering clients:", newOrder);
           if (onReorderClients) {
             onReorderClients(newOrder);
           }
+        }}
+        onReorderMediaTypes={(newOrder) => {
+          console.log("Reordering media types:", newOrder);
+          if (onReorderMediaTypes) {
+            onReorderMediaTypes(newOrder);
+          }
+        }}
+        onSaveVisibleClients={(newOrder) => {
+          console.log("Saving new client order:", newOrder);
           if (onSaveVisibleClients) {
             onSaveVisibleClients(newOrder);
           }
         }}
-        onReorderMediaTypes={(newOrder) => {
-          if (onReorderMediaTypes) {
-            onReorderMediaTypes(newOrder);
-          }
+        onSaveVisibleMediaTypes={(newOrder) => {
+          console.log("Saving new media type order:", newOrder);
           if (onSaveVisibleMediaTypes) {
             onSaveVisibleMediaTypes(newOrder);
           }

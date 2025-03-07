@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -245,13 +244,16 @@ export const Settings = ({
       
       if (oldIndex !== -1 && newIndex !== -1) {
         const newOrder = arrayMove(selectedClients, oldIndex, newIndex);
+        console.log("Drag end clients - new order:", newOrder);
+        
         if (onReorderClients) {
           onReorderClients(newOrder);
-          
-          // Save the new order immediately after reordering
-          if (onSaveVisibleClients) {
-            onSaveVisibleClients(newOrder);
-          }
+        }
+        
+        // Save the new order immediately after reordering
+        if (onSaveVisibleClients) {
+          console.log("Saving visible clients after drag:", newOrder);
+          onSaveVisibleClients(newOrder);
         }
       }
     }
@@ -266,13 +268,16 @@ export const Settings = ({
       
       if (oldIndex !== -1 && newIndex !== -1) {
         const newOrder = arrayMove(selectedMediaTypes, oldIndex, newIndex);
+        console.log("Drag end media types - new order:", newOrder);
+        
         if (onReorderMediaTypes) {
           onReorderMediaTypes(newOrder);
-          
-          // Save the new order immediately after reordering
-          if (onSaveVisibleMediaTypes) {
-            onSaveVisibleMediaTypes(newOrder);
-          }
+        }
+        
+        // Save the new order immediately after reordering
+        if (onSaveVisibleMediaTypes) {
+          console.log("Saving visible media types after drag:", newOrder);
+          onSaveVisibleMediaTypes(newOrder);
         }
       }
     }

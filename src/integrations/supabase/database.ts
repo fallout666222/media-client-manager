@@ -255,28 +255,206 @@ export const getUserVisibleClients = async (userId: string) => {
   return await supabase.from('visible_clients').select(`
     *,
     client:clients(*)
-  `).eq('user_id', userId);
+  `).eq('user_id', userId).order('display_order', { ascending: true });
 };
 
-export const addUserVisibleClient = async (userId: string, clientId: string) => {
-  return await supabase.from('visible_clients').insert({ user_id: userId, client_id: clientId }).select().single();
+export const addUserVisibleClient = async (userId: string, clientId: string, displayOrder?: number) => {
+  // If display_order is not provided, get the maximum current order and add 1
+  if (displayOrder === undefined) {
+    const { data: existingClients } = await supabase
+      .from('visible_clients')
+      .select('display_order')
+      .eq('user_id', userId)
+      .order('display_order', { ascending: false })
+      .limit(1);
+    
+    displayOrder = existingClients && existingClients.length > 0 
+      ? (existingClients[0].display_order || 0) + 1 
+      : 0;
+  }
+  
+  console.log(`Adding visible client for user ${userId}, client ${clientId} with order ${displayOrder}`);
+  
+  return await supabase
+    .from('visible_clients')
+    .insert({ 
+      user_id: userId, 
+      client_id: clientId, 
+      display_order: displayOrder 
+    })
+    .select()
+    .single();
 };
 
 export const removeUserVisibleClient = async (id: string) => {
   return await supabase.from('visible_clients').delete().eq('id', id);
 };
 
+export const updateUserVisibleClientsOrder = async (userId: string, clientIds: string[]) => {
+  console.log(`Updating visible clients order for user ${userId}:`, clientIds);
+  
+  // Get all current visible clients for this user with their IDs
+  const { data: visibleClients, error } = await supabase
+    .from('visible_clients')
+    .select('id, client_id, client:clients(id, name)')
+    .eq('user_id', userId);
+    
+  if (error) {
+    console.error("Error fetching visible clients:", error);
+    throw error;
+  }
+  
+  if (!visibleClients || visibleClients.length === 0) {
+    console.warn("No visible clients found to update order");
+    return { success: false, error: "No visible clients found" };
+  }
+  
+  // Create a map of client names to visible_clients.id for easy lookup
+  const clientNameToVisibleClientId = new Map();
+  visibleClients.forEach(vc => {
+    if (vc.client && vc.client.name) {
+      clientNameToVisibleClientId.set(vc.client.name, vc.id);
+    }
+  });
+  
+  // Create batch update
+  const updates = [];
+  
+  for (let i = 0; i < clientIds.length; i++) {
+    const clientName = clientIds[i];
+    const visibleClientId = clientNameToVisibleClientId.get(clientName);
+    
+    if (visibleClientId) {
+      updates.push({
+        id: visibleClientId,
+        display_order: i
+      });
+    } else {
+      console.warn(`Could not find visible client ID for client name: ${clientName}`);
+    }
+  }
+  
+  if (updates.length === 0) {
+    console.warn("No updates to make for visible clients order");
+    return { success: false, error: "No valid clients to update" };
+  }
+  
+  console.log("Updating visible clients with:", updates);
+  
+  // Perform the batch update
+  const { data, error: updateError } = await supabase
+    .from('visible_clients')
+    .upsert(updates)
+    .select();
+    
+  if (updateError) {
+    console.error("Error updating visible clients order:", updateError);
+    throw updateError;
+  }
+  
+  return { success: true, data };
+};
+
 export const getUserVisibleTypes = async (userId: string) => {
   return await supabase.from('visible_types').select(`
     *,
     type:media_types(*)
-  `).eq('user_id', userId);
+  `).eq('user_id', userId).order('display_order', { ascending: true });
 };
 
-export const addUserVisibleType = async (userId: string, typeId: string) => {
-  return await supabase.from('visible_types').insert({ user_id: userId, type_id: typeId }).select().single();
+export const addUserVisibleType = async (userId: string, typeId: string, displayOrder?: number) => {
+  // If display_order is not provided, get the maximum current order and add 1
+  if (displayOrder === undefined) {
+    const { data: existingTypes } = await supabase
+      .from('visible_types')
+      .select('display_order')
+      .eq('user_id', userId)
+      .order('display_order', { ascending: false })
+      .limit(1);
+    
+    displayOrder = existingTypes && existingTypes.length > 0 
+      ? (existingTypes[0].display_order || 0) + 1 
+      : 0;
+  }
+  
+  console.log(`Adding visible type for user ${userId}, type ${typeId} with order ${displayOrder}`);
+  
+  return await supabase
+    .from('visible_types')
+    .insert({ 
+      user_id: userId, 
+      type_id: typeId, 
+      display_order: displayOrder 
+    })
+    .select()
+    .single();
 };
 
 export const removeUserVisibleType = async (id: string) => {
   return await supabase.from('visible_types').delete().eq('id', id);
+};
+
+export const updateUserVisibleTypesOrder = async (userId: string, typeNames: string[]) => {
+  console.log(`Updating visible types order for user ${userId}:`, typeNames);
+  
+  // Get all current visible types for this user with their IDs
+  const { data: visibleTypes, error } = await supabase
+    .from('visible_types')
+    .select('id, type_id, type:media_types(id, name)')
+    .eq('user_id', userId);
+    
+  if (error) {
+    console.error("Error fetching visible types:", error);
+    throw error;
+  }
+  
+  if (!visibleTypes || visibleTypes.length === 0) {
+    console.warn("No visible types found to update order");
+    return { success: false, error: "No visible types found" };
+  }
+  
+  // Create a map of type names to visible_types.id for easy lookup
+  const typeNameToVisibleTypeId = new Map();
+  visibleTypes.forEach(vt => {
+    if (vt.type && vt.type.name) {
+      typeNameToVisibleTypeId.set(vt.type.name, vt.id);
+    }
+  });
+  
+  // Create batch update
+  const updates = [];
+  
+  for (let i = 0; i < typeNames.length; i++) {
+    const typeName = typeNames[i];
+    const visibleTypeId = typeNameToVisibleTypeId.get(typeName);
+    
+    if (visibleTypeId) {
+      updates.push({
+        id: visibleTypeId,
+        display_order: i
+      });
+    } else {
+      console.warn(`Could not find visible type ID for type name: ${typeName}`);
+    }
+  }
+  
+  if (updates.length === 0) {
+    console.warn("No updates to make for visible types order");
+    return { success: false, error: "No valid types to update" };
+  }
+  
+  console.log("Updating visible types with:", updates);
+  
+  // Perform the batch update
+  const { data, error: updateError } = await supabase
+    .from('visible_types')
+    .upsert(updates)
+    .select();
+    
+  if (updateError) {
+    console.error("Error updating visible types order:", updateError);
+    throw updateError;
+  }
+  
+  return { success: true, data };
 };
