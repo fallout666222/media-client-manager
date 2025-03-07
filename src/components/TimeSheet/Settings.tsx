@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,6 +63,8 @@ interface SettingsProps {
   visibleClients?: Client[];
   onReorderClients?: (clients: string[]) => void;
   onReorderMediaTypes?: (types: string[]) => void;
+  onSaveVisibleClients?: (clients: string[]) => void;
+  onSaveVisibleMediaTypes?: (types: string[]) => void;
 }
 
 export const Settings = ({
@@ -81,6 +84,8 @@ export const Settings = ({
   visibleClients = [],
   onReorderClients,
   onReorderMediaTypes,
+  onSaveVisibleClients,
+  onSaveVisibleMediaTypes,
 }: SettingsProps) => {
   const [newClient, setNewClient] = useState('');
   const [newMediaType, setNewMediaType] = useState('');
@@ -242,6 +247,11 @@ export const Settings = ({
         const newOrder = arrayMove(selectedClients, oldIndex, newIndex);
         if (onReorderClients) {
           onReorderClients(newOrder);
+          
+          // Save the new order immediately after reordering
+          if (onSaveVisibleClients) {
+            onSaveVisibleClients(newOrder);
+          }
         }
       }
     }
@@ -258,6 +268,11 @@ export const Settings = ({
         const newOrder = arrayMove(selectedMediaTypes, oldIndex, newIndex);
         if (onReorderMediaTypes) {
           onReorderMediaTypes(newOrder);
+          
+          // Save the new order immediately after reordering
+          if (onSaveVisibleMediaTypes) {
+            onSaveVisibleMediaTypes(newOrder);
+          }
         }
       }
     }
