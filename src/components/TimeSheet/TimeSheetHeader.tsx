@@ -2,34 +2,23 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { RotateCcw, Settings2 } from "lucide-react";
-import { User } from '@/types/timesheet';
-import { TeamMemberSelector } from '@/components/TeamMemberSelector';
 
 interface TimeSheetHeaderProps {
   userRole: string;
-  remainingHours?: number;
+  remainingHours: number;
   status: string;
-  onReturnToFirstUnsubmittedWeek?: () => void;
-  onToggleSettings?: () => void;
-  onExportToExcel?: () => void;
+  onReturnToFirstUnsubmittedWeek: () => void;
+  onToggleSettings: () => void;
+  onExportToExcel?: () => void;  // Made optional
   firstWeek?: string;
   weekPercentage?: number;
   weekHours?: number;
   hasCustomWeeks?: boolean;
-  
-  // Add these properties to match what's being passed in TimeSheet.tsx
-  user: User;
-  users: User[];
-  onUserChange: (user: User) => void;
-  currentUser: User;
-  readOnly: boolean;
-  adminOverride: boolean;
-  isUserHead: boolean;
 }
 
 export const TimeSheetHeader = ({
   userRole,
-  remainingHours = 0,
+  remainingHours,
   status,
   onReturnToFirstUnsubmittedWeek,
   onToggleSettings,
@@ -37,21 +26,12 @@ export const TimeSheetHeader = ({
   weekPercentage = 100,
   weekHours = 40,
   hasCustomWeeks = true,
-  user,
-  users,
-  onUserChange,
-  currentUser,
-  readOnly,
-  adminOverride,
-  isUserHead
 }: TimeSheetHeaderProps) => {
   // Calculate the effective hours based on percentage
   const effectiveWeekHours = Math.round(weekHours * (weekPercentage / 100));
   
-  const showTeamMemberSelector = userRole === 'admin' || userRole === 'manager' || isUserHead;
-  
   return (
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+    <div className="flex items-center justify-between">
       <div>
         <h1 className="text-2xl font-bold">Timesheet</h1>
         <p className="text-sm text-muted-foreground">
@@ -69,42 +49,26 @@ export const TimeSheetHeader = ({
           </p>
         )}
       </div>
-      
-      <div className="flex flex-col md:flex-row gap-2">
-        {showTeamMemberSelector && (
-          <TeamMemberSelector
-            users={users}
-            selectedUser={user}
-            onUserChange={onUserChange}
-            currentUser={currentUser}
-            readOnly={readOnly && !adminOverride}
-          />
+      <div className="flex gap-2">
+        {firstWeek && (
+          <Button
+            variant="outline"
+            onClick={onReturnToFirstUnsubmittedWeek}
+            className="flex items-center gap-2"
+            disabled={!hasCustomWeeks}
+            title={!hasCustomWeeks ? "No custom weeks available" : "Return to first unsubmitted week"}
+          >
+            <RotateCcw className="h-4 w-4" />
+            Return to First Unsubmitted Week
+          </Button>
         )}
-        
-        <div className="flex gap-2">
-          {onReturnToFirstUnsubmittedWeek && (
-            <Button
-              variant="outline"
-              onClick={onReturnToFirstUnsubmittedWeek}
-              className="flex items-center gap-2"
-              disabled={!hasCustomWeeks}
-              title={!hasCustomWeeks ? "No custom weeks available" : "Return to first unsubmitted week"}
-            >
-              <RotateCcw className="h-4 w-4" />
-              First Unsubmitted
-            </Button>
-          )}
-          
-          {onToggleSettings && (
-            <Button
-              variant="outline"
-              onClick={onToggleSettings}
-            >
-              <Settings2 className="h-4 w-4 mr-2" />
-              Settings
-            </Button>
-          )}
-        </div>
+        <Button
+          variant="outline"
+          onClick={onToggleSettings}
+        >
+          <Settings2 className="h-4 w-4 mr-2" />
+          Settings
+        </Button>
       </div>
     </div>
   );

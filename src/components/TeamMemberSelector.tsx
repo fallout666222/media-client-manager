@@ -20,17 +20,15 @@ import { User } from "@/types/timesheet";
 interface TeamMemberSelectorProps {
   currentUser: User;
   users: User[];
-  onUserChange: (user: User) => void;
+  onUserSelect: (user: User) => void;
   selectedUser: User;
-  readOnly?: boolean;
 }
 
 export function TeamMemberSelector({
   currentUser,
   users,
-  onUserChange,
+  onUserSelect,
   selectedUser,
-  readOnly = false
 }: TeamMemberSelectorProps) {
   const [open, setOpen] = useState(false);
 
@@ -55,7 +53,7 @@ export function TeamMemberSelector({
   const teamMembers = getTeamMembers();
   
   // Disable the dropdown if there's only one team member (themselves)
-  const isDisabled = teamMembers.length === 1 || readOnly;
+  const isDisabled = teamMembers.length === 1;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -81,7 +79,7 @@ export function TeamMemberSelector({
                 key={user.id}
                 value={user.username}
                 onSelect={() => {
-                  onUserChange(user);
+                  onUserSelect(user);
                   setOpen(false);
                 }}
               >

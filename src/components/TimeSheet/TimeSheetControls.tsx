@@ -23,20 +23,6 @@ interface TimeSheetControlsProps {
   weekPercentage?: number;
   customWeeks?: any[];
   adminOverride?: boolean;
-  currentUserId?: string;
-  
-  // Add these new props to match what's being passed in TimeSheet.tsx
-  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
-  weekHours: number;
-  userWeeks: any[];
-  hasUnsubmittedEarlierWeek: () => boolean;
-  onReturnToFirstUnsubmitted: () => void;
-  isFormDisabled: boolean;
-  setCurrentCustomWeek: React.Dispatch<React.SetStateAction<any>>;
-  currentCustomWeek: any;
-  setWeekPercentage: React.Dispatch<React.SetStateAction<number>>;
-  userName: string;
-  userRole: string;
 }
 
 export const TimeSheetControls = ({
@@ -55,36 +41,9 @@ export const TimeSheetControls = ({
   weekId,
   weekPercentage = 100,
   customWeeks = [],
-  adminOverride = false,
-  currentUserId,
-  // Map these new props
-  setCurrentDate,
-  weekHours,
-  userWeeks,
-  hasUnsubmittedEarlierWeek,
-  onReturnToFirstUnsubmitted,
-  isFormDisabled,
-  setCurrentCustomWeek,
-  currentCustomWeek,
-  setWeekPercentage,
-  userName,
-  userRole
+  adminOverride = false
 }: TimeSheetControlsProps) => {
   const [redirectApplied, setRedirectApplied] = useState(false);
-  
-  // Save the current week to localStorage whenever it changes
-  useEffect(() => {
-    if (weekId && currentUserId && (isViewingOwnTimesheet || adminOverride)) {
-      const weekToSave = customWeeks.find(week => week.id === weekId);
-      if (weekToSave) {
-        localStorage.setItem(`userLastWeek_${currentUserId}`, JSON.stringify({
-          weekId: weekId,
-          date: weekToSave.period_from
-        }));
-        console.log(`Saved current week (${weekToSave.name}) for user ${currentUserId}`);
-      }
-    }
-  }, [weekId, customWeeks, currentUserId, isViewingOwnTimesheet, adminOverride]);
   
   useEffect(() => {
     // Check for redirect information in localStorage

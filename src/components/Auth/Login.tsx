@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,21 +76,13 @@ export const Login = ({
           description: `You are now logged in as ${data.name}`
         });
 
-        // Check if user has unconfirmed, needs-revision, or under-review weeks
+        // Check if user has unconfirmed or needs-revision weeks
         try {
           console.log('Checking for unconfirmed weeks for user:', data.id);
           const firstUnconfirmedWeek = await getUserFirstUnconfirmedWeek(data.id);
-          
-          // Check if there's a saved week in localStorage
-          const savedWeekData = localStorage.getItem(`userLastWeek_${data.id}`);
-          
-          if (savedWeekData) {
-            // If there's a saved week, use that for redirect
-            localStorage.setItem('redirectToWeek', savedWeekData);
-            console.log('Redirecting to saved week:', JSON.parse(savedWeekData));
-          } else if (firstUnconfirmedWeek) {
-            // Otherwise use the first unconfirmed/needs-revision week
-            console.log('Found unconfirmed/needs-revision week to redirect to:', firstUnconfirmedWeek);
+          if (firstUnconfirmedWeek) {
+            console.log('Found unconfirmed week to redirect to:', firstUnconfirmedWeek);
+            // Set the first unconfirmed week in localStorage to redirect after login
             localStorage.setItem('redirectToWeek', JSON.stringify({
               weekId: firstUnconfirmedWeek.id,
               date: firstUnconfirmedWeek.period_from
