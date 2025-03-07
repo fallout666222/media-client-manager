@@ -938,15 +938,12 @@ const TimeSheet = ({
         customWeeks={customWeeks}
         adminOverride={adminOverride}
         currentUserId={viewedUser.id}
-        setCurrentDate={setCurrentDate}
         weekHours={weekHours}
         userWeeks={userWeeks}
         hasUnsubmittedEarlierWeek={hasUnsubmittedEarlierWeek}
         onReturnToFirstUnsubmitted={handleReturnToFirstUnsubmittedWeek}
         isFormDisabled={isCurrentWeekSubmitted() && !adminOverride && !isUserHead}
-        setCurrentCustomWeek={setCurrentCustomWeek}
         currentCustomWeek={currentCustomWeek}
-        setWeekPercentage={setWeekPercentage}
         userName={viewedUser.name || viewedUser.username || ''}
         userRole={userRole}
       />
@@ -973,6 +970,13 @@ const TimeSheet = ({
         onSaveVisibleClients={handleSaveVisibleClients}
         onSaveVisibleMediaTypes={handleSaveVisibleMediaTypes}
         weekPercentage={weekPercentage}
+        isViewingOwnTimesheet={isViewingOwnTimesheet}
+        availableClients={availableClients}
+        availableMediaTypes={availableMediaTypes}
+        clientObjects={clients}
+        adminOverride={adminOverride}
+        currentUserId={viewedUser.id}
+        isUserHead={isUserHead}
       />
     </div>
   );

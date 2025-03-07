@@ -31,19 +31,20 @@ interface TimeSheetContentProps {
   weekHours?: number;
   weekPercentage?: number;
   userRole: 'admin' | 'user' | 'manager';
-  availableClients: string[];
-  availableMediaTypes: string[];
+  availableClients?: string[];
+  availableMediaTypes?: string[];
   selectedClients: string[];
   selectedMediaTypes: string[];
   onSelectClient: (client: string) => void;
   onSelectMediaType: (type: string) => void;
-  isViewingOwnTimesheet: boolean;
+  isViewingOwnTimesheet?: boolean;
   clientObjects?: Client[];
   adminOverride?: boolean;
   onReorderClients?: (clients: string[]) => void;
   onReorderMediaTypes?: (types: string[]) => void;
   currentUserId?: string;
   isUserHead?: boolean;
+  onToggleSettings: () => void;
 }
 
 export const TimeSheetContent = ({
@@ -63,19 +64,20 @@ export const TimeSheetContent = ({
   weekHours = 40,
   weekPercentage = 100,
   userRole,
-  availableClients,
-  availableMediaTypes,
+  availableClients = clients,
+  availableMediaTypes = mediaTypes,
   selectedClients,
   selectedMediaTypes,
   onSelectClient,
   onSelectMediaType,
-  isViewingOwnTimesheet,
+  isViewingOwnTimesheet = true,
   clientObjects = [],
   adminOverride = false,
   onReorderClients,
   onReorderMediaTypes,
   currentUserId,
-  isUserHead = false
+  isUserHead = false,
+  onToggleSettings
 }: TimeSheetContentProps) => {
   // Get all clients and media types that have entries with hours > 0
   const clientsWithEntries = useMemo(() => {
