@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 
 // Custom Weeks
@@ -38,46 +37,91 @@ export const authenticateUser = async (login: string, password: string) => {
 };
 
 export const getUserFirstUnconfirmedWeek = async (userId: string) => {
-  // Get week statuses that are either unconfirmed or needs-revision
-  const { data: statusNames } = await supabase
+  // First check for weeks in 'needs-revision' status (highest priority)
+  const { data: needsRevisionStatus } = await supabase
     .from('week_status_names')
     .select('id')
-    .or('name.eq.unconfirmed,name.eq.needs-revision');
+    .eq('name', 'needs-revision')
+    .single();
   
-  if (!statusNames || statusNames.length === 0) {
-    console.log('No unconfirmed or needs-revision status names found');
-    return null;
+  if (needsRevisionStatus) {
+    console.log('Checking for weeks with needs-revision status');
+    const { data: needsRevisionWeeks } = await supabase
+      .from('week_statuses')
+      .select(`
+        id,
+        week_id,
+        week_status_id,
+        user_id,
+        week:custom_weeks(id, name, period_from, period_to, required_hours)
+      `)
+      .eq('user_id', userId)
+      .eq('week_status_id', needsRevisionStatus.id)
+      .order('created_at', { ascending: true });
+      
+    if (needsRevisionWeeks && needsRevisionWeeks.length > 0 && needsRevisionWeeks[0].week) {
+      console.log('Found needs-revision week:', needsRevisionWeeks[0].week);
+      return needsRevisionWeeks[0].week;
+    }
   }
   
-  const statusIds = statusNames.map(status => status.id);
-  console.log('Status IDs to search for:', statusIds);
+  // Then check for weeks with 'unconfirmed' status
+  const { data: unconfirmedStatus } = await supabase
+    .from('week_status_names')
+    .select('id')
+    .eq('name', 'unconfirmed')
+    .single();
   
-  // Find the first week with these statuses
-  const { data: weekStatuses, error } = await supabase
-    .from('week_statuses')
-    .select(`
-      id,
-      week_id,
-      week_status_id,
-      user_id,
-      week:custom_weeks(id, name, period_from, period_to, required_hours)
-    `)
-    .eq('user_id', userId)
-    .in('week_status_id', statusIds)
-    .order('created_at', { ascending: true });
-  
-  if (error) {
-    console.error('Error fetching week statuses:', error);
-    return null;
+  if (unconfirmedStatus) {
+    console.log('Checking for weeks with unconfirmed status');
+    const { data: unconfirmedWeeks } = await supabase
+      .from('week_statuses')
+      .select(`
+        id,
+        week_id,
+        week_status_id,
+        user_id,
+        week:custom_weeks(id, name, period_from, period_to, required_hours)
+      `)
+      .eq('user_id', userId)
+      .eq('week_status_id', unconfirmedStatus.id)
+      .order('created_at', { ascending: true });
+      
+    if (unconfirmedWeeks && unconfirmedWeeks.length > 0 && unconfirmedWeeks[0].week) {
+      console.log('Found unconfirmed week:', unconfirmedWeeks[0].week);
+      return unconfirmedWeeks[0].week;
+    }
   }
   
-  console.log('Found week statuses:', weekStatuses);
+  // As a last priority, check for 'under-review' weeks
+  const { data: underReviewStatus } = await supabase
+    .from('week_status_names')
+    .select('id')
+    .eq('name', 'under-review')
+    .single();
   
-  if (weekStatuses && weekStatuses.length > 0 && weekStatuses[0].week) {
-    return weekStatuses[0].week;
+  if (underReviewStatus) {
+    console.log('Checking for weeks with under-review status');
+    const { data: underReviewWeeks } = await supabase
+      .from('week_statuses')
+      .select(`
+        id,
+        week_id,
+        week_status_id,
+        user_id,
+        week:custom_weeks(id, name, period_from, period_to, required_hours)
+      `)
+      .eq('user_id', userId)
+      .eq('week_status_id', underReviewStatus.id)
+      .order('created_at', { ascending: true });
+      
+    if (underReviewWeeks && underReviewWeeks.length > 0 && underReviewWeeks[0].week) {
+      console.log('Found under-review week:', underReviewWeeks[0].week);
+      return underReviewWeeks[0].week;
+    }
   }
   
-  console.log('No weeks with unconfirmed/needs-revision status found for user:', userId);
+  console.log('No weeks with relevant status found for user:', userId);
   return null;
 };
 
@@ -449,3 +493,4 @@ export const updateVisibleTypesOrder = async (userId: string, typeNames: string[
   return { data: true };
 };
 
+export { updateHours };

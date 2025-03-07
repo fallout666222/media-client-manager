@@ -23,6 +23,7 @@ interface TimeSheetControlsProps {
   weekPercentage?: number;
   customWeeks?: any[];
   adminOverride?: boolean;
+  currentUserId?: string;
 }
 
 export const TimeSheetControls = ({
@@ -41,9 +42,24 @@ export const TimeSheetControls = ({
   weekId,
   weekPercentage = 100,
   customWeeks = [],
-  adminOverride = false
+  adminOverride = false,
+  currentUserId
 }: TimeSheetControlsProps) => {
   const [redirectApplied, setRedirectApplied] = useState(false);
+  
+  // Save the current week to localStorage whenever it changes
+  useEffect(() => {
+    if (weekId && currentUserId && (isViewingOwnTimesheet || adminOverride)) {
+      const weekToSave = customWeeks.find(week => week.id === weekId);
+      if (weekToSave) {
+        localStorage.setItem(`userLastWeek_${currentUserId}`, JSON.stringify({
+          weekId: weekId,
+          date: weekToSave.period_from
+        }));
+        console.log(`Saved current week (${weekToSave.name}) for user ${currentUserId}`);
+      }
+    }
+  }, [weekId, customWeeks, currentUserId, isViewingOwnTimesheet, adminOverride]);
   
   useEffect(() => {
     // Check for redirect information in localStorage

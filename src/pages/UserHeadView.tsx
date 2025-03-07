@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -176,7 +175,6 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
     }
   };
 
-  // Add this new function to handle updating hours
   const handleTimeUpdate = async (userId: string, weekId: string, client: string, mediaType: string, hours: number) => {
     try {
       console.log(`Updating hours for user ${userId}, week ${weekId}, client ${client}, mediaType ${mediaType}, hours ${hours}`);
