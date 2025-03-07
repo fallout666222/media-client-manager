@@ -4,20 +4,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { User } from "@/types/timesheet";
+
 interface LoginProps {
   onLogin: (user: User) => void;
   users: User[];
 }
+
 export const Login = ({
   onLogin,
   users
 }: LoginProps) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+
   const handleFormSubmit = async (event: React.SyntheticEvent) => {
     event.preventDefault();
     try {
@@ -110,7 +111,9 @@ export const Login = ({
       setLoading(false);
     }
   };
-  return <div className="flex min-h-screen items-center justify-center bg-gray-50">
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-lg">
         <div>
           <h2 className="text-center text-3xl font-bold tracking-tight">
@@ -132,5 +135,6 @@ export const Login = ({
           </Button>
         </form>
       </div>
-    </div>;
+    </div>
+  );
 };
