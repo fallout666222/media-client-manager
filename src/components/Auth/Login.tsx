@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -220,7 +219,7 @@ export const Login = ({
           
           <TabsContent value="kerberos">
             <div className="mt-8 space-y-6">
-              <Alert variant="outline" className="bg-blue-50 border-blue-200">
+              <Alert className="bg-blue-50 border-blue-200">
                 <InfoIcon className="h-4 w-4 text-blue-500" />
                 <AlertDescription>
                   Kerberos single sign-on allows you to authenticate using your domain credentials.
