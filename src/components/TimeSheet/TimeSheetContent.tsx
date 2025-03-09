@@ -204,6 +204,7 @@ export const TimeSheetContent = ({
           onSelectClient(client);
           
           // If the client is a system default client, automatically add "Administrative" media type
+          // Check if it's a system client AND if "Administrative" is not already in the selected media types
           if (DEFAULT_SYSTEM_CLIENTS.includes(client) && !selectedMediaTypes.includes("Administrative")) {
             onSelectMediaType("Administrative");
             if (onSaveVisibleMediaTypes) {
