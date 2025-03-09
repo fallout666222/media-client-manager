@@ -169,6 +169,8 @@ export const WeekPicker = ({
       
       // Set the week
       const date = parse(savedWeek.startDate, "yyyy-MM-dd", new Date());
+      
+      // Call onWeekChange directly with the saved date to ensure time entries are loaded
       onWeekChange(date);
       onWeekHoursChange(savedWeek.hours);
       
@@ -208,7 +210,7 @@ export const WeekPicker = ({
         // Save the selected week to localStorage
         localStorage.setItem('selectedWeekId', firstWeek.id);
         
-        // Notify parent about the change
+        // Call onWeekChange directly with the selected date to ensure time entries are loaded
         onWeekChange(date);
         onWeekHoursChange(firstWeek.hours);
         
@@ -233,9 +235,8 @@ export const WeekPicker = ({
       // Save the selected week to localStorage
       localStorage.setItem('selectedWeekId', selectedWeek.id);
       
+      // Call onWeekChange directly to load time entries for this week
       onWeekChange(date);
-      
-      // Pass the base hours (not adjusted by percentage) - the TimeSheet component will apply the percentage
       onWeekHoursChange(selectedWeek.hours);
     }
   };
@@ -260,9 +261,8 @@ export const WeekPicker = ({
     // Save the selected week to localStorage
     localStorage.setItem('selectedWeekId', newWeek.id);
     
+    // Call onWeekChange directly to load time entries for this week
     onWeekChange(date);
-    
-    // Pass the base hours (not adjusted by percentage)
     onWeekHoursChange(newWeek.hours);
   };
 
