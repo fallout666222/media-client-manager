@@ -32,9 +32,7 @@ export const TimeSheetGrid = ({
   const { toast } = useToast();
   const [localTimeEntries, setLocalTimeEntries] = useState<Record<string, Record<string, number>>>({});
   
-  // This useEffect ensures localTimeEntries is updated when timeEntries prop changes
   useEffect(() => {
-    console.log("TimeSheetGrid received new timeEntries:", timeEntries);
     const initialEntries: Record<string, Record<string, number>> = {};
     
     Object.entries(timeEntries).forEach(([client, mediaEntries]) => {
@@ -44,7 +42,6 @@ export const TimeSheetGrid = ({
       });
     });
     
-    console.log("Setting localTimeEntries to:", initialEntries);
     setLocalTimeEntries(initialEntries);
   }, [timeEntries]);
   

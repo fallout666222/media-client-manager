@@ -96,12 +96,8 @@ export const WeekPicker = ({
 
   // When weeks are loaded, try to restore saved state
   useEffect(() => {
-    // Only restore the saved week after weeks are loaded and loading is finished
     if (availableWeeks.length > 0 && !loading) {
-      // Use setTimeout to ensure this runs after the parent component's state is updated
-      setTimeout(() => {
-        restoreSavedWeek();
-      }, 0);
+      restoreSavedWeek();
     }
   }, [availableWeeks, loading]);
 
@@ -155,42 +151,28 @@ export const WeekPicker = ({
   // Function to restore saved week from localStorage
   const restoreSavedWeek = () => {
     try {
-      console.log("Attempting to restore saved week from localStorage");
       const savedWeekId = localStorage.getItem('selectedWeekId');
-      if (!savedWeekId) {
-        console.log("No saved week ID found in localStorage");
-        return;
-      }
-      
-      console.log(`Found saved week ID: ${savedWeekId}`);
+      if (!savedWeekId) return;
       
       // Find the week with the saved ID
       const savedWeek = availableWeeks.find(week => week.id === savedWeekId);
-      if (!savedWeek) {
-        console.log(`Week with ID ${savedWeekId} not found in available weeks`);
-        return;
-      }
-      
-      console.log(`Found saved week: ${savedWeek.name}, start date: ${savedWeek.startDate}`);
+      if (!savedWeek) return;
       
       // Check if the week is in the current filtered weeks based on year filter
       const weekYear = getYear(parse(savedWeek.startDate, 'yyyy-MM-dd', new Date())).toString();
       
       // Update year filter if needed to include the saved week
       if (selectedYear !== 'all' && weekYear !== selectedYear) {
-        console.log(`Updating year filter from ${selectedYear} to ${weekYear} to include saved week`);
         setSelectedYear(weekYear);
         localStorage.setItem('selectedYear', weekYear);
       }
       
       // Set the week
       const date = parse(savedWeek.startDate, "yyyy-MM-dd", new Date());
-      
-      console.log(`Restored saved week: ${savedWeek.name}, date: ${format(date, 'yyyy-MM-dd')}, hours: ${savedWeek.hours}`);
-      
-      // Call onWeekChange directly with the saved date to ensure time entries are loaded
       onWeekChange(date);
       onWeekHoursChange(savedWeek.hours);
+      
+      console.log(`Restored saved week: ${savedWeek.name}`);
     } catch (error) {
       console.error('Error restoring saved week:', error);
     }
@@ -198,7 +180,6 @@ export const WeekPicker = ({
 
   // Handle year filter change
   const handleYearChange = (year: string) => {
-    console.log(`Year filter changed from ${selectedYear} to ${year}`);
     setSelectedYear(year);
     localStorage.setItem('selectedYear', year);
     
@@ -221,12 +202,13 @@ export const WeekPicker = ({
         const firstWeek = newFilteredWeeks[0];
         const date = parse(firstWeek.startDate, "yyyy-MM-dd", new Date());
         
-        console.log(`Selecting first week of ${year}: ${firstWeek.name}, date: ${format(date, 'yyyy-MM-dd')}, hours: ${firstWeek.hours}`);
+        // Log to help with debugging
+        console.log(`Year filter changed to ${year}, selecting first week: ${firstWeek.name}`);
         
         // Save the selected week to localStorage
         localStorage.setItem('selectedWeekId', firstWeek.id);
         
-        // Call onWeekChange directly with the selected date to ensure time entries are loaded
+        // Notify parent about the change
         onWeekChange(date);
         onWeekHoursChange(firstWeek.hours);
         
@@ -246,13 +228,14 @@ export const WeekPicker = ({
     const selectedWeek = filteredWeeks.find(week => week.id === weekId);
     if (selectedWeek) {
       const date = parse(selectedWeek.startDate, "yyyy-MM-dd", new Date());
-      console.log(`Selected week: ${selectedWeek.name}, date: ${selectedWeek.startDate}, hours: ${selectedWeek.hours}`);
+      console.log(`Selected week: ${selectedWeek.name}, date: ${selectedWeek.startDate}`);
       
       // Save the selected week to localStorage
       localStorage.setItem('selectedWeekId', selectedWeek.id);
       
-      // Call onWeekChange directly to load time entries for this week
       onWeekChange(date);
+      
+      // Pass the base hours (not adjusted by percentage) - the TimeSheet component will apply the percentage
       onWeekHoursChange(selectedWeek.hours);
     }
   };
@@ -272,13 +255,14 @@ export const WeekPicker = ({
 
     const newWeek = filteredWeeks[newIndex];
     const date = parse(newWeek.startDate, "yyyy-MM-dd", new Date());
-    console.log(`Navigating to ${direction} week: ${newWeek.name}, date: ${newWeek.startDate}, hours: ${newWeek.hours}`);
+    console.log(`Navigating to ${direction} week: ${newWeek.name}, date: ${newWeek.startDate}`);
     
     // Save the selected week to localStorage
     localStorage.setItem('selectedWeekId', newWeek.id);
     
-    // Call onWeekChange directly to load time entries for this week
     onWeekChange(date);
+    
+    // Pass the base hours (not adjusted by percentage)
     onWeekHoursChange(newWeek.hours);
   };
 
