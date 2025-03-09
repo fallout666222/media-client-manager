@@ -119,17 +119,41 @@ export const WeekPicker = ({
 
   // Find the current week based on the currentDate
   const getCurrentWeek = () => {
+    // First try to find an exact match
     for (const week of filteredWeeks) {
       const weekStartDate = parse(week.startDate, "yyyy-MM-dd", new Date());
       if (isSameDay(weekStartDate, currentDate)) {
         return week;
       }
     }
-    return filteredWeeks[0]; // Default to the first available week if no match
+    
+    // If no exact match and filtered weeks exist, return the first week in the filtered list
+    if (filteredWeeks.length > 0) {
+      return filteredWeeks[0];
+    }
+    
+    return null; // Return null if no weeks are available
   };
 
+  // When the year filter changes, we need to select the first week of that year and notify parent
+  useEffect(() => {
+    const currentWeek = getCurrentWeek();
+    if (currentWeek && filteredWeeks.length > 0) {
+      // Check if current week is in filtered weeks
+      const isCurrentWeekInFiltered = filteredWeeks.some(week => week.id === currentWeek.id);
+      
+      // If current week is not in filtered weeks, select the first filtered week
+      if (!isCurrentWeekInFiltered && filteredWeeks.length > 0) {
+        const firstWeek = filteredWeeks[0];
+        const date = parse(firstWeek.startDate, "yyyy-MM-dd", new Date());
+        onWeekChange(date);
+        onWeekHoursChange(firstWeek.hours);
+      }
+    }
+  }, [selectedYear, filteredWeeks]);
+
   const currentWeek = getCurrentWeek();
-  const currentWeekId = currentWeek?.id || filteredWeeks[0]?.id;
+  const currentWeekId = currentWeek?.id || (filteredWeeks.length > 0 ? filteredWeeks[0]?.id : '');
 
   const handleCustomWeekSelect = (weekId: string) => {
     const selectedWeek = filteredWeeks.find(week => week.id === weekId);
@@ -206,7 +230,7 @@ export const WeekPicker = ({
           variant="outline"
           size="icon"
           onClick={() => handleNavigateWeek('prev')}
-          disabled={!filteredWeeks.length || currentWeekId === filteredWeeks[0].id}
+          disabled={!filteredWeeks.length || currentWeekId === filteredWeeks[0]?.id}
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
@@ -231,7 +255,7 @@ export const WeekPicker = ({
           variant="outline"
           size="icon"
           onClick={() => handleNavigateWeek('next')}
-          disabled={!filteredWeeks.length || currentWeekId === filteredWeeks[filteredWeeks.length - 1].id}
+          disabled={!filteredWeeks.length || currentWeekId === filteredWeeks[filteredWeeks.length - 1]?.id}
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
