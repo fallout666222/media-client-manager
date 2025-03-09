@@ -35,7 +35,11 @@ export const WeekPicker = ({
 }: WeekPickerProps) => {
   const [availableWeeks, setAvailableWeeks] = useState<CustomWeek[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [selectedYear, setSelectedYear] = useState<string>(() => {
+    // Initialize from localStorage if available
+    const savedYear = localStorage.getItem('selectedYear');
+    return savedYear || 'all';
+  });
   const { toast } = useToast();
 
   // Get unique years from available weeks
@@ -90,6 +94,13 @@ export const WeekPicker = ({
     fetchWeeks();
   }, [propCustomWeeks]);
 
+  // When weeks are loaded, try to restore saved state
+  useEffect(() => {
+    if (availableWeeks.length > 0 && !loading) {
+      restoreSavedWeek();
+    }
+  }, [availableWeeks, loading]);
+
   // Filter weeks by year if a year is selected
   const getFilteredWeeks = () => {
     if (availableWeeks.length === 0) return [];
@@ -137,12 +148,43 @@ export const WeekPicker = ({
     return null; // Return null if no weeks are available
   };
 
+  // Function to restore saved week from localStorage
+  const restoreSavedWeek = () => {
+    try {
+      const savedWeekId = localStorage.getItem('selectedWeekId');
+      if (!savedWeekId) return;
+      
+      // Find the week with the saved ID
+      const savedWeek = availableWeeks.find(week => week.id === savedWeekId);
+      if (!savedWeek) return;
+      
+      // Check if the week is in the current filtered weeks based on year filter
+      const weekYear = getYear(parse(savedWeek.startDate, 'yyyy-MM-dd', new Date())).toString();
+      
+      // Update year filter if needed to include the saved week
+      if (selectedYear !== 'all' && weekYear !== selectedYear) {
+        setSelectedYear(weekYear);
+        localStorage.setItem('selectedYear', weekYear);
+      }
+      
+      // Set the week
+      const date = parse(savedWeek.startDate, "yyyy-MM-dd", new Date());
+      onWeekChange(date);
+      onWeekHoursChange(savedWeek.hours);
+      
+      console.log(`Restored saved week: ${savedWeek.name}`);
+    } catch (error) {
+      console.error('Error restoring saved week:', error);
+    }
+  };
+
   // Handle year filter change
   const handleYearChange = (year: string) => {
     setSelectedYear(year);
+    localStorage.setItem('selectedYear', year);
     
     // When year changes, select the first week of that year if available
-    if (filteredWeeks.length > 0) {
+    if (availableWeeks.length > 0) {
       // We need to refilter the weeks with the new year selection
       const newFilteredWeeks = availableWeeks.filter(week => {
         // Skip first week filter for this immediate calculation
@@ -163,7 +205,10 @@ export const WeekPicker = ({
         // Log to help with debugging
         console.log(`Year filter changed to ${year}, selecting first week: ${firstWeek.name}`);
         
-        // Notify parent about the change with a small delay to ensure state updates properly
+        // Save the selected week to localStorage
+        localStorage.setItem('selectedWeekId', firstWeek.id);
+        
+        // Notify parent about the change
         onWeekChange(date);
         onWeekHoursChange(firstWeek.hours);
         
@@ -184,6 +229,10 @@ export const WeekPicker = ({
     if (selectedWeek) {
       const date = parse(selectedWeek.startDate, "yyyy-MM-dd", new Date());
       console.log(`Selected week: ${selectedWeek.name}, date: ${selectedWeek.startDate}`);
+      
+      // Save the selected week to localStorage
+      localStorage.setItem('selectedWeekId', selectedWeek.id);
+      
       onWeekChange(date);
       
       // Pass the base hours (not adjusted by percentage) - the TimeSheet component will apply the percentage
@@ -207,6 +256,10 @@ export const WeekPicker = ({
     const newWeek = filteredWeeks[newIndex];
     const date = parse(newWeek.startDate, "yyyy-MM-dd", new Date());
     console.log(`Navigating to ${direction} week: ${newWeek.name}, date: ${newWeek.startDate}`);
+    
+    // Save the selected week to localStorage
+    localStorage.setItem('selectedWeekId', newWeek.id);
+    
     onWeekChange(date);
     
     // Pass the base hours (not adjusted by percentage)
