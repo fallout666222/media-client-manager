@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Select,
   SelectContent,
@@ -41,7 +41,9 @@ export const WeekPicker = ({
     return savedYear || 'all';
   });
   const { toast } = useToast();
-
+  const initialLoadComplete = useRef(false);
+  const restorationAttempted = useRef(false);
+  
   // Get unique years from available weeks
   const availableYears = useMemo(() => {
     if (availableWeeks.length === 0) return [];
@@ -88,6 +90,7 @@ export const WeekPicker = ({
         console.error('Error fetching custom weeks:', error);
       } finally {
         setLoading(false);
+        initialLoadComplete.current = true;
       }
     };
 
@@ -97,13 +100,32 @@ export const WeekPicker = ({
   // When weeks are loaded, try to restore saved state
   useEffect(() => {
     // Only restore the saved week after weeks are loaded and loading is finished
-    if (availableWeeks.length > 0 && !loading) {
-      // Use setTimeout to ensure this runs after the parent component's state is updated
-      setTimeout(() => {
+    if (availableWeeks.length > 0 && !loading && initialLoadComplete.current && !restorationAttempted.current) {
+      console.log("Initial load complete, attempting to restore saved week");
+      restorationAttempted.current = true;
+      
+      // Force browser to complete rendering before restoring
+      const timeoutId = setTimeout(() => {
         restoreSavedWeek();
-      }, 0);
+        
+        // After restoring, force a reload of the current week data
+        // This helps ensure time entries are loaded after the week is restored
+        const savedWeekId = localStorage.getItem('selectedWeekId');
+        if (savedWeekId) {
+          const savedWeek = availableWeeks.find(week => week.id === savedWeekId);
+          if (savedWeek) {
+            console.log("Forcing a refresh of time entries for restored week");
+            const date = parse(savedWeek.startDate, "yyyy-MM-dd", new Date());
+            // Call these again to ensure data is loaded
+            onWeekChange(date);
+            onWeekHoursChange(savedWeek.hours);
+          }
+        }
+      }, 300);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [availableWeeks, loading]);
+  }, [availableWeeks, loading, onWeekChange, onWeekHoursChange]);
 
   // Filter weeks by year if a year is selected
   const getFilteredWeeks = () => {

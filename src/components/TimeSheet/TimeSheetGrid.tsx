@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Input } from "@/components/ui/input";
 import { TimeEntry, TimeSheetStatus } from '@/types/timesheet';
 import { useToast } from "@/hooks/use-toast";
@@ -32,13 +32,23 @@ export const TimeSheetGrid = ({
   const { toast } = useToast();
   const [localTimeEntries, setLocalTimeEntries] = useState<Record<string, Record<string, number>>>({});
   
-  // This useEffect ensures localTimeEntries is updated when timeEntries prop changes
-  useEffect(() => {
-    console.log("TimeSheetGrid received new timeEntries:", timeEntries);
+  // Using useCallback to create a stable reference for initialization logic
+  const initializeLocalEntries = useCallback((entries: Record<string, Record<string, TimeEntry>>) => {
+    console.log("Initializing localTimeEntries from timeEntries:", entries);
     const initialEntries: Record<string, Record<string, number>> = {};
     
-    Object.entries(timeEntries).forEach(([client, mediaEntries]) => {
+    // First, ensure all clients and media types have entry objects
+    clients.forEach(client => {
       initialEntries[client] = {};
+      mediaTypes.forEach(type => {
+        initialEntries[client][type] = entries[client]?.[type]?.hours || 0;
+      });
+    });
+    
+    // Then, add any additional entries from timeEntries that might not be in clients/mediaTypes
+    Object.entries(entries).forEach(([client, mediaEntries]) => {
+      if (!initialEntries[client]) initialEntries[client] = {};
+      
       Object.entries(mediaEntries).forEach(([type, entry]) => {
         initialEntries[client][type] = entry.hours || 0;
       });
@@ -46,7 +56,24 @@ export const TimeSheetGrid = ({
     
     console.log("Setting localTimeEntries to:", initialEntries);
     setLocalTimeEntries(initialEntries);
-  }, [timeEntries]);
+  }, [clients, mediaTypes]);
+  
+  // This useEffect ensures localTimeEntries is updated when timeEntries prop changes
+  useEffect(() => {
+    console.log("TimeSheetGrid received new timeEntries:", timeEntries);
+    if (Object.keys(timeEntries).length > 0) {
+      console.log("TimeEntries has data, initializing local state");
+      initializeLocalEntries(timeEntries);
+    } else {
+      console.log("TimeEntries is empty, not initializing local state");
+    }
+  }, [timeEntries, initializeLocalEntries]);
+  
+  // Log when clients or mediaTypes change
+  useEffect(() => {
+    console.log("TimeSheetGrid clients updated:", clients);
+    console.log("TimeSheetGrid mediaTypes updated:", mediaTypes);
+  }, [clients, mediaTypes]);
   
   const effectiveWeekHours = Math.round(weekHours * (weekPercentage / 100));
 
