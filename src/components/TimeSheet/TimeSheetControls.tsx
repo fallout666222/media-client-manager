@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { WeekPicker } from './WeekPicker';
 import { ApprovalActions } from './ApprovalActions';
 import { TimeSheetStatus } from '@/types/timesheet';
@@ -44,15 +44,6 @@ export const TimeSheetControls = ({
   adminOverride = false
 }: TimeSheetControlsProps) => {
   const [redirectApplied, setRedirectApplied] = useState(false);
-  const dataLoadedRef = useRef(false);
-  
-  // Track when customWeeks are available
-  useEffect(() => {
-    if (customWeeks.length > 0 && !dataLoadedRef.current) {
-      dataLoadedRef.current = true;
-      console.log(`TimeSheetControls: ${customWeeks.length} custom weeks available`);
-    }
-  }, [customWeeks]);
   
   useEffect(() => {
     // Check for redirect information in localStorage
@@ -63,7 +54,7 @@ export const TimeSheetControls = ({
         const { weekId: redirectWeekId, date } = JSON.parse(redirectData);
         
         console.log('Looking for week with ID:', redirectWeekId);
-        console.log('Available custom weeks:', customWeeks.length);
+        console.log('Available custom weeks:', customWeeks);
         
         // Find the week in customWeeks
         let weekToRedirectTo = customWeeks.find(week => week.id === redirectWeekId);
@@ -130,13 +121,6 @@ export const TimeSheetControls = ({
     
     // Clear the redirect data after using it
     localStorage.removeItem('redirectToWeek');
-    
-    // Force a reload of the page data after a short delay
-    setTimeout(() => {
-      console.log('Forcing data reload after redirect');
-      const dateObj = parse(date, 'yyyy-MM-dd', new Date());
-      onWeekChange(dateObj);
-    }, 500);
   };
   
   return (
