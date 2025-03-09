@@ -12,6 +12,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format, parse, isSameDay, isBefore, getYear } from 'date-fns';
 import { CustomWeek } from '@/types/timesheet';
 import { getCustomWeeks } from '@/integrations/supabase/database';
+import { useToast } from "@/hooks/use-toast";
 
 interface WeekPickerProps {
   currentDate: Date;
@@ -35,6 +36,7 @@ export const WeekPicker = ({
   const [availableWeeks, setAvailableWeeks] = useState<CustomWeek[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState<string>('all');
+  const { toast } = useToast();
 
   // Get unique years from available weeks
   const availableYears = useMemo(() => {
@@ -135,22 +137,44 @@ export const WeekPicker = ({
     return null; // Return null if no weeks are available
   };
 
-  // When the year filter changes, we need to select the first week of that year and notify parent
-  useEffect(() => {
-    const currentWeek = getCurrentWeek();
-    if (currentWeek && filteredWeeks.length > 0) {
-      // Check if current week is in filtered weeks
-      const isCurrentWeekInFiltered = filteredWeeks.some(week => week.id === currentWeek.id);
+  // Handle year filter change
+  const handleYearChange = (year: string) => {
+    setSelectedYear(year);
+    
+    // When year changes, select the first week of that year if available
+    if (filteredWeeks.length > 0) {
+      // We need to refilter the weeks with the new year selection
+      const newFilteredWeeks = availableWeeks.filter(week => {
+        // Skip first week filter for this immediate calculation
+        if (year === 'all') return true;
+        
+        const weekYear = getYear(parse(week.startDate, 'yyyy-MM-dd', new Date())).toString();
+        return weekYear === year;
+      }).sort((a, b) => {
+        const dateA = parse(a.startDate, 'yyyy-MM-dd', new Date());
+        const dateB = parse(b.startDate, 'yyyy-MM-dd', new Date());
+        return dateA.getTime() - dateB.getTime();
+      });
       
-      // If current week is not in filtered weeks, select the first filtered week
-      if (!isCurrentWeekInFiltered && filteredWeeks.length > 0) {
-        const firstWeek = filteredWeeks[0];
+      if (newFilteredWeeks.length > 0) {
+        const firstWeek = newFilteredWeeks[0];
         const date = parse(firstWeek.startDate, "yyyy-MM-dd", new Date());
+        
+        // Log to help with debugging
+        console.log(`Year filter changed to ${year}, selecting first week: ${firstWeek.name}`);
+        
+        // Notify parent about the change with a small delay to ensure state updates properly
         onWeekChange(date);
         onWeekHoursChange(firstWeek.hours);
+        
+        // Show a toast notification to indicate the week has changed
+        toast({
+          title: "Week Changed",
+          description: `Selected first week of ${year === 'all' ? 'all years' : year}: ${firstWeek.name}`,
+        });
       }
     }
-  }, [selectedYear, filteredWeeks]);
+  };
 
   const currentWeek = getCurrentWeek();
   const currentWeekId = currentWeek?.id || (filteredWeeks.length > 0 ? filteredWeeks[0]?.id : '');
@@ -159,6 +183,7 @@ export const WeekPicker = ({
     const selectedWeek = filteredWeeks.find(week => week.id === weekId);
     if (selectedWeek) {
       const date = parse(selectedWeek.startDate, "yyyy-MM-dd", new Date());
+      console.log(`Selected week: ${selectedWeek.name}, date: ${selectedWeek.startDate}`);
       onWeekChange(date);
       
       // Pass the base hours (not adjusted by percentage) - the TimeSheet component will apply the percentage
@@ -181,6 +206,7 @@ export const WeekPicker = ({
 
     const newWeek = filteredWeeks[newIndex];
     const date = parse(newWeek.startDate, "yyyy-MM-dd", new Date());
+    console.log(`Navigating to ${direction} week: ${newWeek.name}, date: ${newWeek.startDate}`);
     onWeekChange(date);
     
     // Pass the base hours (not adjusted by percentage)
@@ -208,7 +234,7 @@ export const WeekPicker = ({
         <label className="text-sm font-medium whitespace-nowrap">Filter by year:</label>
         <Select
           value={selectedYear}
-          onValueChange={setSelectedYear}
+          onValueChange={handleYearChange}
         >
           <SelectTrigger className="h-8 flex-1">
             <SelectValue placeholder="All years" />
