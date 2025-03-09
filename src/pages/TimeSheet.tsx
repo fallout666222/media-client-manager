@@ -663,6 +663,7 @@ const TimeSheet = ({
           
           if (customWeek) {
             weekId = customWeek.id;
+            setCurrentCustomWeek(customWeek);
           } else {
             const defaultWeek = userWeeks.find(w => 
               format(parse(w.startDate, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === currentWeekKey
@@ -708,8 +709,10 @@ const TimeSheet = ({
       }
     };
     
-    loadUserData();
-  }, [viewedUser, currentDate]);
+    if (viewedUser.id && currentDate) {
+      loadUserData();
+    }
+  }, [viewedUser.id, currentDate, customWeeks]);
 
   const handleTimeUpdate = async (client: string, mediaType: string, hours: number) => {
     if ((readOnly || !isViewingOwnTimesheet) && !adminOverride && !isUserHead) return;
