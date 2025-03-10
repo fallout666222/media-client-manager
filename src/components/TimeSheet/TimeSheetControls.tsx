@@ -5,6 +5,7 @@ import { ApprovalActions } from './ApprovalActions';
 import { TimeSheetStatus } from '@/types/timesheet';
 import { parse } from 'date-fns';
 import { getCustomWeeks } from '@/integrations/supabase/database';
+import { WeekSlider } from './WeekSlider';
 
 interface TimeSheetControlsProps {
   currentDate: Date;
@@ -23,6 +24,7 @@ interface TimeSheetControlsProps {
   weekPercentage?: number;
   customWeeks?: any[];
   adminOverride?: boolean;
+  weekStatuses?: Record<string, TimeSheetStatus>;
 }
 
 export const TimeSheetControls = ({
@@ -41,7 +43,8 @@ export const TimeSheetControls = ({
   weekId,
   weekPercentage = 100,
   customWeeks = [],
-  adminOverride = false
+  adminOverride = false,
+  weekStatuses = {}
 }: TimeSheetControlsProps) => {
   const [redirectApplied, setRedirectApplied] = useState(false);
   
@@ -122,34 +125,56 @@ export const TimeSheetControls = ({
     // Clear the redirect data after using it
     localStorage.removeItem('redirectToWeek');
   };
+
+  const handleWeekSelect = (weekId: string) => {
+    const selectedWeek = customWeeks.find(week => week.id === weekId);
+    if (selectedWeek) {
+      const date = parse(selectedWeek.period_from || selectedWeek.startDate, "yyyy-MM-dd", new Date());
+      onWeekChange(date);
+      
+      // Pass the base hours (not adjusted by percentage)
+      onWeekHoursChange(selectedWeek.required_hours || selectedWeek.hours);
+    }
+  };
   
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center justify-between p-4 bg-muted rounded-lg">
-      <div>
-        <WeekPicker
-          currentDate={currentDate}
-          onWeekChange={onWeekChange}
-          onWeekHoursChange={onWeekHoursChange}
-          firstWeek={firstWeek}
-          weekPercentage={weekPercentage}
-          customWeeks={customWeeks}
-        />
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center justify-between p-4 bg-muted rounded-lg">
+        <div>
+          <WeekPicker
+            currentDate={currentDate}
+            onWeekChange={onWeekChange}
+            onWeekHoursChange={onWeekHoursChange}
+            firstWeek={firstWeek}
+            weekPercentage={weekPercentage}
+            customWeeks={customWeeks}
+          />
+        </div>
+        
+        <div className="flex items-center gap-4">
+          <ApprovalActions
+            status={status}
+            isManager={isManager}
+            isViewingOwnTimesheet={isViewingOwnTimesheet}
+            isUserHead={isUserHead}
+            onSubmitForReview={onSubmitForReview}
+            onApprove={onApprove}
+            onReject={onReject}
+            disabled={readOnly && !adminOverride}
+            weekId={weekId}
+            adminOverride={adminOverride}
+          />
+        </div>
       </div>
       
-      <div className="flex items-center gap-4">
-        <ApprovalActions
-          status={status}
-          isManager={isManager}
-          isViewingOwnTimesheet={isViewingOwnTimesheet}
-          isUserHead={isUserHead}
-          onSubmitForReview={onSubmitForReview}
-          onApprove={onApprove}
-          onReject={onReject}
-          disabled={readOnly && !adminOverride}
-          weekId={weekId}
-          adminOverride={adminOverride}
+      {customWeeks.length > 0 && (
+        <WeekSlider 
+          weeks={customWeeks}
+          weekStatuses={weekStatuses}
+          currentWeekId={weekId}
+          onWeekSelect={handleWeekSelect}
         />
-      </div>
+      )}
     </div>
   );
 };
