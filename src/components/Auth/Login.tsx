@@ -214,12 +214,12 @@ export const Login = ({
       
       // Before redirecting, check if the ADFS server is available
       try {
+        // Modified: Removed the timeout property as it's not supported in the fetch API
         const pingResponse = await fetch(`${adfsUrl}/ping`, { 
           method: 'GET',
           mode: 'no-cors',
           headers: { 'Content-Type': 'application/json' },
-          cache: 'no-cache',
-          timeout: 5000
+          cache: 'no-cache'
         });
         
         // Redirect the user to the ADFS login page
