@@ -15,7 +15,13 @@ console.log('Initializing Supabase client with URL:', supabaseUrl);
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseKey);
+export const supabase = createClient<Database>(supabaseUrl, supabaseKey, {
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
+  }
+});
 
 /**
  * DATABASE SWITCHING GUIDE:
@@ -51,14 +57,20 @@ export const checkSupabaseConnection = async () => {
 // Helper to check if a particular custom week exists
 export const checkCustomWeekExists = async (weekId: string) => {
   try {
+    console.log(`Checking if custom week with ID ${weekId} exists...`);
     const { data, error } = await supabase
       .from('custom_weeks')
       .select('*')
       .eq('id', weekId)
-      .single();
+      .maybeSingle();
     
     if (error) {
-      console.error(`Custom week with ID ${weekId} not found:`, error);
+      console.error(`Error checking for custom week ${weekId}:`, error);
+      return null;
+    }
+    
+    if (!data) {
+      console.log(`Custom week with ID ${weekId} not found`);
       return null;
     }
     

@@ -12,7 +12,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format, parse, isSameDay, isBefore, getYear } from 'date-fns';
 import { CustomWeek } from '@/types/timesheet';
 import { getCustomWeeks } from '@/integrations/supabase/database';
-import { checkCustomWeekExists } from '@/integrations/supabase/client';
+import { checkCustomWeekExists, supabase } from '@/integrations/supabase/client';
 
 interface WeekPickerProps {
   currentDate: Date;
@@ -36,6 +36,7 @@ export const WeekPicker = ({
   const [availableWeeks, setAvailableWeeks] = useState<CustomWeek[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [lastRefreshTime, setLastRefreshTime] = useState<number>(Date.now());
 
   // Get unique years from available weeks
   const availableYears = useMemo(() => {
@@ -54,6 +55,8 @@ export const WeekPicker = ({
   const fetchWeeks = useCallback(async () => {
     try {
       setLoading(true);
+      console.log('Fetching weeks, last refresh:', new Date(lastRefreshTime).toISOString());
+      
       if (propCustomWeeks.length > 0) {
         console.log('Using provided custom weeks:', propCustomWeeks);
         // Transform data to match CustomWeek interface if needed
@@ -89,8 +92,9 @@ export const WeekPicker = ({
       console.error('Error fetching custom weeks:', error);
     } finally {
       setLoading(false);
+      setLastRefreshTime(Date.now());
     }
-  }, [propCustomWeeks]);
+  }, [propCustomWeeks, lastRefreshTime]);
 
   useEffect(() => {
     fetchWeeks();
@@ -101,7 +105,23 @@ export const WeekPicker = ({
       fetchWeeks();
     }, 10000); // Refresh every 10 seconds
     
-    return () => clearInterval(refreshInterval);
+    // Set up real-time subscription for custom_weeks table changes
+    const weekSubscription = supabase
+      .channel('custom_weeks_changes')
+      .on('postgres_changes', {
+        event: '*', 
+        schema: 'public',
+        table: 'custom_weeks'
+      }, (payload) => {
+        console.log('Detected change in custom_weeks table:', payload);
+        fetchWeeks(); // Refresh weeks when changes are detected
+      })
+      .subscribe();
+    
+    return () => {
+      clearInterval(refreshInterval);
+      supabase.removeChannel(weekSubscription);
+    };
   }, [fetchWeeks]);
 
   // Filter weeks by year if a year is selected
@@ -150,33 +170,48 @@ export const WeekPicker = ({
   const handleCustomWeekSelect = async (weekId: string) => {
     console.log(`Selecting week with ID: ${weekId}`);
     
-    // First check if this week is in our filtered list
-    const selectedWeek = filteredWeeks.find(week => week.id === weekId);
-    
-    if (selectedWeek) {
-      console.log('Found week in filtered list:', selectedWeek);
-      applyWeekSelection(selectedWeek);
-    } else {
-      // If not in filtered list, try to fetch directly from database
-      console.log('Week not found in filtered list, checking database...');
-      const weekData = await checkCustomWeekExists(weekId);
+    try {
+      // First check if this week is in our filtered list
+      const selectedWeek = filteredWeeks.find(week => week.id === weekId);
       
-      if (weekData) {
-        console.log('Found week in database:', weekData);
-        const formattedWeek = {
-          id: weekData.id,
-          name: weekData.name,
-          startDate: weekData.period_from,
-          endDate: weekData.period_to,
-          hours: weekData.required_hours
-        };
-        applyWeekSelection(formattedWeek);
-        
-        // Also refresh our week list to include this week
-        fetchWeeks();
+      if (selectedWeek) {
+        console.log('Found week in filtered list:', selectedWeek);
+        applyWeekSelection(selectedWeek);
       } else {
-        console.error(`Could not find week with ID ${weekId}`);
+        // If not in filtered list, try to fetch directly from database
+        console.log('Week not found in filtered list, checking database...');
+        const weekData = await checkCustomWeekExists(weekId);
+        
+        if (weekData) {
+          console.log('Found week in database:', weekData);
+          const formattedWeek = {
+            id: weekData.id,
+            name: weekData.name,
+            startDate: weekData.period_from,
+            endDate: weekData.period_to,
+            hours: weekData.required_hours
+          };
+          applyWeekSelection(formattedWeek);
+          
+          // Also refresh our week list to include this week
+          fetchWeeks();
+        } else {
+          console.error(`Could not find week with ID ${weekId}`);
+          // Force refresh weeks list to ensure we have the latest data
+          await fetchWeeks();
+          
+          // Try one more time after refresh
+          const refreshedWeek = availableWeeks.find(week => week.id === weekId);
+          if (refreshedWeek) {
+            console.log('Found week after refresh:', refreshedWeek);
+            applyWeekSelection(refreshedWeek);
+          } else {
+            console.error(`Week with ID ${weekId} not found even after refresh`);
+          }
+        }
       }
+    } catch (error) {
+      console.error('Error selecting week:', error);
     }
   };
   
@@ -227,12 +262,24 @@ export const WeekPicker = ({
     return `${week.name}: ${start} - ${end} (${effectiveHours}h)`;
   };
 
-  if (loading || filteredWeeks.length === 0) {
+  if (loading && filteredWeeks.length === 0) {
     return <div className="w-full max-w-md mb-4 flex items-center justify-center p-4">Loading weeks...</div>;
   }
 
   return (
     <div className="w-full max-w-md mb-4 space-y-2">
+      {/* Manual refresh button */}
+      <div className="flex justify-end mb-1">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => fetchWeeks()}
+          className="text-xs py-1 h-7"
+        >
+          Refresh Weeks
+        </Button>
+      </div>
+      
       {/* Year filter */}
       <div className="flex items-center gap-2 mb-2">
         <label className="text-sm font-medium whitespace-nowrap">Filter by year:</label>
