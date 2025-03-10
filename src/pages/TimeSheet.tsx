@@ -889,6 +889,14 @@ const TimeSheet = ({
     }
   };
 
+  const getRemainingHours = (): number => {
+    const totalHours = getTotalHoursForWeek();
+    const effectiveWeekHours = Math.round(weekHours * (weekPercentage / 100));
+    return effectiveWeekHours - totalHours;
+  };
+
+  const remainingHours = getRemainingHours();
+
   return (
     <div>
       <TimeSheetHeader 
