@@ -3,7 +3,10 @@ import { supabase } from './client';
 
 // Custom Weeks
 export const getCustomWeeks = async () => {
-  return await supabase.from('custom_weeks').select('*').order('period_from', { ascending: true });
+  console.log(`[${new Date().toISOString()}] Fetching custom weeks from database`);
+  const result = await supabase.from('custom_weeks').select('*').order('period_from', { ascending: true });
+  console.log(`[${new Date().toISOString()}] Fetched ${result.data?.length || 0} custom weeks from database`);
+  return result;
 };
 
 export const createCustomWeek = async (week: { name: string, period_from: string, period_to: string, required_hours: number }) => {
@@ -214,11 +217,15 @@ export const updateWeekPercentage = async (userId: string, weekId: string, perce
 
 // Week Hours
 export const getWeekHours = async (userId: string, weekId: string) => {
-  return await supabase.from('week_hours').select(`
+  console.log(`[${new Date().toISOString()}] Loading time entries for user ${userId}, week ${weekId}`);
+  const result = await supabase.from('week_hours').select(`
     *,
     client:clients(*),
     media_type:media_types(*)
   `).eq('user_id', userId).eq('week_id', weekId);
+  
+  console.log(`[${new Date().toISOString()}] Found ${result.data?.length || 0} time entries`);
+  return result;
 };
 
 export const updateWeekHours = async (
@@ -266,6 +273,7 @@ export const updateWeekHours = async (
 // Update this function to handle zero hours by deleting records
 export const updateHours = async (userId: string, weekId: string, clientName: string, mediaTypeName: string, hours: number) => {
   try {
+    console.log(`[${new Date().toISOString()}] Updating hours for user ${userId}, week ${weekId}, client ${clientName}, media ${mediaTypeName}, hours ${hours}`);
     // Get the client and media type IDs from their names
     const { data: clientsData } = await getClients();
     const { data: mediaTypesData } = await getMediaTypes();

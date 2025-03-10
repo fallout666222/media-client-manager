@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { TimeEntry, TimeSheetStatus } from '@/types/timesheet';
@@ -31,18 +30,18 @@ export const TimeSheetGrid = ({
   const isFormDisabled = readOnly || status === 'under-review' || status === 'accepted';
   const { toast } = useToast();
   const [localTimeEntries, setLocalTimeEntries] = useState<Record<string, Record<string, number>>>({});
-  const [initialized, setInitialized] = useState(false);
   
-  // Add a debug log for when time entries change
+  // Debug log for time entries changes with timestamp
   useEffect(() => {
-    console.log(`TimeSheetGrid received new timeEntries:`, timeEntries);
+    console.log(`[${new Date().toISOString()}] TimeSheetGrid received new timeEntries:`, timeEntries);
   }, [timeEntries]);
   
-  // Initialize local time entries from props
+  // Reset and initialize local time entries from props whenever timeEntries changes
   useEffect(() => {
-    // Only process if we have timeEntries data
+    // Reset local entries if timeEntries is empty to avoid stale data
     if (!Object.keys(timeEntries).length) {
-      // If timeEntries is empty, don't initialize localTimeEntries yet
+      console.log(`[${new Date().toISOString()}] Resetting localTimeEntries due to empty timeEntries`);
+      setLocalTimeEntries({});
       return;
     }
     
@@ -55,9 +54,8 @@ export const TimeSheetGrid = ({
       });
     });
     
-    console.log(`Setting localTimeEntries to:`, initialEntries);
+    console.log(`[${new Date().toISOString()}] Setting localTimeEntries to:`, initialEntries);
     setLocalTimeEntries(initialEntries);
-    setInitialized(true);
   }, [timeEntries]);
   
   const effectiveWeekHours = Math.round(weekHours * (weekPercentage / 100));

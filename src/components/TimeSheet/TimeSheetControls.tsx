@@ -50,24 +50,24 @@ export const TimeSheetControls = ({
     const redirectData = localStorage.getItem('redirectToWeek');
     if (redirectData && !redirectApplied) {
       try {
-        console.log('Found redirect data in localStorage:', redirectData);
+        console.log(`[${new Date().toISOString()}] Found redirect data in localStorage:`, redirectData);
         const { weekId: redirectWeekId, date } = JSON.parse(redirectData);
         
-        console.log('Looking for week with ID:', redirectWeekId);
-        console.log('Available custom weeks:', customWeeks);
+        console.log(`[${new Date().toISOString()}] Looking for week with ID:`, redirectWeekId);
+        console.log(`[${new Date().toISOString()}] Available custom weeks:`, customWeeks);
         
         // Find the week in customWeeks
         let weekToRedirectTo = customWeeks.find(week => week.id === redirectWeekId);
         
         if (weekToRedirectTo) {
-          console.log('Found week to redirect to in customWeeks:', weekToRedirectTo);
+          console.log(`[${new Date().toISOString()}] Found week to redirect to in customWeeks:`, weekToRedirectTo);
           applyRedirect(weekToRedirectTo, date);
         } else if (customWeeks.length === 0) {
           // If customWeeks is empty, fetch the week directly from the database
-          console.log('customWeeks is empty, fetching week data directly...');
+          console.log(`[${new Date().toISOString()}] customWeeks is empty, fetching week data directly...`);
           fetchWeekAndRedirect(redirectWeekId, date);
         } else {
-          console.log('Week not found in available weeks');
+          console.log(`[${new Date().toISOString()}] Week not found in available weeks`);
           // Clear the redirect data if we can't find the week
           localStorage.removeItem('redirectToWeek');
         }
@@ -89,10 +89,10 @@ export const TimeSheetControls = ({
       if (data && data.length > 0) {
         const weekToRedirectTo = data.find(week => week.id === weekId);
         if (weekToRedirectTo) {
-          console.log('Found week to redirect to from database:', weekToRedirectTo);
+          console.log(`[${new Date().toISOString()}] Found week to redirect to from database:`, weekToRedirectTo);
           applyRedirect(weekToRedirectTo, date);
         } else {
-          console.log('Week not found in database');
+          console.log(`[${new Date().toISOString()}] Week not found in database`);
           localStorage.removeItem('redirectToWeek');
         }
       }
@@ -106,21 +106,23 @@ export const TimeSheetControls = ({
     // Convert the date string to a Date object
     const dateObj = parse(date, 'yyyy-MM-dd', new Date());
     
-    // Update the current week
-    onWeekChange(dateObj);
+    // Mark redirect as applied to prevent multiple redirects
+    setRedirectApplied(true);
     
-    // If the week has hours, update those too
+    // Clear the redirect data immediately to prevent further processing
+    localStorage.removeItem('redirectToWeek');
+    
+    console.log(`[${new Date().toISOString()}] Applying redirect to week:`, weekData.name, 'date:', date, 'hours:', weekData.required_hours);
+    
+    // Update the week hours first
     if (weekData.required_hours) {
       onWeekHoursChange(weekData.required_hours);
     }
     
-    console.log('Redirected to week:', weekData.name);
+    // Then update the current week (triggers data reload)
+    onWeekChange(dateObj);
     
-    // Mark redirect as applied to prevent multiple redirects
-    setRedirectApplied(true);
-    
-    // Clear the redirect data after using it
-    localStorage.removeItem('redirectToWeek');
+    console.log(`[${new Date().toISOString()}] Redirected to week:`, weekData.name);
   };
   
   return (
