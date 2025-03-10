@@ -19,9 +19,36 @@ export const AdfsCallback = () => {
         // Get the authorization code from the URL
         const urlParams = new URLSearchParams(location.search);
         const code = urlParams.get('code');
+        const errorParam = urlParams.get('error');
+        const errorDescription = urlParams.get('error_description');
+        
+        if (errorParam) {
+          let russianErrorMessage = 'Произошла ошибка при аутентификации через ADFS.';
+          
+          switch(errorParam) {
+            case 'access_denied':
+              russianErrorMessage = 'Доступ запрещен. Авторизация была отклонена.';
+              break;
+            case 'invalid_request':
+              russianErrorMessage = 'Неверный запрос аутентификации.';
+              break;
+            case 'unauthorized_client':
+              russianErrorMessage = 'Клиент не авторизован для выполнения этого запроса.';
+              break;
+            case 'server_error':
+              russianErrorMessage = 'Произошла ошибка на сервере ADFS.';
+              break;
+          }
+          
+          if (errorDescription) {
+            russianErrorMessage += ` Детали: ${errorDescription}`;
+          }
+          
+          throw new Error(russianErrorMessage);
+        }
         
         if (!code) {
-          throw new Error('No authorization code received from ADFS');
+          throw new Error('Не получен код авторизации от ADFS');
         }
         
         // Exchange the code for tokens
@@ -47,7 +74,22 @@ export const AdfsCallback = () => {
         });
         
         if (!response.ok) {
-          throw new Error('Failed to exchange authorization code for tokens');
+          const responseData = await response.json().catch(() => null);
+          
+          if (responseData && responseData.error) {
+            switch(responseData.error) {
+              case 'invalid_grant':
+                throw new Error('Недействительный код авторизации или истек срок его действия.');
+              case 'invalid_client':
+                throw new Error('Недопустимый ID клиента или секрет клиента.');
+              case 'invalid_request':
+                throw new Error('Неверный запрос обмена токенами.');
+              default:
+                throw new Error(`Ошибка при обмене кода на токены: ${responseData.error}`);
+            }
+          }
+          
+          throw new Error('Не удалось обменять код авторизации на токены.');
         }
         
         const tokenData = await response.json();
@@ -62,7 +104,7 @@ export const AdfsCallback = () => {
         const userEmail = idTokenPayload.email || idTokenPayload.upn;
         
         if (!userEmail) {
-          throw new Error('No email or UPN found in ID token');
+          throw new Error('Не найден email или UPN в ID токене');
         }
         
         // Now find the user in your database using Supabase
@@ -74,7 +116,7 @@ export const AdfsCallback = () => {
           .single();
         
         if (error || !data) {
-          throw new Error('User not found in the system');
+          throw new Error(`Пользователь с email ${userEmail} не найден в системе`);
         }
         
         // Create a properly formatted User object
@@ -119,8 +161,8 @@ export const AdfsCallback = () => {
         
         // Show success toast
         toast({
-          title: "Welcome back!",
-          description: `You are now logged in as ${data.name}`
+          title: "Добро пожаловать!",
+          description: `Вы успешно вошли в систему как ${data.name}`
         });
         
         // Redirect to the main page
@@ -128,10 +170,11 @@ export const AdfsCallback = () => {
         
       } catch (error) {
         console.error('ADFS callback error:', error);
-        setError('Authentication failed. Please try again or contact support.');
+        const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка аутентификации';
+        setError(errorMessage);
         toast({
-          title: "Authentication Failed",
-          description: "There was a problem completing the ADFS authentication.",
+          title: "Ошибка аутентификации",
+          description: errorMessage,
           variant: "destructive"
         });
       } finally {
@@ -146,7 +189,7 @@ export const AdfsCallback = () => {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <p className="mb-4">Completing authentication...</p>
+          <p className="mb-4">Завершение аутентификации...</p>
           <div className="w-8 h-8 border-4 border-t-blue-500 border-b-transparent border-l-transparent border-r-transparent rounded-full animate-spin mx-auto"></div>
         </div>
       </div>
@@ -165,7 +208,7 @@ export const AdfsCallback = () => {
               className="text-blue-500 hover:underline"
               onClick={() => navigate('/login')}
             >
-              Return to login
+              Вернуться на страницу входа
             </button>
           </div>
         </div>

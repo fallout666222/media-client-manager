@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -203,22 +204,56 @@ export const Login = ({
       const clientId = import.meta.env.VITE_ADFS_CLIENT_ID || 'your-client-id';
       const redirectUri = encodeURIComponent(window.location.origin + '/auth/adfs-callback');
       
+      // Check if ADFS URL is configured
+      if (!adfsUrl || adfsUrl === 'https://adfs.example.org/adfs') {
+        throw new Error('adfs_not_configured');
+      }
+      
       // Construct the authorization URL
       const authUrl = `${adfsUrl}/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&resource=https://timesheet.app&scope=openid profile email`;
       
-      // Redirect the user to the ADFS login page
-      window.location.href = authUrl;
-      
-      // The actual authentication will happen on the ADFS server and the user will be
-      // redirected back to the specified redirect_uri with an authorization code
-      // This code is then exchanged for tokens in a separate callback handler
+      // Before redirecting, check if the ADFS server is available
+      try {
+        const pingResponse = await fetch(`${adfsUrl}/ping`, { 
+          method: 'GET',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          cache: 'no-cache',
+          timeout: 5000
+        });
+        
+        // Redirect the user to the ADFS login page
+        window.location.href = authUrl;
+      } catch (connectionError) {
+        console.error('ADFS server connection error:', connectionError);
+        throw new Error('adfs_connection_error');
+      }
       
     } catch (error) {
       console.error('ADFS login error:', error);
-      setAdfsError('ADFS authentication failed. Please check your network connection and try again.');
+      const errorMessage = error instanceof Error ? error.message : 'unknown_error';
+      
+      // Set appropriate error message based on error type
+      switch(errorMessage) {
+        case 'adfs_not_configured':
+          setAdfsError('ADFS не настроен. Пожалуйста, обратитесь к администратору системы.');
+          break;
+        case 'adfs_connection_error':
+          setAdfsError('Не удалось подключиться к серверу ADFS. Проверьте сетевое подключение и доступность сервера.');
+          break;
+        case 'user_not_found':
+          setAdfsError(`Пользователь "${username || 'Unknown'}" не найден в системе.`);
+          break;
+        case 'insufficient_permissions':
+          setAdfsError('Недостаточно прав для входа в систему. Обратитесь к администратору.');
+          break;
+        default:
+          setAdfsError('Произошла неизвестная ошибка при авторизации через ADFS. Пожалуйста, попробуйте позже или используйте другой метод входа.');
+      }
+      
       toast({
-        title: "ADFS Authentication Failed",
-        description: "There was a problem with single sign-on. Please try again or use password authentication.",
+        title: "Ошибка ADFS аутентификации",
+        description: "Возникла проблема с единым входом. Пожалуйста, попробуйте еще раз или используйте другой метод входа.",
         variant: "destructive"
       });
     } finally {
