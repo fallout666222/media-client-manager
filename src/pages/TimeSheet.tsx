@@ -1,4 +1,4 @@
-<lov-code>
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parse, format, isAfter, isBefore, addWeeks, startOfWeek, isEqual, isSameDay } from 'date-fns';
@@ -857,4 +857,102 @@ const TimeSheet = ({
       const typeMap = new Map(mediaTypesData.map(t => [t.name, t.id]));
       
       for (const typeName of types) {
-        const typeId = typeMap
+        const typeId = typeMap.get(typeName);
+        
+        if (typeId && !currentVisible?.some(v => v.type_id === typeId)) {
+          await addUserVisibleType(currentUser.id, typeId);
+        }
+      }
+      
+      if (currentVisible) {
+        for (const visible of currentVisible) {
+          const type = mediaTypesData.find(t => t.id === visible.type_id);
+          
+          if (type && !types.includes(type.name)) {
+            await removeUserVisibleType(visible.id);
+          }
+        }
+      }
+      
+      await updateVisibleTypesOrder(currentUser.id, types);
+      
+      toast({
+        title: "Visible Media Types Updated",
+        description: "Your visible media types have been updated",
+      });
+    } catch (error) {
+      console.error('Error updating visible media types:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update visible media types",
+        variant: "destructive"
+      });
+    }
+  };
+
+  return (
+    <div>
+      <TimeSheetHeader 
+        userRole={userRole}
+        currentDate={currentDate}
+        customWeeks={customWeeks}
+        onDateChange={setCurrentDate}
+        onCustomWeekChange={setCurrentCustomWeek}
+        currentUser={currentUser}
+        viewedUser={viewedUser}
+        users={users}
+        onUserChange={setViewedUser}
+        isImpersonationMode={!!impersonatedUser}
+        showTeamMemberSelect={userRole === 'admin' || userRole === 'manager' || isUserHead}
+      />
+      <TimeSheetControls
+        userRole={userRole}
+        status={getCurrentWeekStatus()}
+        canSubmit={!isCurrentWeekSubmitted() && !readOnly}
+        canReject={(getCurrentWeekStatus() === 'under-review' || getCurrentWeekStatus() === 'accepted') && !readOnly}
+        canApprove={getCurrentWeekStatus() === 'under-review' && !readOnly}
+        hasEarlierUnsubmittedWeeks={hasUnsubmittedEarlierWeek() && !adminOverride}
+        adminOverride={adminOverride}
+        onReturnToUnsubmittedWeek={handleReturnToFirstUnsubmittedWeek}
+        onSubmitForReview={handleSubmitForReview}
+        onApprove={handleApprove}
+        onReject={handleReject}
+        showSettings={showSettings}
+        onToggleSettings={() => setShowSettings(!showSettings)}
+        weekStatuses={weekStatuses}
+        customWeeks={customWeeks}
+        currentDate={currentDate}
+        setCurrentDate={setCurrentDate}
+        setCurrentCustomWeek={setCurrentCustomWeek}
+      />
+      
+      <TimeSheetContent
+        weekHours={weekHours}
+        effectiveWeekHours={Math.round(weekHours * (weekPercentage / 100))}
+        weekPercentage={weekPercentage}
+        status={getCurrentWeekStatus()}
+        showSettings={showSettings}
+        isReadOnly={readOnly && !adminOverride && !isUserHead}
+        selectedClients={selectedClients}
+        selectedMediaTypes={selectedMediaTypes}
+        availableClients={availableClients}
+        availableMediaTypes={availableMediaTypes}
+        timeEntries={timeEntries[format(currentDate, 'yyyy-MM-dd')] || {}}
+        onHoursChange={handleTimeUpdate}
+        onChangeWeekHours={handleWeekHoursChange}
+        onSelectClient={handleSelectClient}
+        onSelectMediaType={handleSelectMediaType}
+        onRemoveClient={handleRemoveClient}
+        onRemoveMediaType={handleRemoveMediaType}
+        onAddClient={handleAddClient}
+        onAddMediaType={handleAddMediaType}
+        onSaveVisibleClients={handleSaveVisibleClients}
+        onSaveVisibleMediaTypes={handleSaveVisibleMediaTypes}
+        userRole={userRole}
+        onWeekHoursChange={handleWeekHoursChange}
+      />
+    </div>
+  );
+};
+
+export default TimeSheet;
