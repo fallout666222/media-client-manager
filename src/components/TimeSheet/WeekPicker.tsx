@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Select,
   SelectContent,
@@ -12,6 +12,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format, parse, isSameDay, isBefore, getYear } from 'date-fns';
 import { CustomWeek } from '@/types/timesheet';
 import { getCustomWeeks } from '@/integrations/supabase/database';
+import { checkCustomWeekExists } from '@/integrations/supabase/client';
 
 interface WeekPickerProps {
   currentDate: Date;
@@ -50,43 +51,58 @@ export const WeekPicker = ({
     return Array.from(years).sort();
   }, [availableWeeks]);
 
-  useEffect(() => {
-    const fetchWeeks = async () => {
-      try {
-        setLoading(true);
-        if (propCustomWeeks.length > 0) {
-          // Transform data to match CustomWeek interface if needed
-          const formattedWeeks = propCustomWeeks.map(week => ({
+  const fetchWeeks = useCallback(async () => {
+    try {
+      setLoading(true);
+      if (propCustomWeeks.length > 0) {
+        console.log('Using provided custom weeks:', propCustomWeeks);
+        // Transform data to match CustomWeek interface if needed
+        const formattedWeeks = propCustomWeeks.map(week => ({
+          id: week.id,
+          name: week.name,
+          startDate: week.period_from || week.startDate,
+          endDate: week.period_to || week.endDate,
+          hours: week.required_hours || week.hours
+        }));
+        setAvailableWeeks(formattedWeeks);
+      } else {
+        console.log('Fetching custom weeks from database...');
+        const { data, error } = await getCustomWeeks();
+        if (error) {
+          console.error('Error fetching custom weeks:', error);
+        } else if (data && data.length > 0) {
+          console.log('Received custom weeks from database:', data);
+          // Transform data to match CustomWeek interface
+          const formattedWeeks = data.map(week => ({
             id: week.id,
             name: week.name,
-            startDate: week.period_from || week.startDate,
-            endDate: week.period_to || week.endDate,
-            hours: week.required_hours || week.hours
+            startDate: week.period_from,
+            endDate: week.period_to,
+            hours: week.required_hours
           }));
           setAvailableWeeks(formattedWeeks);
         } else {
-          const { data } = await getCustomWeeks();
-          if (data && data.length > 0) {
-            // Transform data to match CustomWeek interface
-            const formattedWeeks = data.map(week => ({
-              id: week.id,
-              name: week.name,
-              startDate: week.period_from,
-              endDate: week.period_to,
-              hours: week.required_hours
-            }));
-            setAvailableWeeks(formattedWeeks);
-          }
+          console.log('No custom weeks found in database');
         }
-      } catch (error) {
-        console.error('Error fetching custom weeks:', error);
-      } finally {
-        setLoading(false);
       }
-    };
-
-    fetchWeeks();
+    } catch (error) {
+      console.error('Error fetching custom weeks:', error);
+    } finally {
+      setLoading(false);
+    }
   }, [propCustomWeeks]);
+
+  useEffect(() => {
+    fetchWeeks();
+    
+    // Set up a periodic refresh of weeks
+    const refreshInterval = setInterval(() => {
+      console.log('Refreshing custom weeks data...');
+      fetchWeeks();
+    }, 10000); // Refresh every 10 seconds
+    
+    return () => clearInterval(refreshInterval);
+  }, [fetchWeeks]);
 
   // Filter weeks by year if a year is selected
   const getFilteredWeeks = () => {
@@ -131,14 +147,56 @@ export const WeekPicker = ({
   const currentWeek = getCurrentWeek();
   const currentWeekId = currentWeek?.id || filteredWeeks[0]?.id;
 
-  const handleCustomWeekSelect = (weekId: string) => {
+  const handleCustomWeekSelect = async (weekId: string) => {
+    console.log(`Selecting week with ID: ${weekId}`);
+    
+    // First check if this week is in our filtered list
     const selectedWeek = filteredWeeks.find(week => week.id === weekId);
+    
     if (selectedWeek) {
-      const date = parse(selectedWeek.startDate, "yyyy-MM-dd", new Date());
+      console.log('Found week in filtered list:', selectedWeek);
+      applyWeekSelection(selectedWeek);
+    } else {
+      // If not in filtered list, try to fetch directly from database
+      console.log('Week not found in filtered list, checking database...');
+      const weekData = await checkCustomWeekExists(weekId);
+      
+      if (weekData) {
+        console.log('Found week in database:', weekData);
+        const formattedWeek = {
+          id: weekData.id,
+          name: weekData.name,
+          startDate: weekData.period_from,
+          endDate: weekData.period_to,
+          hours: weekData.required_hours
+        };
+        applyWeekSelection(formattedWeek);
+        
+        // Also refresh our week list to include this week
+        fetchWeeks();
+      } else {
+        console.error(`Could not find week with ID ${weekId}`);
+      }
+    }
+  };
+  
+  const applyWeekSelection = (week: CustomWeek) => {
+    try {
+      console.log(`Applying week selection: ${week.name} (${week.id})`);
+      
+      // Parse the start date string to a Date object
+      const date = parse(week.startDate, "yyyy-MM-dd", new Date());
+      console.log(`Parsed date:`, date);
+      
+      // Update the week in parent component
       onWeekChange(date);
       
-      // Pass the base hours (not adjusted by percentage) - the TimeSheet component will apply the percentage
-      onWeekHoursChange(selectedWeek.hours);
+      // Pass the base hours (not adjusted by percentage)
+      onWeekHoursChange(week.hours);
+      
+      console.log(`Week selection applied successfully`);
+    } catch (error) {
+      console.error('Error applying week selection:', error);
     }
   };
 
@@ -156,11 +214,7 @@ export const WeekPicker = ({
     }
 
     const newWeek = filteredWeeks[newIndex];
-    const date = parse(newWeek.startDate, "yyyy-MM-dd", new Date());
-    onWeekChange(date);
-    
-    // Pass the base hours (not adjusted by percentage)
-    onWeekHoursChange(newWeek.hours);
+    applyWeekSelection(newWeek);
   };
 
   const formatWeekLabel = (week: CustomWeek) => {
@@ -212,13 +266,13 @@ export const WeekPicker = ({
         </Button>
 
         <Select
-          value={currentWeekId}
+          value={currentWeekId || ''}
           onValueChange={handleCustomWeekSelect}
         >
           <SelectTrigger className="flex-1">
             <SelectValue placeholder="Select a custom week" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="z-50">
             {filteredWeeks.map((week) => (
               <SelectItem key={week.id} value={week.id}>
                 {formatWeekLabel(week)}

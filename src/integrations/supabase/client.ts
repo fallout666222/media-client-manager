@@ -47,3 +47,25 @@ export const checkSupabaseConnection = async () => {
     return false;
   }
 };
+
+// Helper to check if a particular custom week exists
+export const checkCustomWeekExists = async (weekId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('custom_weeks')
+      .select('*')
+      .eq('id', weekId)
+      .single();
+    
+    if (error) {
+      console.error(`Custom week with ID ${weekId} not found:`, error);
+      return null;
+    }
+    
+    console.log(`Found custom week:`, data);
+    return data;
+  } catch (err) {
+    console.error(`Error checking for custom week ${weekId}:`, err);
+    return null;
+  }
+};
