@@ -33,12 +33,14 @@ export const TimeSheetGrid = ({
   const [localTimeEntries, setLocalTimeEntries] = useState<Record<string, Record<string, number>>>({});
   const [initialized, setInitialized] = useState(false);
   
-  // Log when timeEntries prop changes
+  // Add a debug log for when time entries change
   useEffect(() => {
     console.log(`TimeSheetGrid received new timeEntries:`, timeEntries);
   }, [timeEntries]);
   
+  // Initialize local time entries from props
   useEffect(() => {
+    // Only process if we have timeEntries data
     if (!Object.keys(timeEntries).length) {
       // If timeEntries is empty, don't initialize localTimeEntries yet
       return;
