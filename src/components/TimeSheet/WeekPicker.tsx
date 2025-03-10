@@ -40,6 +40,7 @@ export const WeekPicker = ({
     const savedYear = localStorage.getItem('selectedYear');
     return savedYear || 'all';
   });
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const { toast } = useToast();
 
   // Get unique years from available weeks
@@ -96,10 +97,12 @@ export const WeekPicker = ({
 
   // When weeks are loaded, try to restore saved state
   useEffect(() => {
-    if (availableWeeks.length > 0 && !loading) {
+    if (availableWeeks.length > 0 && !loading && isInitialLoad) {
+      console.log('Attempting to restore saved week from localStorage');
       restoreSavedWeek();
+      setIsInitialLoad(false);
     }
-  }, [availableWeeks, loading]);
+  }, [availableWeeks, loading, isInitialLoad]);
 
   // Filter weeks by year if a year is selected
   const getFilteredWeeks = () => {
@@ -152,17 +155,28 @@ export const WeekPicker = ({
   const restoreSavedWeek = () => {
     try {
       const savedWeekId = localStorage.getItem('selectedWeekId');
-      if (!savedWeekId) return;
+      if (!savedWeekId) {
+        console.log('No saved week ID found in localStorage');
+        return;
+      }
+      
+      console.log(`Found saved week ID: ${savedWeekId}`);
       
       // Find the week with the saved ID
       const savedWeek = availableWeeks.find(week => week.id === savedWeekId);
-      if (!savedWeek) return;
+      if (!savedWeek) {
+        console.log(`No week found with ID: ${savedWeekId}`);
+        return;
+      }
+      
+      console.log(`Found saved week: ${savedWeek.name}, start date: ${savedWeek.startDate}`);
       
       // Check if the week is in the current filtered weeks based on year filter
       const weekYear = getYear(parse(savedWeek.startDate, 'yyyy-MM-dd', new Date())).toString();
       
       // Update year filter if needed to include the saved week
       if (selectedYear !== 'all' && weekYear !== selectedYear) {
+        console.log(`Updating year filter from ${selectedYear} to ${weekYear} to include saved week`);
         setSelectedYear(weekYear);
         localStorage.setItem('selectedYear', weekYear);
       }
@@ -172,7 +186,19 @@ export const WeekPicker = ({
       onWeekChange(date);
       onWeekHoursChange(savedWeek.hours);
       
-      console.log(`Restored saved week: ${savedWeek.name}`);
+      console.log(`Restored saved week: ${savedWeek.name}, date: ${savedWeek.startDate}, hours: ${savedWeek.hours}`);
+
+      // Force a delay to ensure the week change is processed before any other operations
+      setTimeout(() => {
+        // This is a trigger to force parent components to reload data for this week
+        const event = new CustomEvent('weekRestored', { 
+          detail: { 
+            weekId: savedWeek.id,
+            date: savedWeek.startDate
+          } 
+        });
+        window.dispatchEvent(event);
+      }, 50);
     } catch (error) {
       console.error('Error restoring saved week:', error);
     }

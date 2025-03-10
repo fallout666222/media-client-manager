@@ -31,8 +31,19 @@ export const TimeSheetGrid = ({
   const isFormDisabled = readOnly || status === 'under-review' || status === 'accepted';
   const { toast } = useToast();
   const [localTimeEntries, setLocalTimeEntries] = useState<Record<string, Record<string, number>>>({});
+  const [initialized, setInitialized] = useState(false);
+  
+  // Log when timeEntries prop changes
+  useEffect(() => {
+    console.log(`TimeSheetGrid received new timeEntries:`, timeEntries);
+  }, [timeEntries]);
   
   useEffect(() => {
+    if (!Object.keys(timeEntries).length) {
+      // If timeEntries is empty, don't initialize localTimeEntries yet
+      return;
+    }
+    
     const initialEntries: Record<string, Record<string, number>> = {};
     
     Object.entries(timeEntries).forEach(([client, mediaEntries]) => {
@@ -42,7 +53,9 @@ export const TimeSheetGrid = ({
       });
     });
     
+    console.log(`Setting localTimeEntries to:`, initialEntries);
     setLocalTimeEntries(initialEntries);
+    setInitialized(true);
   }, [timeEntries]);
   
   const effectiveWeekHours = Math.round(weekHours * (weekPercentage / 100));

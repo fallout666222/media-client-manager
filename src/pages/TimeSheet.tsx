@@ -82,6 +82,21 @@ const TimeSheet = ({
   const [weekPercentage, setWeekPercentage] = useState<number>(100);
   const isViewingOwnTimesheet = impersonatedUser ? adminOverride : viewedUser.id === currentUser.id;
 
+  const [forceReload, setForceReload] = useState<number>(0);
+
+  useEffect(() => {
+    const handleWeekRestored = (event: CustomEvent) => {
+      console.log('Week restored event received:', event.detail);
+      setForceReload(prev => prev + 1);
+    };
+
+    window.addEventListener('weekRestored', handleWeekRestored as EventListener);
+    
+    return () => {
+      window.removeEventListener('weekRestored', handleWeekRestored as EventListener);
+    };
+  }, []);
+
   useEffect(() => {
     const fetchCustomWeeks = async () => {
       try {
@@ -709,7 +724,7 @@ const TimeSheet = ({
     };
     
     loadUserData();
-  }, [viewedUser, currentDate]);
+  }, [viewedUser, currentDate, forceReload]);
 
   const handleTimeUpdate = async (client: string, mediaType: string, hours: number) => {
     if ((readOnly || !isViewingOwnTimesheet) && !adminOverride && !isUserHead) return;
