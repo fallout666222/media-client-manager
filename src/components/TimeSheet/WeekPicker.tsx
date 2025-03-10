@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Select,
   SelectContent,
@@ -35,6 +35,7 @@ export const WeekPicker = ({
   const [availableWeeks, setAvailableWeeks] = useState<CustomWeek[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [lastFetchTime, setLastFetchTime] = useState<number>(Date.now());
 
   // Get unique years from available weeks
   const availableYears = useMemo(() => {
@@ -50,43 +51,65 @@ export const WeekPicker = ({
     return Array.from(years).sort();
   }, [availableWeeks]);
 
-  useEffect(() => {
-    const fetchWeeks = async () => {
-      try {
-        setLoading(true);
-        if (propCustomWeeks.length > 0) {
-          // Transform data to match CustomWeek interface if needed
-          const formattedWeeks = propCustomWeeks.map(week => ({
+  // Create a memoized refresh function to fetch weeks
+  const fetchWeeks = useCallback(async () => {
+    try {
+      setLoading(true);
+      if (propCustomWeeks.length > 0) {
+        console.log(`Using ${propCustomWeeks.length} custom weeks from props`);
+        // Transform data to match CustomWeek interface if needed
+        const formattedWeeks = propCustomWeeks.map(week => ({
+          id: week.id,
+          name: week.name,
+          startDate: week.period_from || week.startDate,
+          endDate: week.period_to || week.endDate,
+          hours: week.required_hours || week.hours
+        }));
+        setAvailableWeeks(formattedWeeks);
+      } else {
+        const { data } = await getCustomWeeks();
+        if (data && data.length > 0) {
+          console.log(`Fetched ${data.length} custom weeks from database`);
+          // Transform data to match CustomWeek interface
+          const formattedWeeks = data.map(week => ({
             id: week.id,
             name: week.name,
-            startDate: week.period_from || week.startDate,
-            endDate: week.period_to || week.endDate,
-            hours: week.required_hours || week.hours
+            startDate: week.period_from,
+            endDate: week.period_to,
+            hours: week.required_hours
           }));
           setAvailableWeeks(formattedWeeks);
-        } else {
-          const { data } = await getCustomWeeks();
-          if (data && data.length > 0) {
-            // Transform data to match CustomWeek interface
-            const formattedWeeks = data.map(week => ({
-              id: week.id,
-              name: week.name,
-              startDate: week.period_from,
-              endDate: week.period_to,
-              hours: week.required_hours
-            }));
-            setAvailableWeeks(formattedWeeks);
-          }
         }
-      } catch (error) {
-        console.error('Error fetching custom weeks:', error);
-      } finally {
-        setLoading(false);
       }
-    };
-
-    fetchWeeks();
+    } catch (error) {
+      console.error('Error fetching custom weeks:', error);
+    } finally {
+      setLoading(false);
+      setLastFetchTime(Date.now());
+    }
   }, [propCustomWeeks]);
+
+  // Effect to load weeks when props change or component mounts
+  useEffect(() => {
+    fetchWeeks();
+  }, [fetchWeeks]);
+
+  // Add an effect to periodically check for new weeks - every 30 seconds
+  useEffect(() => {
+    // Only set up polling if we're not using customWeeks from props
+    if (propCustomWeeks.length === 0) {
+      const intervalId = setInterval(() => {
+        fetchWeeks();
+      }, 30000); // Check every 30 seconds
+      
+      return () => clearInterval(intervalId);
+    }
+  }, [fetchWeeks, propCustomWeeks.length]);
+
+  // Add a manual refresh function that can be triggered from the UI
+  const handleRefreshWeeks = () => {
+    fetchWeeks();
+  };
 
   // Filter weeks by year if a year is selected
   const getFilteredWeeks = () => {
@@ -173,7 +196,7 @@ export const WeekPicker = ({
     return `${week.name}: ${start} - ${end} (${effectiveHours}h)`;
   };
 
-  if (loading || filteredWeeks.length === 0) {
+  if (loading && filteredWeeks.length === 0) {
     return <div className="w-full max-w-md mb-4 flex items-center justify-center p-4">Loading weeks...</div>;
   }
 
@@ -189,7 +212,7 @@ export const WeekPicker = ({
           <SelectTrigger className="h-8 flex-1">
             <SelectValue placeholder="All years" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-white">
             <SelectItem value="all">All years</SelectItem>
             {availableYears.map((year) => (
               <SelectItem key={year} value={year}>
@@ -198,6 +221,16 @@ export const WeekPicker = ({
             ))}
           </SelectContent>
         </Select>
+        
+        {/* Refresh button */}
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRefreshWeeks}
+          title="Refresh weeks list"
+        >
+          ↻
+        </Button>
       </div>
 
       {/* Week picker controls */}
@@ -218,7 +251,7 @@ export const WeekPicker = ({
           <SelectTrigger className="flex-1">
             <SelectValue placeholder="Select a custom week" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-white">
             {filteredWeeks.map((week) => (
               <SelectItem key={week.id} value={week.id}>
                 {formatWeekLabel(week)}
