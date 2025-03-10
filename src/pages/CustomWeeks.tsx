@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { differenceInDays, parse, format, getYear } from "date-fns";
+import { differenceInDays, parse, format, getYear, isWithinInterval } from "date-fns";
 import {
   Table,
   TableBody,
@@ -127,6 +127,36 @@ const CustomWeeks = () => {
     });
   };
 
+  // Check if a new week overlaps with existing weeks
+  const checkForOverlaps = (start: string, end: string): boolean => {
+    try {
+      const newStartDate = parse(start, "yyyy-MM-dd", new Date());
+      const newEndDate = parse(end, "yyyy-MM-dd", new Date());
+      
+      return weeks.some(week => {
+        const existingStartDate = parse(week.startDate, "yyyy-MM-dd", new Date());
+        const existingEndDate = parse(week.endDate, "yyyy-MM-dd", new Date());
+        
+        // Check if the new date range overlaps with an existing one
+        // Overlap occurs if: 
+        // - New start date is within existing range, OR
+        // - New end date is within existing range, OR
+        // - New range fully contains the existing range
+        return (
+          isWithinInterval(newStartDate, { start: existingStartDate, end: existingEndDate }) ||
+          isWithinInterval(newEndDate, { start: existingStartDate, end: existingEndDate }) ||
+          (
+            newStartDate <= existingStartDate && 
+            newEndDate >= existingEndDate
+          )
+        );
+      });
+    } catch (error) {
+      console.error('Error checking date overlaps:', error);
+      return false;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -152,6 +182,16 @@ const CustomWeeks = () => {
       toast({
         title: "Error",
         description: "Hours must be greater than 0",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Check for date overlaps
+    if (checkForOverlaps(startDate, endDate)) {
+      toast({
+        title: "Error",
+        description: "Date range overlaps with an existing week",
         variant: "destructive",
       });
       return;
