@@ -74,8 +74,17 @@ export const checkCustomWeekExists = async (weekId: string) => {
       return null;
     }
     
-    console.log(`Found custom week:`, data);
-    return data;
+    // Convert database field names to component expected names
+    const formattedWeek = {
+      id: data.id,
+      name: data.name,
+      startDate: data.period_from,
+      endDate: data.period_to,
+      hours: data.required_hours
+    };
+    
+    console.log(`Found custom week:`, formattedWeek);
+    return formattedWeek;
   } catch (err) {
     console.error(`Error checking for custom week ${weekId}:`, err);
     return null;
