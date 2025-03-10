@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Select,
@@ -51,6 +50,18 @@ export const WeekPicker = ({
     return Array.from(years).sort();
   }, [availableWeeks]);
 
+  // Effect to load weeks when props change or component mounts
+  useEffect(() => {
+    fetchWeeks();
+    
+    // Set up polling to check for new weeks - every 30 seconds
+    const intervalId = setInterval(() => {
+      fetchWeeks();
+    }, 30000); // Check every 30 seconds
+    
+    return () => clearInterval(intervalId);
+  }, [fetchWeeks]);
+
   // Create a memoized refresh function to fetch weeks
   const fetchWeeks = useCallback(async () => {
     try {
@@ -88,28 +99,6 @@ export const WeekPicker = ({
       setLastFetchTime(Date.now());
     }
   }, [propCustomWeeks]);
-
-  // Effect to load weeks when props change or component mounts
-  useEffect(() => {
-    fetchWeeks();
-  }, [fetchWeeks]);
-
-  // Add an effect to periodically check for new weeks - every 30 seconds
-  useEffect(() => {
-    // Only set up polling if we're not using customWeeks from props
-    if (propCustomWeeks.length === 0) {
-      const intervalId = setInterval(() => {
-        fetchWeeks();
-      }, 30000); // Check every 30 seconds
-      
-      return () => clearInterval(intervalId);
-    }
-  }, [fetchWeeks, propCustomWeeks.length]);
-
-  // Add a manual refresh function that can be triggered from the UI
-  const handleRefreshWeeks = () => {
-    fetchWeeks();
-  };
 
   // Filter weeks by year if a year is selected
   const getFilteredWeeks = () => {
@@ -152,22 +141,45 @@ export const WeekPicker = ({
   };
 
   const currentWeek = getCurrentWeek();
-  const currentWeekId = currentWeek?.id || filteredWeeks[0]?.id;
+  const currentWeekId = currentWeek?.id || (filteredWeeks.length > 0 ? filteredWeeks[0]?.id : "");
 
+  // Fix: Improve the week selection handler to ensure it works reliably
   const handleCustomWeekSelect = (weekId: string) => {
+    console.log(`Selecting week with ID: ${weekId}`);
+    
     const selectedWeek = filteredWeeks.find(week => week.id === weekId);
-    if (selectedWeek) {
+    if (!selectedWeek) {
+      console.error(`Week with ID ${weekId} not found in filteredWeeks`);
+      return;
+    }
+    
+    console.log(`Found selected week:`, selectedWeek);
+    
+    try {
+      // Parse the date correctly
       const date = parse(selectedWeek.startDate, "yyyy-MM-dd", new Date());
+      console.log(`Parsed date: ${format(date, "yyyy-MM-dd")}`);
+      
+      // Update the date
       onWeekChange(date);
       
-      // Pass the base hours (not adjusted by percentage) - the TimeSheet component will apply the percentage
-      onWeekHoursChange(selectedWeek.hours);
+      // Update the hours (not adjusted by percentage - TimeSheet component will apply the percentage)
+      const hours = selectedWeek.hours || 40; // Default to 40 if hours not specified
+      console.log(`Setting hours to: ${hours}`);
+      onWeekHoursChange(hours);
+      
+      console.log(`Week selection completed for week ${selectedWeek.name}`);
+    } catch (error) {
+      console.error('Error selecting week:', error);
     }
   };
 
   const handleNavigateWeek = (direction: 'prev' | 'next') => {
     const currentIndex = filteredWeeks.findIndex(week => week.id === currentWeekId);
-    if (currentIndex === -1) return;
+    if (currentIndex === -1) {
+      console.error(`Week with ID ${currentWeekId} not found in filtered weeks`);
+      return;
+    }
 
     let newIndex;
     if (direction === 'prev' && currentIndex > 0) {
@@ -175,15 +187,25 @@ export const WeekPicker = ({
     } else if (direction === 'next' && currentIndex < filteredWeeks.length - 1) {
       newIndex = currentIndex + 1;
     } else {
+      console.log(`Cannot navigate ${direction}, current index: ${currentIndex}, weeks count: ${filteredWeeks.length}`);
       return;
     }
 
     const newWeek = filteredWeeks[newIndex];
-    const date = parse(newWeek.startDate, "yyyy-MM-dd", new Date());
-    onWeekChange(date);
+    console.log(`Navigating ${direction} to week:`, newWeek);
     
-    // Pass the base hours (not adjusted by percentage)
-    onWeekHoursChange(newWeek.hours);
+    try {
+      const date = parse(newWeek.startDate, "yyyy-MM-dd", new Date());
+      onWeekChange(date);
+      
+      // Pass the base hours (not adjusted by percentage)
+      const hours = newWeek.hours || 40;
+      onWeekHoursChange(hours);
+      
+      console.log(`Navigation completed to week ${newWeek.name}`);
+    } catch (error) {
+      console.error(`Error navigating to week:`, error);
+    }
   };
 
   const formatWeekLabel = (week: CustomWeek) => {
@@ -221,16 +243,6 @@ export const WeekPicker = ({
             ))}
           </SelectContent>
         </Select>
-        
-        {/* Refresh button */}
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleRefreshWeeks}
-          title="Refresh weeks list"
-        >
-          ↻
-        </Button>
       </div>
 
       {/* Week picker controls */}
@@ -239,7 +251,7 @@ export const WeekPicker = ({
           variant="outline"
           size="icon"
           onClick={() => handleNavigateWeek('prev')}
-          disabled={!filteredWeeks.length || currentWeekId === filteredWeeks[0].id}
+          disabled={!filteredWeeks.length || currentWeekId === filteredWeeks[0]?.id}
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
@@ -251,7 +263,7 @@ export const WeekPicker = ({
           <SelectTrigger className="flex-1">
             <SelectValue placeholder="Select a custom week" />
           </SelectTrigger>
-          <SelectContent className="bg-white">
+          <SelectContent className="bg-white z-50">
             {filteredWeeks.map((week) => (
               <SelectItem key={week.id} value={week.id}>
                 {formatWeekLabel(week)}
@@ -264,7 +276,7 @@ export const WeekPicker = ({
           variant="outline"
           size="icon"
           onClick={() => handleNavigateWeek('next')}
-          disabled={!filteredWeeks.length || currentWeekId === filteredWeeks[filteredWeeks.length - 1].id}
+          disabled={!filteredWeeks.length || currentWeekId === filteredWeeks[filteredWeeks.length - 1]?.id}
         >
           <ChevronRight className="h-4 w-4" />
         </Button>

@@ -133,6 +133,7 @@ export const TimeSheetControls = ({
           firstWeek={firstWeek}
           weekPercentage={weekPercentage}
           customWeeks={customWeeks}
+          viewedUserId={isViewingOwnTimesheet ? undefined : weekId}
         />
       </div>
       
