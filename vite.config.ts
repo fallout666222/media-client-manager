@@ -8,7 +8,7 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
-    port: parseInt(process.env.SERVER_PORT || '8080'),
+    port: 8080,
   },
   plugins: [
     react(),
@@ -19,10 +19,5 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
-  },
-  build: {
-    sourcemap: true,
-    // Increase build memory limit for large applications
-    chunkSizeWarningLimit: 1600,
   },
 }));

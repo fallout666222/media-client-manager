@@ -10,18 +10,10 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_KEY || SUPABASE_PUBLISHABLE_KEY;
 
-console.log('Initializing Supabase client with URL:', supabaseUrl);
-
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseKey, {
-  realtime: {
-    params: {
-      eventsPerSecond: 10
-    }
-  }
-});
+export const supabase = createClient<Database>(supabaseUrl, supabaseKey);
 
 /**
  * DATABASE SWITCHING GUIDE:
@@ -37,56 +29,3 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseKey, {
  *    - Implement the same interface/methods as the Supabase client
  *    - Update imports throughout the application
  */
-
-// Debug helper to check connection status
-export const checkSupabaseConnection = async () => {
-  try {
-    const { data, error } = await supabase.from('custom_weeks').select('count');
-    if (error) {
-      console.error('Supabase connection error:', error);
-      return false;
-    }
-    console.log('Supabase connection successful');
-    return true;
-  } catch (err) {
-    console.error('Failed to check Supabase connection:', err);
-    return false;
-  }
-};
-
-// Helper to check if a particular custom week exists
-export const checkCustomWeekExists = async (weekId: string) => {
-  try {
-    console.log(`Checking if custom week with ID ${weekId} exists...`);
-    const { data, error } = await supabase
-      .from('custom_weeks')
-      .select('*')
-      .eq('id', weekId)
-      .maybeSingle();
-    
-    if (error) {
-      console.error(`Error checking for custom week ${weekId}:`, error);
-      return null;
-    }
-    
-    if (!data) {
-      console.log(`Custom week with ID ${weekId} not found`);
-      return null;
-    }
-    
-    // Convert database field names to component expected names
-    const formattedWeek = {
-      id: data.id,
-      name: data.name,
-      startDate: data.period_from,
-      endDate: data.period_to,
-      hours: data.required_hours
-    };
-    
-    console.log(`Found custom week:`, formattedWeek);
-    return formattedWeek;
-  } catch (err) {
-    console.error(`Error checking for custom week ${weekId}:`, err);
-    return null;
-  }
-};
