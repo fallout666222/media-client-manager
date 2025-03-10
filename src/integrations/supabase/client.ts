@@ -10,6 +10,8 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_KEY || SUPABASE_PUBLISHABLE_KEY;
 
+console.log('Initializing Supabase client with URL:', supabaseUrl);
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
@@ -29,3 +31,19 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseKey);
  *    - Implement the same interface/methods as the Supabase client
  *    - Update imports throughout the application
  */
+
+// Debug helper to check connection status
+export const checkSupabaseConnection = async () => {
+  try {
+    const { data, error } = await supabase.from('custom_weeks').select('count');
+    if (error) {
+      console.error('Supabase connection error:', error);
+      return false;
+    }
+    console.log('Supabase connection successful');
+    return true;
+  } catch (err) {
+    console.error('Failed to check Supabase connection:', err);
+    return false;
+  }
+};

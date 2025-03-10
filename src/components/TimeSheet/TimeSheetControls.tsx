@@ -45,6 +45,31 @@ export const TimeSheetControls = ({
 }: TimeSheetControlsProps) => {
   const [redirectApplied, setRedirectApplied] = useState(false);
   
+  const fetchWeeks = async (redirectWeekId: string, date: string) => {
+    try {
+      console.log('Fetching custom weeks for redirect...');
+      const { data, error } = await getCustomWeeks();
+      if (error) {
+        console.error('Error fetching custom weeks:', error);
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        const weekToRedirectTo = data.find(week => week.id === redirectWeekId);
+        if (weekToRedirectTo) {
+          console.log('Found week to redirect to from database:', weekToRedirectTo);
+          applyRedirect(weekToRedirectTo, date);
+        } else {
+          console.log('Week not found in database');
+          localStorage.removeItem('redirectToWeek');
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching week data:', error);
+      localStorage.removeItem('redirectToWeek');
+    }
+  };
+  
   useEffect(() => {
     // Check for redirect information in localStorage
     const redirectData = localStorage.getItem('redirectToWeek');
@@ -65,7 +90,7 @@ export const TimeSheetControls = ({
         } else if (customWeeks.length === 0) {
           // If customWeeks is empty, fetch the week directly from the database
           console.log('customWeeks is empty, fetching week data directly...');
-          fetchWeekAndRedirect(redirectWeekId, date);
+          fetchWeeks(redirectWeekId, date);
         } else {
           console.log('Week not found in available weeks');
           // Clear the redirect data if we can't find the week
@@ -77,30 +102,6 @@ export const TimeSheetControls = ({
       }
     }
   }, [customWeeks, onWeekChange, onWeekHoursChange, redirectApplied]);
-  
-  const fetchWeekAndRedirect = async (weekId: string, date: string) => {
-    try {
-      const { data, error } = await getCustomWeeks();
-      if (error) {
-        console.error('Error fetching custom weeks:', error);
-        return;
-      }
-      
-      if (data && data.length > 0) {
-        const weekToRedirectTo = data.find(week => week.id === weekId);
-        if (weekToRedirectTo) {
-          console.log('Found week to redirect to from database:', weekToRedirectTo);
-          applyRedirect(weekToRedirectTo, date);
-        } else {
-          console.log('Week not found in database');
-          localStorage.removeItem('redirectToWeek');
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching week data:', error);
-      localStorage.removeItem('redirectToWeek');
-    }
-  };
   
   const applyRedirect = (weekData: any, date: string) => {
     // Convert the date string to a Date object
