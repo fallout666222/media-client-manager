@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { TimeEntry, TimeSheetStatus } from '@/types/timesheet';
@@ -31,20 +32,7 @@ export const TimeSheetGrid = ({
   const { toast } = useToast();
   const [localTimeEntries, setLocalTimeEntries] = useState<Record<string, Record<string, number>>>({});
   
-  // Debug log for time entries changes with timestamp
   useEffect(() => {
-    console.log(`[${new Date().toISOString()}] TimeSheetGrid received new timeEntries:`, timeEntries);
-  }, [timeEntries]);
-  
-  // Reset and initialize local time entries from props whenever timeEntries changes
-  useEffect(() => {
-    // Reset local entries if timeEntries is empty to avoid stale data
-    if (!Object.keys(timeEntries).length) {
-      console.log(`[${new Date().toISOString()}] Resetting localTimeEntries due to empty timeEntries`);
-      setLocalTimeEntries({});
-      return;
-    }
-    
     const initialEntries: Record<string, Record<string, number>> = {};
     
     Object.entries(timeEntries).forEach(([client, mediaEntries]) => {
@@ -54,7 +42,6 @@ export const TimeSheetGrid = ({
       });
     });
     
-    console.log(`[${new Date().toISOString()}] Setting localTimeEntries to:`, initialEntries);
     setLocalTimeEntries(initialEntries);
   }, [timeEntries]);
   

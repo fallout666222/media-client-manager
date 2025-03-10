@@ -12,7 +12,6 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format, parse, isSameDay, isBefore, getYear } from 'date-fns';
 import { CustomWeek } from '@/types/timesheet';
 import { getCustomWeeks } from '@/integrations/supabase/database';
-import { useToast } from "@/hooks/use-toast";
 
 interface WeekPickerProps {
   currentDate: Date;
@@ -35,13 +34,7 @@ export const WeekPicker = ({
 }: WeekPickerProps) => {
   const [availableWeeks, setAvailableWeeks] = useState<CustomWeek[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedYear, setSelectedYear] = useState<string>(() => {
-    // Initialize from localStorage if available
-    const savedYear = localStorage.getItem('selectedYear');
-    return savedYear || 'all';
-  });
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const { toast } = useToast();
+  const [selectedYear, setSelectedYear] = useState<string>('all');
 
   // Get unique years from available weeks
   const availableYears = useMemo(() => {
@@ -95,15 +88,6 @@ export const WeekPicker = ({
     fetchWeeks();
   }, [propCustomWeeks]);
 
-  // When weeks are loaded, try to restore saved state
-  useEffect(() => {
-    if (availableWeeks.length > 0 && !loading && isInitialLoad) {
-      console.log('Attempting to restore saved week from localStorage');
-      restoreSavedWeek();
-      setIsInitialLoad(false);
-    }
-  }, [availableWeeks, loading, isInitialLoad]);
-
   // Filter weeks by year if a year is selected
   const getFilteredWeeks = () => {
     if (availableWeeks.length === 0) return [];
@@ -135,130 +119,22 @@ export const WeekPicker = ({
 
   // Find the current week based on the currentDate
   const getCurrentWeek = () => {
-    // First try to find an exact match
     for (const week of filteredWeeks) {
       const weekStartDate = parse(week.startDate, "yyyy-MM-dd", new Date());
       if (isSameDay(weekStartDate, currentDate)) {
         return week;
       }
     }
-    
-    // If no exact match and filtered weeks exist, return the first week in the filtered list
-    if (filteredWeeks.length > 0) {
-      return filteredWeeks[0];
-    }
-    
-    return null; // Return null if no weeks are available
-  };
-
-  // Function to restore saved week from localStorage
-  const restoreSavedWeek = () => {
-    try {
-      const savedWeekId = localStorage.getItem('selectedWeekId');
-      if (!savedWeekId) {
-        console.log('No saved week ID found in localStorage');
-        return;
-      }
-      
-      console.log(`Found saved week ID: ${savedWeekId}`);
-      
-      // Find the week with the saved ID
-      const savedWeek = availableWeeks.find(week => week.id === savedWeekId);
-      if (!savedWeek) {
-        console.log(`No week found with ID: ${savedWeekId}`);
-        return;
-      }
-      
-      console.log(`Found saved week: ${savedWeek.name}, start date: ${savedWeek.startDate}`);
-      
-      // Check if the week is in the current filtered weeks based on year filter
-      const weekYear = getYear(parse(savedWeek.startDate, 'yyyy-MM-dd', new Date())).toString();
-      
-      // Update year filter if needed to include the saved week
-      if (selectedYear !== 'all' && weekYear !== selectedYear) {
-        console.log(`Updating year filter from ${selectedYear} to ${weekYear} to include saved week`);
-        setSelectedYear(weekYear);
-        localStorage.setItem('selectedYear', weekYear);
-      }
-      
-      // Set the week
-      const date = parse(savedWeek.startDate, "yyyy-MM-dd", new Date());
-      onWeekChange(date);
-      onWeekHoursChange(savedWeek.hours);
-      
-      console.log(`Restored saved week: ${savedWeek.name}, date: ${savedWeek.startDate}, hours: ${savedWeek.hours}`);
-
-      // Force a delay to ensure the week change is processed before any other operations
-      setTimeout(() => {
-        // This is a trigger to force parent components to reload data for this week
-        const event = new CustomEvent('weekRestored', { 
-          detail: { 
-            weekId: savedWeek.id,
-            date: savedWeek.startDate
-          } 
-        });
-        window.dispatchEvent(event);
-      }, 50);
-    } catch (error) {
-      console.error('Error restoring saved week:', error);
-    }
-  };
-
-  // Handle year filter change
-  const handleYearChange = (year: string) => {
-    setSelectedYear(year);
-    localStorage.setItem('selectedYear', year);
-    
-    // When year changes, select the first week of that year if available
-    if (availableWeeks.length > 0) {
-      // We need to refilter the weeks with the new year selection
-      const newFilteredWeeks = availableWeeks.filter(week => {
-        // Skip first week filter for this immediate calculation
-        if (year === 'all') return true;
-        
-        const weekYear = getYear(parse(week.startDate, 'yyyy-MM-dd', new Date())).toString();
-        return weekYear === year;
-      }).sort((a, b) => {
-        const dateA = parse(a.startDate, 'yyyy-MM-dd', new Date());
-        const dateB = parse(b.startDate, 'yyyy-MM-dd', new Date());
-        return dateA.getTime() - dateB.getTime();
-      });
-      
-      if (newFilteredWeeks.length > 0) {
-        const firstWeek = newFilteredWeeks[0];
-        const date = parse(firstWeek.startDate, "yyyy-MM-dd", new Date());
-        
-        // Log to help with debugging
-        console.log(`Year filter changed to ${year}, selecting first week: ${firstWeek.name}`);
-        
-        // Save the selected week to localStorage
-        localStorage.setItem('selectedWeekId', firstWeek.id);
-        
-        // Notify parent about the change
-        onWeekChange(date);
-        onWeekHoursChange(firstWeek.hours);
-        
-        // Show a toast notification to indicate the week has changed
-        toast({
-          title: "Week Changed",
-          description: `Selected first week of ${year === 'all' ? 'all years' : year}: ${firstWeek.name}`,
-        });
-      }
-    }
+    return filteredWeeks[0]; // Default to the first available week if no match
   };
 
   const currentWeek = getCurrentWeek();
-  const currentWeekId = currentWeek?.id || (filteredWeeks.length > 0 ? filteredWeeks[0]?.id : '');
+  const currentWeekId = currentWeek?.id || filteredWeeks[0]?.id;
 
   const handleCustomWeekSelect = (weekId: string) => {
     const selectedWeek = filteredWeeks.find(week => week.id === weekId);
     if (selectedWeek) {
       const date = parse(selectedWeek.startDate, "yyyy-MM-dd", new Date());
-      console.log(`Selected week: ${selectedWeek.name}, date: ${selectedWeek.startDate}`);
-      
-      // Save the selected week to localStorage
-      localStorage.setItem('selectedWeekId', selectedWeek.id);
-      
       onWeekChange(date);
       
       // Pass the base hours (not adjusted by percentage) - the TimeSheet component will apply the percentage
@@ -281,11 +157,6 @@ export const WeekPicker = ({
 
     const newWeek = filteredWeeks[newIndex];
     const date = parse(newWeek.startDate, "yyyy-MM-dd", new Date());
-    console.log(`Navigating to ${direction} week: ${newWeek.name}, date: ${newWeek.startDate}`);
-    
-    // Save the selected week to localStorage
-    localStorage.setItem('selectedWeekId', newWeek.id);
-    
     onWeekChange(date);
     
     // Pass the base hours (not adjusted by percentage)
@@ -313,7 +184,7 @@ export const WeekPicker = ({
         <label className="text-sm font-medium whitespace-nowrap">Filter by year:</label>
         <Select
           value={selectedYear}
-          onValueChange={handleYearChange}
+          onValueChange={setSelectedYear}
         >
           <SelectTrigger className="h-8 flex-1">
             <SelectValue placeholder="All years" />
@@ -335,7 +206,7 @@ export const WeekPicker = ({
           variant="outline"
           size="icon"
           onClick={() => handleNavigateWeek('prev')}
-          disabled={!filteredWeeks.length || currentWeekId === filteredWeeks[0]?.id}
+          disabled={!filteredWeeks.length || currentWeekId === filteredWeeks[0].id}
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
@@ -360,7 +231,7 @@ export const WeekPicker = ({
           variant="outline"
           size="icon"
           onClick={() => handleNavigateWeek('next')}
-          disabled={!filteredWeeks.length || currentWeekId === filteredWeeks[filteredWeeks.length - 1]?.id}
+          disabled={!filteredWeeks.length || currentWeekId === filteredWeeks[filteredWeeks.length - 1].id}
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
