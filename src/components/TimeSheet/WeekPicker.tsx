@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format, parse, isSameDay, isBefore, getYear } from 'date-fns';
-import { CustomWeek } from '@/types/timesheet';
+import { CustomWeek, TimeSheetStatus } from '@/types/timesheet';
 import { getCustomWeeks } from '@/integrations/supabase/database';
 
 interface WeekPickerProps {
@@ -21,6 +21,7 @@ interface WeekPickerProps {
   firstWeek?: string;
   customWeeks?: any[];
   viewedUserId?: string;
+  status?: TimeSheetStatus;
 }
 
 export const WeekPicker = ({ 
@@ -30,7 +31,8 @@ export const WeekPicker = ({
   weekPercentage = 100,
   firstWeek = "2025-01-01", // Default to the earliest week if not specified
   customWeeks: propCustomWeeks = [],
-  viewedUserId
+  viewedUserId,
+  status
 }: WeekPickerProps) => {
   const [availableWeeks, setAvailableWeeks] = useState<CustomWeek[]>([]);
   const [loading, setLoading] = useState(true);
@@ -239,3 +241,4 @@ export const WeekPicker = ({
     </div>
   );
 };
+
