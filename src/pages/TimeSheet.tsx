@@ -22,6 +22,7 @@ import {
   removeUserVisibleClient,
   removeUserVisibleType,
   getWeekStatuses,
+  getWeekStatusesChronological,
   getWeekPercentages,
   updateVisibleClientsOrder,
   updateVisibleTypesOrder
@@ -70,7 +71,12 @@ const TimeSheet = ({
 }: TimeSheetProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [customWeeks, setCustomWeeks] = useState<any[]>([]);
+  const viewedUser = impersonatedUser || currentUser;
+  const viewedUserId = viewedUser.id;
+  
   const [currentDate, setCurrentDate] = useState<Date>(() => {
+    if (initialWeekId) return new Date();
+    
     if (userRole === 'admin' && (!firstWeek || firstWeek === 'null') && !currentUser.firstCustomWeekId) {
       return parse("2024-01-01", 'yyyy-MM-dd', new Date());
     }
@@ -79,8 +85,8 @@ const TimeSheet = ({
     }
     return parse(firstWeek, 'yyyy-MM-dd', new Date());
   });
+  
   const [currentCustomWeek, setCurrentCustomWeek] = useState<any>(null);
-  const [viewedUser, setViewedUser] = useState<User>(impersonatedUser || currentUser);
   const [weekPercentage, setWeekPercentage] = useState<number>(100);
   const isViewingOwnTimesheet = impersonatedUser ? adminOverride : viewedUser.id === currentUser.id;
 
@@ -99,6 +105,18 @@ const TimeSheet = ({
         }
         
         setCustomWeeks(weeksData);
+        
+        const savedWeekId = viewedUserId ? localStorage.getItem(`selectedWeek_${viewedUserId}`) : null;
+        
+        if (savedWeekId && weeksData.length > 0) {
+          const savedWeek = weeksData.find((week: any) => week.id === savedWeekId);
+          if (savedWeek) {
+            console.log(`Setting to saved week from localStorage: ${savedWeek.name}`);
+            setCurrentDate(parse(savedWeek.period_from, 'yyyy-MM-dd', new Date()));
+            setCurrentCustomWeek(savedWeek);
+            return;
+          }
+        }
         
         if (initialWeekId && weeksData.length > 0) {
           const initialWeek = weeksData.find((week: any) => week.id === initialWeekId);
@@ -120,7 +138,7 @@ const TimeSheet = ({
     };
     
     fetchCustomWeeks();
-  }, [currentUser.firstCustomWeekId, propCustomWeeks, initialWeekId]);
+  }, [currentUser.firstCustomWeekId, propCustomWeeks, initialWeekId, viewedUserId]);
 
   useEffect(() => {
     const fetchUserVisibles = async () => {
@@ -998,9 +1016,11 @@ const TimeSheet = ({
         customWeeks={customWeeks}
         adminOverride={adminOverride}
         isUserHead={isUserHead}
+        viewedUserId={viewedUserId}
         hasEarlierWeeksUnderReview={isUserHead && checkEarlierWeeksUnderReview && currentCustomWeek?.id 
           ? checkEarlierWeeksUnderReview(currentCustomWeek.id) 
           : false}
+        onNavigateToFirstUnderReview={isUserHead && findFirstUnderReviewWeek ? handleNavigateToFirstUnderReviewWeek : undefined}
       />
 
       <TimeSheetContent
@@ -1039,3 +1059,4 @@ const TimeSheet = ({
 };
 
 export default TimeSheet;
+
