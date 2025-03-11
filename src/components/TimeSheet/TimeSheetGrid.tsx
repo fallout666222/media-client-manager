@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { TimeEntry, TimeSheetStatus } from '@/types/timesheet';
@@ -99,22 +98,19 @@ export const TimeSheetGrid = ({
         return;
       }
       
-      // For user heads, show an informational toast when hours are less than expected
       if (isUserHead && newTotal < effectiveWeekHours) {
         toast({
           title: "Hours Below Required",
           description: `Current total (${newTotal}) is below the required ${effectiveWeekHours} hours for this week`,
-          variant: "warning"
+          variant: "default"
         });
       }
       
       console.log(`Calling onTimeUpdate with ${client}, ${type}, ${hours}`);
-      // Always call onTimeUpdate to sync with database
       onTimeUpdate(client, type, hours);
     }
   };
 
-  // Display a message if no clients or media types are available
   if (clients.length === 0 || mediaTypes.length === 0) {
     return (
       <Alert className="mb-4">
