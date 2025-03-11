@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
   const [firstUnconfirmedWeek, setFirstUnconfirmedWeek] = useState<any>(null);
   const [weekStatuses, setWeekStatuses] = useState<any[]>([]);
   const [firstUnderReviewWeek, setFirstUnderReviewWeek] = useState<any>(null);
+  const [forceRefresh, setForceRefresh] = useState<number>(0); // Add state to force refresh of TimeSheet
   const { toast } = useToast();
 
   const { data: users = [], isLoading, error } = useQuery({
@@ -120,6 +122,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
         status.status?.name === 'under-review'
       );
       
+      console.log("First under review week found:", firstUnderReview);
       setFirstUnderReviewWeek(firstUnderReview);
     } catch (error) {
       console.error('Error finding first under-review week:', error);
@@ -129,6 +132,18 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
 
   const navigateToFirstUnderReviewWeek = () => {
     if (firstUnderReviewWeek && selectedTeamMember) {
+      console.log("Navigating to first under review week:", firstUnderReviewWeek.week);
+      
+      // Save the week ID to localStorage to ensure TimeSheet component loads it
+      if (firstUnderReviewWeek.week && selectedTeamMember) {
+        localStorage.setItem(`selectedWeek_${selectedTeamMember}`, firstUnderReviewWeek.week_id);
+        console.log(`Saved selected week to localStorage: selectedWeek_${selectedTeamMember} = ${firstUnderReviewWeek.week_id}`);
+      }
+      
+      // Force the TimeSheet component to refresh by updating the forceRefresh state
+      setForceRefresh(prev => prev + 1);
+      
+      // Refresh week statuses to ensure we have latest data
       fetchWeekStatuses(selectedTeamMember);
       
       toast({
@@ -364,6 +379,9 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       firstUnderReviewWeek.week_id : 
       (firstUnconfirmedWeek ? firstUnconfirmedWeek.id : null);
     
+    console.log("Rendering TimeSheet with initialWeekId:", initialWeekId);
+    console.log("firstUnderReviewWeek:", firstUnderReviewWeek);
+    
     return (
       <>
         <div className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -396,6 +414,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
         </div>
         
         <TimeSheet
+          key={`timesheet-${selectedTeamMember}-${initialWeekId}-${forceRefresh}`}
           userRole={teamMember.type as 'admin' | 'user' | 'manager'}
           firstWeek={teamMember.first_week}
           currentUser={currentUser}

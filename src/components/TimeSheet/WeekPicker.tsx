@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Select,
@@ -75,6 +74,7 @@ export const WeekPicker = ({
             endDate: week.period_to || week.endDate,
             hours: week.required_hours || week.hours
           }));
+          console.log("Setting available weeks from props:", formattedWeeks.length);
           setAvailableWeeks(formattedWeeks);
         } else {
           const { data } = await getCustomWeeks();
@@ -87,6 +87,7 @@ export const WeekPicker = ({
               endDate: week.period_to,
               hours: week.required_hours
             }));
+            console.log("Setting available weeks from API:", formattedWeeks.length);
             setAvailableWeeks(formattedWeeks);
           }
         }
@@ -131,34 +132,78 @@ export const WeekPicker = ({
 
   // Find the current week based on the currentDate
   const getCurrentWeek = () => {
+    if (filteredWeeks.length === 0) return null;
+    
+    // Check for saved week in localStorage
+    if (viewedUserId) {
+      const savedWeekId = localStorage.getItem(`selectedWeek_${viewedUserId}`);
+      console.log(`Checking saved week for user ${viewedUserId}:`, savedWeekId);
+      
+      if (savedWeekId) {
+        const savedWeek = filteredWeeks.find(week => week.id === savedWeekId);
+        if (savedWeek) {
+          console.log(`Found saved week in localStorage: ${savedWeek.name}`);
+          return savedWeek;
+        }
+      }
+    }
+    
+    // Otherwise find by date
     for (const week of filteredWeeks) {
       const weekStartDate = parse(week.startDate, "yyyy-MM-dd", new Date());
       if (isSameDay(weekStartDate, currentDate)) {
         return week;
       }
     }
+    
     return filteredWeeks[0]; // Default to the first available week if no match
   };
 
   const currentWeek = getCurrentWeek();
   const currentWeekId = currentWeek?.id || filteredWeeks[0]?.id;
 
+  // When currentWeek changes, update the parent component
+  useEffect(() => {
+    if (currentWeek) {
+      console.log(`WeekPicker: Current week updated to ${currentWeek.name} (${currentWeek.id})`);
+      const weekStartDate = parse(currentWeek.startDate, "yyyy-MM-dd", new Date());
+      
+      // Only update if the date is different
+      if (!isSameDay(weekStartDate, currentDate)) {
+        console.log(`WeekPicker: Updating current date to ${format(weekStartDate, 'yyyy-MM-dd')}`);
+        onWeekChange(weekStartDate);
+      }
+      
+      // Always update hours
+      onWeekHoursChange(currentWeek.hours);
+      
+      // Save selected week to localStorage
+      if (viewedUserId) {
+        localStorage.setItem(`selectedWeek_${viewedUserId}`, currentWeek.id);
+        console.log(`WeekPicker: Saved week ${currentWeek.id} to localStorage for user ${viewedUserId}`);
+      }
+    }
+  }, [currentWeek?.id]);
+
   // Save current week ID to localStorage whenever it changes
   useEffect(() => {
     if (currentWeekId && viewedUserId) {
       localStorage.setItem(`selectedWeek_${viewedUserId}`, currentWeekId);
+      console.log(`WeekPicker: Saved selected week ${currentWeekId} for user ${viewedUserId}`);
     }
   }, [currentWeekId, viewedUserId]);
 
   const handleCustomWeekSelect = (weekId: string) => {
     const selectedWeek = filteredWeeks.find(week => week.id === weekId);
     if (selectedWeek) {
+      console.log(`WeekPicker: Selected week ${selectedWeek.name} (${selectedWeek.id})`);
       const date = parse(selectedWeek.startDate, "yyyy-MM-dd", new Date());
       onWeekChange(date);
       
       // Save selected week to localStorage
       if (viewedUserId) {
         localStorage.setItem(`selectedWeek_${viewedUserId}`, weekId);
+        console.log(`WeekPicker: Saved week ${weekId} to localStorage for user ${viewedUserId}`);
       }
       
       // Pass the base hours (not adjusted by percentage) - the TimeSheet component will apply the percentage
@@ -180,12 +225,14 @@ export const WeekPicker = ({
     }
 
     const newWeek = filteredWeeks[newIndex];
+    console.log(`WeekPicker: Navigating to ${direction} week: ${newWeek.name} (${newWeek.id})`);
     const date = parse(newWeek.startDate, "yyyy-MM-dd", new Date());
     onWeekChange(date);
     
     // Save selected week to localStorage
     if (viewedUserId) {
       localStorage.setItem(`selectedWeek_${viewedUserId}`, newWeek.id);
+      console.log(`WeekPicker: Saved week ${newWeek.id} to localStorage for user ${viewedUserId}`);
     }
     
     // Pass the base hours (not adjusted by percentage)
