@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Select,
@@ -40,6 +41,9 @@ export const WeekPicker = ({
     const savedYear = localStorage.getItem('selectedYear');
     return savedYear || 'all';
   });
+
+  // Add this to track the currently selected week ID
+  const [currentWeekId, setCurrentWeekId] = useState<string | null>(null);
 
   useEffect(() => {
     localStorage.setItem('selectedYear', selectedYear);
@@ -147,8 +151,27 @@ export const WeekPicker = ({
     return filteredWeeks[0];
   };
 
+  // Update currentWeekId when currentDate changes
+  useEffect(() => {
+    const matchingWeek = filteredWeeks.find(week => 
+      isSameDay(parse(week.startDate, "yyyy-MM-dd", new Date()), currentDate)
+    );
+    
+    if (matchingWeek) {
+      console.log(`WeekPicker: Current date changed, updating selected week to ${matchingWeek.name} (${matchingWeek.id})`);
+      setCurrentWeekId(matchingWeek.id);
+      
+      if (viewedUserId) {
+        localStorage.setItem(`selectedWeek_${viewedUserId}`, matchingWeek.id);
+        console.log(`WeekPicker: Saved week ${matchingWeek.id} to localStorage for user ${viewedUserId}`);
+      }
+      
+      onWeekHoursChange(matchingWeek.hours);
+    }
+  }, [currentDate, filteredWeeks]);
+
   const currentWeek = getCurrentWeek();
-  const currentWeekId = currentWeek?.id || filteredWeeks[0]?.id;
+  const effectiveWeekId = currentWeekId || currentWeek?.id || filteredWeeks[0]?.id;
 
   useEffect(() => {
     if (currentWeek) {
@@ -166,30 +189,17 @@ export const WeekPicker = ({
         localStorage.setItem(`selectedWeek_${viewedUserId}`, currentWeek.id);
         console.log(`WeekPicker: Saved week ${currentWeek.id} to localStorage for user ${viewedUserId}`);
       }
+      
+      setCurrentWeekId(currentWeek.id);
     }
   }, [currentWeek?.id]);
 
   useEffect(() => {
-    if (currentWeekId && viewedUserId) {
-      localStorage.setItem(`selectedWeek_${viewedUserId}`, currentWeekId);
-      console.log(`WeekPicker: Saved selected week ${currentWeekId} for user ${viewedUserId}`);
+    if (effectiveWeekId && viewedUserId) {
+      localStorage.setItem(`selectedWeek_${viewedUserId}`, effectiveWeekId);
+      console.log(`WeekPicker: Saved selected week ${effectiveWeekId} for user ${viewedUserId}`);
     }
-  }, [currentWeekId, viewedUserId]);
-
-  useEffect(() => {
-    const selectedWeek = filteredWeeks.find(week => 
-      isSameDay(parse(week.startDate, "yyyy-MM-dd", new Date()), currentDate)
-    );
-    
-    if (selectedWeek && selectedWeek.id !== currentWeekId) {
-      console.log(`WeekPicker: Current date changed, updating selected week to ${selectedWeek.name} (${selectedWeek.id})`);
-      
-      if (viewedUserId) {
-        localStorage.setItem(`selectedWeek_${viewedUserId}`, selectedWeek.id);
-        console.log(`WeekPicker: Saved week ${selectedWeek.id} to localStorage for user ${viewedUserId}`);
-      }
-    }
-  }, [currentDate]);
+  }, [effectiveWeekId, viewedUserId]);
 
   const handleCustomWeekSelect = (weekId: string) => {
     const selectedWeek = filteredWeeks.find(week => week.id === weekId);
@@ -204,11 +214,12 @@ export const WeekPicker = ({
       }
       
       onWeekHoursChange(selectedWeek.hours);
+      setCurrentWeekId(weekId);
     }
   };
 
   const handleNavigateWeek = (direction: 'prev' | 'next') => {
-    const currentIndex = filteredWeeks.findIndex(week => week.id === currentWeekId);
+    const currentIndex = filteredWeeks.findIndex(week => week.id === effectiveWeekId);
     if (currentIndex === -1) return;
 
     let newIndex;
@@ -231,6 +242,7 @@ export const WeekPicker = ({
     }
     
     onWeekHoursChange(newWeek.hours);
+    setCurrentWeekId(newWeek.id);
   };
 
   const formatWeekLabel = (week: CustomWeek) => {
@@ -273,13 +285,13 @@ export const WeekPicker = ({
           variant="outline"
           size="icon"
           onClick={() => handleNavigateWeek('prev')}
-          disabled={!filteredWeeks.length || currentWeekId === filteredWeeks[0].id}
+          disabled={!filteredWeeks.length || effectiveWeekId === filteredWeeks[0].id}
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
 
         <Select
-          value={currentWeekId}
+          value={effectiveWeekId}
           onValueChange={handleCustomWeekSelect}
         >
           <SelectTrigger className="flex-1">
@@ -298,7 +310,7 @@ export const WeekPicker = ({
           variant="outline"
           size="icon"
           onClick={() => handleNavigateWeek('next')}
-          disabled={!filteredWeeks.length || currentWeekId === filteredWeeks[filteredWeeks.length - 1].id}
+          disabled={!filteredWeeks.length || effectiveWeekId === filteredWeeks[filteredWeeks.length - 1].id}
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
