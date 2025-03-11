@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -36,7 +35,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
   const [firstUnconfirmedWeek, setFirstUnconfirmedWeek] = useState<any>(null);
   const [weekStatuses, setWeekStatuses] = useState<any[]>([]);
   const [firstUnderReviewWeek, setFirstUnderReviewWeek] = useState<any>(null);
-  const [forceRefresh, setForceRefresh] = useState<number>(0); // Add state to force refresh of TimeSheet
+  const [forceRefresh, setForceRefresh] = useState<number>(0);
   const { toast } = useToast();
 
   const { data: users = [], isLoading, error } = useQuery({
@@ -134,16 +133,13 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
     if (firstUnderReviewWeek && selectedTeamMember) {
       console.log("Navigating to first under review week:", firstUnderReviewWeek.week);
       
-      // Save the week ID to localStorage to ensure TimeSheet component loads it
       if (firstUnderReviewWeek.week && selectedTeamMember) {
         localStorage.setItem(`selectedWeek_${selectedTeamMember}`, firstUnderReviewWeek.week_id);
         console.log(`Saved selected week to localStorage: selectedWeek_${selectedTeamMember} = ${firstUnderReviewWeek.week_id}`);
       }
       
-      // Force the TimeSheet component to refresh by updating the forceRefresh state
       setForceRefresh(prev => prev + 1);
       
-      // Refresh week statuses to ensure we have latest data
       fetchWeekStatuses(selectedTeamMember);
       
       toast({
@@ -200,7 +196,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
     if (currentIndex <= 0) return false;
     
     return sortedWeeks.slice(0, currentIndex).some(status => 
-      status.status?.name === 'under-review'
+      status.status?.name === 'under-review' && status.week_id !== weekId
     );
   };
 

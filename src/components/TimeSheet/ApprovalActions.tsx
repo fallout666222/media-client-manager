@@ -8,29 +8,29 @@ interface ApprovalActionsProps {
   status?: TimeSheetStatus;
   isManager?: boolean;
   isViewingOwnTimesheet?: boolean;
-  isUserHead?: boolean; // Add this to identify if the viewer is a user head
+  isUserHead?: boolean;
   onSubmitForReview?: () => void;
   onApprove: () => void;
   onReject: () => void;
   disabled?: boolean;
   weekId?: string;
-  adminOverride?: boolean; // Add this prop for admin override
-  hasEarlierWeeksUnderReview?: boolean; // New prop to check if there are earlier weeks under review
-  onNavigateToFirstUnderReview?: () => void; // Add this for navigation to first under review week
+  adminOverride?: boolean;
+  hasEarlierWeeksUnderReview?: boolean;
+  onNavigateToFirstUnderReview?: () => void;
 }
 
 export const ApprovalActions = ({
   status,
   isManager,
   isViewingOwnTimesheet,
-  isUserHead = false, // Default to false
+  isUserHead = false,
   onSubmitForReview,
   onApprove,
   onReject,
   disabled = false,
   weekId,
   adminOverride = false,
-  hasEarlierWeeksUnderReview = false, // Default to false
+  hasEarlierWeeksUnderReview = false,
   onNavigateToFirstUnderReview
 }: ApprovalActionsProps) => {
   const handleReject = () => {
@@ -83,9 +83,11 @@ export const ApprovalActions = ({
   }
 
   // User Head can approve/reject timesheets under review for their team members
-  // But only in chronological order (no earlier weeks under review)
   if (isUserHead && !isViewingOwnTimesheet) {
     if (status === 'under-review') {
+      // Log the hasEarlierWeeksUnderReview value for debugging
+      console.log("hasEarlierWeeksUnderReview:", hasEarlierWeeksUnderReview);
+      
       return (
         <div className="flex gap-2 flex-wrap">
           <Button 
