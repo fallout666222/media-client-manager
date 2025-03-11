@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { format, parse } from 'date-fns';
+import { format, parse, isBefore } from 'date-fns';
 import { TimeSheetStatus, TimeSheetData, User } from '@/types/timesheet';
 import { getWeekHours } from '@/integrations/supabase/database';
 
