@@ -335,6 +335,46 @@ const TimeSheet = ({
     return null;
   };
 
+  const findFirstUnderReviewWeek = () => {
+    if (customWeeks.length > 0) {
+      let userFirstWeekDate: Date | null = null;
+      
+      if (viewedUser.firstCustomWeekId) {
+        const userFirstCustomWeek = customWeeks.find(week => week.id === viewedUser.firstCustomWeekId);
+        if (userFirstCustomWeek) {
+          userFirstWeekDate = parse(userFirstCustomWeek.period_from, 'yyyy-MM-dd', new Date());
+        }
+      } else if (viewedUser.firstWeek) {
+        userFirstWeekDate = parse(viewedUser.firstWeek, 'yyyy-MM-dd', new Date());
+      }
+      
+      if (userFirstWeekDate) {
+        const sortedWeeks = [...customWeeks].sort((a, b) => {
+          const dateA = parse(a.period_from, 'yyyy-MM-dd', new Date());
+          const dateB = parse(b.period_from, 'yyyy-MM-dd', new Date());
+          return dateA.getTime() - dateB.getTime();
+        });
+        
+        const userWeeks = sortedWeeks.filter(week => {
+          const weekDate = parse(week.period_from, 'yyyy-MM-dd', new Date());
+          return !isBefore(weekDate, userFirstWeekDate as Date);
+        });
+        
+        for (const week of userWeeks) {
+          if (weekStatuses[week.period_from] === 'under-review') {
+            console.log(`Found first week under review: ${week.name} (${week.period_from})`);
+            return {
+              date: parse(week.period_from, 'yyyy-MM-dd', new Date()),
+              weekData: week
+            };
+          }
+        }
+      }
+    }
+    
+    return null;
+  };
+
   const handleReturnToFirstUnsubmittedWeek = () => {
     const firstUnsubmitted = findFirstUnsubmittedWeek();
     if (firstUnsubmitted) {
@@ -360,6 +400,37 @@ const TimeSheet = ({
         description: adminOverride 
           ? "There are no unsubmitted weeks in the database for this user" 
           : "All your weeks have been submitted",
+      });
+    }
+  };
+
+  const handleNavigateToFirstUnderReviewWeek = () => {
+    const firstUnderReview = findFirstUnderReviewWeek();
+    if (firstUnderReview) {
+      setCurrentDate(firstUnderReview.date);
+      
+      if (firstUnderReview.weekData) {
+        if ('required_hours' in firstUnderReview.weekData) {
+          setWeekHours(firstUnderReview.weekData.required_hours);
+          setCurrentCustomWeek(firstUnderReview.weekData);
+        } else {
+          setWeekHours(firstUnderReview.weekData.hours);
+          setCurrentCustomWeek(null);
+        }
+      }
+      
+      if (viewedUserId && firstUnderReview.weekData && firstUnderReview.weekData.id) {
+        localStorage.setItem(`selectedWeek_${viewedUserId}`, firstUnderReview.weekData.id);
+      }
+      
+      toast({
+        title: "Navigated to First Week Under Review",
+        description: `Showing week of ${format(firstUnderReview.date, 'MMM d, yyyy')}`,
+      });
+    } else {
+      toast({
+        title: "No Weeks Under Review",
+        description: "There are no weeks under review for this user",
       });
     }
   };
@@ -852,4 +923,182 @@ const TimeSheet = ({
       
       if (currentVisible) {
         for (const visible of currentVisible) {
-          const client = clientsData.
+          const client = clientsData.find(c => c.id === visible.client_id);
+          if (client && !clients.includes(client.name)) {
+            await removeUserVisibleClient(currentUser.id, visible.client_id);
+          }
+        }
+      }
+      
+      setSelectedClients(clients);
+    } catch (error) {
+      console.error('Error saving visible clients:', error);
+    }
+  };
+
+  const handleSaveVisibleMediaTypes = async (types: string[]) => {
+    if (!currentUser.id || readOnly) return;
+    
+    try {
+      const { data: typesData } = await getMediaTypes();
+      if (!typesData) return;
+      
+      const { data: currentVisible } = await getUserVisibleTypes(currentUser.id);
+      
+      const typeMap = new Map(typesData.map(t => [t.name, t.id]));
+      
+      for (const typeName of types) {
+        const typeId = typeMap.get(typeName);
+        
+        if (typeId && !currentVisible?.some(v => v.type_id === typeId)) {
+          await addUserVisibleType(currentUser.id, typeId);
+        }
+      }
+      
+      if (currentVisible) {
+        for (const visible of currentVisible) {
+          const type = typesData.find(t => t.id === visible.type_id);
+          if (type && !types.includes(type.name)) {
+            await removeUserVisibleType(currentUser.id, visible.type_id);
+          }
+        }
+      }
+      
+      setSelectedMediaTypes(types);
+    } catch (error) {
+      console.error('Error saving visible media types:', error);
+    }
+  };
+
+  const handleSaveVisibleOrder = async (clients: string[], types: string[]) => {
+    if (!currentUser.id || readOnly) return;
+    
+    try {
+      const { data: clientsData } = await getClients();
+      const { data: typesData } = await getMediaTypes();
+      
+      if (clientsData) {
+        const clientMap = new Map(clientsData.map(c => [c.name, c.id]));
+        const clientIds = clients.map(name => clientMap.get(name)).filter(Boolean) as string[];
+        await updateVisibleClientsOrder(currentUser.id, clientIds);
+      }
+      
+      if (typesData) {
+        const typeMap = new Map(typesData.map(t => [t.name, t.id]));
+        const typeIds = types.map(name => typeMap.get(name)).filter(Boolean) as string[];
+        await updateVisibleTypesOrder(currentUser.id, typeIds);
+      }
+    } catch (error) {
+      console.error('Error saving visible order:', error);
+    }
+  };
+
+  const handleUserChange = (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    if (user) {
+      setViewedUser(user);
+      setTimeEntries({});
+    }
+  };
+
+  return (
+    <div className="container mx-auto py-4 px-2 space-y-6">
+      <TimeSheetHeader 
+        userRole={userRole} 
+        showSettings={showSettings}
+        setShowSettings={setShowSettings}
+        viewedUser={viewedUser}
+        isManager={userRole === 'manager' || userRole === 'admin'}
+        readOnly={readOnly}
+        adminOverride={adminOverride}
+      />
+      
+      {userRole === 'manager' && !impersonatedUser && (
+        <TeamMemberSelector 
+          users={users.filter(u => u.manager_id === currentUser.id && !u.hidden && u.id !== currentUser.id)} 
+          onUserChange={handleUserChange}
+        />
+      )}
+      
+      {isUserHead && !impersonatedUser && (
+        <TeamMemberSelector 
+          users={users.filter(u => u.user_head_id === currentUser.id && !u.hidden && u.id !== currentUser.id)} 
+          onUserChange={handleUserChange}
+        />
+      )}
+      
+      <TimeSheetControls
+        currentDate={currentDate}
+        onWeekChange={(date) => {
+          setCurrentDate(date);
+          setTimeEntries({});
+          
+          const customWeek = customWeeks.find(week => 
+            isSameDay(parse(week.period_from, 'yyyy-MM-dd', new Date()), date)
+          );
+          
+          if (customWeek) {
+            setCurrentCustomWeek(customWeek);
+            setWeekHours(customWeek.required_hours);
+            
+            if (viewedUserId) {
+              localStorage.setItem(`selectedWeek_${viewedUserId}`, customWeek.id);
+            }
+          } else {
+            setCurrentCustomWeek(null);
+            const defaultWeek = userWeeks.find(w => 
+              isSameDay(parse(w.startDate, 'yyyy-MM-dd', new Date()), date)
+            );
+            if (defaultWeek) {
+              setWeekHours(defaultWeek.hours);
+            }
+          }
+        }}
+        onWeekHoursChange={handleWeekHoursChange}
+        status={getCurrentWeekStatus()}
+        isManager={userRole === 'manager' || userRole === 'admin'}
+        isViewingOwnTimesheet={isViewingOwnTimesheet}
+        onSubmitForReview={handleSubmitForReview}
+        onApprove={handleApprove}
+        onReject={handleReject}
+        readOnly={readOnly && !adminOverride}
+        firstWeek={firstWeek}
+        weekId={currentCustomWeek?.id}
+        weekPercentage={weekPercentage}
+        customWeeks={customWeeks}
+        adminOverride={adminOverride}
+        isUserHead={isUserHead}
+        hasEarlierWeeksUnderReview={isUserHead && checkEarlierWeeksUnderReview && currentCustomWeek?.id 
+          ? checkEarlierWeeksUnderReview(currentCustomWeek.id) 
+          : false}
+        viewedUserId={viewedUserId}
+        onNavigateToFirstUnderReview={handleNavigateToFirstUnderReviewWeek}
+      />
+      
+      <TimeSheetContent 
+        timeEntries={timeEntries[format(currentDate, 'yyyy-MM-dd')] || {}}
+        availableClients={availableClients}
+        availableMediaTypes={availableMediaTypes}
+        selectedClients={selectedClients}
+        selectedMediaTypes={selectedMediaTypes}
+        onSelectClient={handleSelectClient}
+        onSelectMediaType={handleSelectMediaType}
+        onAddClient={handleAddClient}
+        onAddMediaType={handleAddMediaType}
+        onRemoveClient={handleRemoveClient}
+        onRemoveMediaType={handleRemoveMediaType}
+        onTimeUpdate={handleTimeUpdate}
+        userRole={userRole}
+        onSaveVisibleClients={handleSaveVisibleClients}
+        onSaveVisibleMediaTypes={handleSaveVisibleMediaTypes}
+        onSaveVisibleOrder={handleSaveVisibleOrder}
+        showSettings={showSettings}
+        weekHours={weekHours * (weekPercentage / 100)}
+        status={getCurrentWeekStatus()}
+        readOnly={(readOnly || !isViewingOwnTimesheet) && !adminOverride && !isUserHead}
+      />
+    </div>
+  );
+};
+
+export default TimeSheet;
