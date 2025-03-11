@@ -99,6 +99,15 @@ export const TimeSheetGrid = ({
         return;
       }
       
+      // For user heads, show an informational toast when hours are less than expected
+      if (isUserHead && newTotal < effectiveWeekHours) {
+        toast({
+          title: "Hours Below Required",
+          description: `Current total (${newTotal}) is below the required ${effectiveWeekHours} hours for this week`,
+          variant: "warning"
+        });
+      }
+      
       console.log(`Calling onTimeUpdate with ${client}, ${type}, ${hours}`);
       // Always call onTimeUpdate to sync with database
       onTimeUpdate(client, type, hours);
