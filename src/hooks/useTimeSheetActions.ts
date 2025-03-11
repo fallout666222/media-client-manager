@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parse, format, isSameDay, isBefore } from 'date-fns';
@@ -167,7 +168,9 @@ export const useTimeSheetActions = ({
     
     return Object.values(weekEntries).reduce((clientSum: number, mediaEntries: Record<string, { hours?: number }>) => {
       return clientSum + Object.values(mediaEntries).reduce((mediaSum: number, entry: { hours?: number }) => {
-        return mediaSum + (Number(entry.hours) || 0);
+        // Explicitly convert hours to a number to fix type error
+        const entryHours = typeof entry.hours === 'number' ? entry.hours : 0;
+        return mediaSum + entryHours;
       }, 0);
     }, 0);
   };
