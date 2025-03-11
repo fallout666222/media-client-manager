@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, Link } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from "react-router-dom";
 import TimeSheet from "./pages/TimeSheet";
 import { Login } from "./components/Auth/Login";
 import DepartmentManagement from "./components/Admin/DepartmentManagement";
@@ -38,7 +38,24 @@ import { AdfsCallback } from "./pages/AuthCallbacks";
 
 const queryClient = new QueryClient();
 
-export function App() {
+function NavButton({ to, children }: { to: string; children: React.ReactNode }) {
+  const location = useLocation();
+  const isActive = location.pathname === to;
+  
+  return (
+    <Link to={to}>
+      <Button 
+        variant={isActive ? "active" : "outline"} 
+        size="sm" 
+        className="flex items-center gap-2"
+      >
+        {children}
+      </Button>
+    </Link>
+  );
+}
+
+function AppContent() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<User[]>([]);
@@ -339,263 +356,251 @@ export function App() {
   }
 
   return (
+    <>
+      {user && (
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 flex-wrap justify-end">
+          <span className="text-sm text-gray-600">
+            Logged in as: {user.username} ({user.role})
+          </span>
+          {user.role === 'admin' && (
+            <>
+              <NavButton to="/view-users">
+                <Users className="h-4 w-4" />
+                View Users
+              </NavButton>
+              <NavButton to="/custom-weeks">
+                <Calendar className="h-4 w-4" />
+                Custom Weeks
+              </NavButton>
+              <NavButton to="/user-manager">
+                <UserCog className="h-4 w-4" />
+                User-Manager
+              </NavButton>
+              <NavButton to="/first-weeks">
+                <CalendarDays className="h-4 w-4" />
+                First Weeks
+              </NavButton>
+              <NavButton to="/week-percentage">
+                <Percent className="h-4 w-4" />
+                Week Percentage
+              </NavButton>
+              <NavButton to="/departments">
+                <Building className="h-4 w-4" />
+                Departments
+              </NavButton>
+              <NavButton to="/client-tree">
+                <TreeDeciduous className="h-4 w-4" />
+                Client Tree
+              </NavButton>
+              <NavButton to="/media-types">
+                <Film className="h-4 w-4" />
+                Media Types
+              </NavButton>
+            </>
+          )}
+          {user.role === 'manager' && (
+            <NavButton to="/manager-view">
+              <Eye className="h-4 w-4" />
+              View Team
+            </NavButton>
+          )}
+          {isUserHead && (
+            <NavButton to="/user-head-view">
+              <UserCircle className="h-4 w-4" />
+              User Head View
+            </NavButton>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleLogout}
+            className="flex items-center gap-2"
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </Button>
+        </div>
+      )}
+      <Routes>
+        <Route
+          path="/"
+          element={
+            user ? (
+              <div className="container mx-auto p-4 pt-16">
+                {user.role === 'admin' || user.firstWeek || user.firstCustomWeekId ? (
+                  <TimeSheet 
+                    userRole={user.role} 
+                    firstWeek={user.firstWeek || (user.role === 'admin' ? '2024-01-01' : '')} 
+                    currentUser={user}
+                    users={users}
+                    clients={clients}
+                  />
+                ) : (
+                  <div className="text-center p-8">
+                    <h2 className="text-xl font-semibold mb-4">
+                      Welcome! Please wait for an admin to set your first working week.
+                    </h2>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            !user ? (
+              <Login onLogin={handleLogin} users={users} />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
+          path="/auth/adfs-callback"
+          element={<AdfsCallback />}
+        />
+        <Route
+          path="/view-users"
+          element={
+            user?.role === 'admin' ? (
+              <UserImpersonation clients={clients} />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
+          path="/custom-weeks"
+          element={
+            user?.role === 'admin' ? (
+              <CustomWeeks />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
+          path="/user-manager"
+          element={
+            user?.role === 'admin' ? (
+              <UserManagerAssignment 
+                onUpdateUserManager={handleUpdateUserManager}
+                onUpdateUserDepartment={handleUpdateUserDepartment}
+                onToggleUserHidden={handleToggleUserHidden}
+              />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
+          path="/first-weeks"
+          element={
+            user?.role === 'admin' ? (
+              <UserFirstWeekManagement />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
+          path="/week-percentage"
+          element={
+            user?.role === 'admin' ? (
+              <UserWeekPercentage />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
+          path="/manager-view"
+          element={
+            user?.role === 'manager' ? (
+              <ManagerView 
+                currentUser={user}
+                users={getVisibleUsers()}
+                clients={clients}
+              />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
+          path="/client-tree"
+          element={
+            user?.role === 'admin' ? (
+              <ClientTree />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
+          path="/departments"
+          element={
+            user?.role === 'admin' ? (
+              <div className="container mx-auto p-4 pt-16">
+                <div className="flex items-center justify-between mb-6">
+                  <h1 className="text-2xl font-bold">Department Management</h1>
+                  <Link to="/">
+                    <Button variant="outline" size="sm" className="flex items-center gap-2">
+                      <ArrowLeft className="h-4 w-4" />
+                      Back to Dashboard
+                    </Button>
+                  </Link>
+                </div>
+                <DepartmentManagement 
+                  departments={departments}
+                  onAddDepartment={handleAddDepartment}
+                  onDeleteDepartment={handleDeleteDepartment}
+                />
+              </div>
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
+          path="/media-types"
+          element={
+            user?.role === 'admin' ? (
+              <MediaTypeManagement />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
+          path="/user-head-view"
+          element={
+            user && isUserHead ? (
+              <UserHeadView
+                currentUser={user}
+                clients={clients}
+              />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+      </Routes>
+    </>
+  );
+}
+
+export function App() {
+  return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          {user && (
-            <div className="fixed top-4 right-4 z-50 flex items-center gap-2 flex-wrap justify-end">
-              <span className="text-sm text-gray-600">
-                Logged in as: {user.username} ({user.role})
-              </span>
-              {user.role === 'admin' && (
-                <>
-                  <Link to="/view-users">
-                    <Button variant="outline" size="sm" className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      View Users
-                    </Button>
-                  </Link>
-                  <Link to="/custom-weeks">
-                    <Button variant="outline" size="sm" className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      Custom Weeks
-                    </Button>
-                  </Link>
-                  <Link to="/user-manager">
-                    <Button variant="outline" size="sm" className="flex items-center gap-2">
-                      <UserCog className="h-4 w-4" />
-                      User-Manager
-                    </Button>
-                  </Link>
-                  <Link to="/first-weeks">
-                    <Button variant="outline" size="sm" className="flex items-center gap-2">
-                      <CalendarDays className="h-4 w-4" />
-                      First Weeks
-                    </Button>
-                  </Link>
-                  <Link to="/week-percentage">
-                    <Button variant="outline" size="sm" className="flex items-center gap-2">
-                      <Percent className="h-4 w-4" />
-                      Week Percentage
-                    </Button>
-                  </Link>
-                  <Link to="/departments">
-                    <Button variant="outline" size="sm" className="flex items-center gap-2">
-                      <Building className="h-4 w-4" />
-                      Departments
-                    </Button>
-                  </Link>
-                  <Link to="/client-tree">
-                    <Button variant="outline" size="sm" className="flex items-center gap-2">
-                      <TreeDeciduous className="h-4 w-4" />
-                      Client Tree
-                    </Button>
-                  </Link>
-                  <Link to="/media-types">
-                    <Button variant="outline" size="sm" className="flex items-center gap-2">
-                      <Film className="h-4 w-4" />
-                      Media Types
-                    </Button>
-                  </Link>
-                </>
-              )}
-              {user.role === 'manager' && (
-                <Link to="/manager-view">
-                  <Button variant="outline" size="sm" className="flex items-center gap-2">
-                    <Eye className="h-4 w-4" />
-                    View Team
-                  </Button>
-                </Link>
-              )}
-              {isUserHead && (
-                <Link to="/user-head-view">
-                  <Button variant="outline" size="sm" className="flex items-center gap-2">
-                    <UserCircle className="h-4 w-4" />
-                    User Head View
-                  </Button>
-                </Link>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLogout}
-                className="flex items-center gap-2"
-              >
-                <LogOut className="h-4 w-4" />
-                Logout
-              </Button>
-            </div>
-          )}
-          <Routes>
-            <Route
-              path="/"
-              element={
-                user ? (
-                  <div className="container mx-auto p-4 pt-16">
-                    {user.role === 'admin' || user.firstWeek || user.firstCustomWeekId ? (
-                      <TimeSheet 
-                        userRole={user.role} 
-                        firstWeek={user.firstWeek || (user.role === 'admin' ? '2024-01-01' : '')} 
-                        currentUser={user}
-                        users={users}
-                        clients={clients}
-                      />
-                    ) : (
-                      <div className="text-center p-8">
-                        <h2 className="text-xl font-semibold mb-4">
-                          Welcome! Please wait for an admin to set your first working week.
-                        </h2>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
-            <Route
-              path="/login"
-              element={
-                !user ? (
-                  <Login onLogin={handleLogin} users={users} />
-                ) : (
-                  <Navigate to="/" replace />
-                )
-              }
-            />
-            <Route
-              path="/auth/adfs-callback"
-              element={<AdfsCallback />}
-            />
-            <Route
-              path="/view-users"
-              element={
-                user?.role === 'admin' ? (
-                  <UserImpersonation clients={clients} />
-                ) : (
-                  <Navigate to="/" replace />
-                )
-              }
-            />
-            <Route
-              path="/custom-weeks"
-              element={
-                user?.role === 'admin' ? (
-                  <CustomWeeks />
-                ) : (
-                  <Navigate to="/" replace />
-                )
-              }
-            />
-            <Route
-              path="/user-manager"
-              element={
-                user?.role === 'admin' ? (
-                  <UserManagerAssignment 
-                    onUpdateUserManager={handleUpdateUserManager}
-                    onUpdateUserDepartment={handleUpdateUserDepartment}
-                    onToggleUserHidden={handleToggleUserHidden}
-                  />
-                ) : (
-                  <Navigate to="/" replace />
-                )
-              }
-            />
-            <Route
-              path="/first-weeks"
-              element={
-                user?.role === 'admin' ? (
-                  <UserFirstWeekManagement />
-                ) : (
-                  <Navigate to="/" replace />
-                )
-              }
-            />
-            <Route
-              path="/week-percentage"
-              element={
-                user?.role === 'admin' ? (
-                  <UserWeekPercentage />
-                ) : (
-                  <Navigate to="/" replace />
-                )
-              }
-            />
-            <Route
-              path="/manager-view"
-              element={
-                user?.role === 'manager' ? (
-                  <ManagerView 
-                    currentUser={user}
-                    users={getVisibleUsers()}
-                    clients={clients}
-                  />
-                ) : (
-                  <Navigate to="/" replace />
-                )
-              }
-            />
-            <Route
-              path="/client-tree"
-              element={
-                user?.role === 'admin' ? (
-                  <ClientTree />
-                ) : (
-                  <Navigate to="/" replace />
-                )
-              }
-            />
-            <Route
-              path="/departments"
-              element={
-                user?.role === 'admin' ? (
-                  <div className="container mx-auto p-4 pt-16">
-                    <div className="flex items-center justify-between mb-6">
-                      <h1 className="text-2xl font-bold">Department Management</h1>
-                      <Link to="/">
-                        <Button variant="outline" size="sm" className="flex items-center gap-2">
-                          <ArrowLeft className="h-4 w-4" />
-                          Back to Dashboard
-                        </Button>
-                      </Link>
-                    </div>
-                    <DepartmentManagement 
-                      departments={departments}
-                      onAddDepartment={handleAddDepartment}
-                      onDeleteDepartment={handleDeleteDepartment}
-                    />
-                  </div>
-                ) : (
-                  <Navigate to="/" replace />
-                )
-              }
-            />
-            <Route
-              path="/media-types"
-              element={
-                user?.role === 'admin' ? (
-                  <MediaTypeManagement />
-                ) : (
-                  <Navigate to="/" replace />
-                )
-              }
-            />
-            <Route
-              path="/user-head-view"
-              element={
-                user && isUserHead ? (
-                  <UserHeadView
-                    currentUser={user}
-                    clients={clients}
-                  />
-                ) : (
-                  <Navigate to="/" replace />
-                )
-              }
-            />
-          </Routes>
+          <AppContent />
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

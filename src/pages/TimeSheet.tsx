@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parse, format, isAfter, isBefore, addWeeks, startOfWeek, isEqual, isSameDay } from 'date-fns';
@@ -938,6 +939,7 @@ const TimeSheet = ({
         weekPercentage={weekPercentage}
         weekHours={weekHours}
         hasCustomWeeks={customWeeks.length > 0}
+        showSettings={showSettings} // Pass the showSettings state
       />
 
       {hasUnsubmittedEarlierWeek() && !readOnly && !isCurrentWeekSubmitted() && !adminOverride && (

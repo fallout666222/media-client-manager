@@ -14,6 +14,7 @@ interface TimeSheetHeaderProps {
   weekPercentage?: number;
   weekHours?: number;
   hasCustomWeeks?: boolean;
+  showSettings?: boolean; // New prop to track if settings are shown
 }
 
 export const TimeSheetHeader = ({
@@ -26,6 +27,7 @@ export const TimeSheetHeader = ({
   weekPercentage = 100,
   weekHours = 40,
   hasCustomWeeks = true,
+  showSettings = false, // Default to false
 }: TimeSheetHeaderProps) => {
   // Calculate the effective hours based on percentage
   const effectiveWeekHours = Math.round(weekHours * (weekPercentage / 100));
@@ -63,7 +65,7 @@ export const TimeSheetHeader = ({
           </Button>
         )}
         <Button
-          variant="outline"
+          variant={showSettings ? "active" : "outline"}
           onClick={onToggleSettings}
         >
           <Settings2 className="h-4 w-4 mr-2" />
