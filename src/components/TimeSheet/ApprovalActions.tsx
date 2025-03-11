@@ -87,7 +87,7 @@ export const ApprovalActions = ({
             title={hasEarlierWeeksUnderReview ? "Earlier weeks need to be approved first" : "Approve timesheet"}
           >
             <Check className="h-4 w-4 mr-2" />
-            Approve
+            {hasEarlierWeeksUnderReview ? "Earlier Weeks Pending" : "Approve"}
           </Button>
           <Button onClick={handleReject} variant="destructive" disabled={disabled}>
             <X className="h-4 w-4 mr-2" />

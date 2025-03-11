@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, Send, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Select,
@@ -35,6 +34,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
   const [searchTerm, setSearchTerm] = useState("");
   const [firstUnconfirmedWeek, setFirstUnconfirmedWeek] = useState<any>(null);
   const [weekStatuses, setWeekStatuses] = useState<any[]>([]);
+  const [firstUnderReviewWeek, setFirstUnderReviewWeek] = useState<any>(null);
   const { toast } = useToast();
 
   const { data: users = [], isLoading, error } = useQuery({
@@ -63,6 +63,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
     setSelectedTeamMember(userId);
     fetchFirstUnconfirmedWeek(userId);
     fetchWeekStatuses(userId);
+    findFirstUnderReviewWeek(userId);
   };
 
   const fetchFirstUnconfirmedWeek = async (userId: string) => {
@@ -86,9 +87,60 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       const { data } = await getWeekStatuses(userId);
       if (data) {
         setWeekStatuses(data);
+        findFirstUnderReviewWeek(userId, data);
       }
     } catch (error) {
       console.error('Error fetching week statuses:', error);
+    }
+  };
+
+  const findFirstUnderReviewWeek = async (userId: string, statusData?: any[]) => {
+    try {
+      const data = statusData || weekStatuses;
+      if (!data || data.length === 0) {
+        const { data: freshData } = await getWeekStatuses(userId);
+        if (!freshData || freshData.length === 0) {
+          setFirstUnderReviewWeek(null);
+          return;
+        }
+        
+        findFirstUnderReviewWeek(userId, freshData);
+        return;
+      }
+      
+      const sortedWeeks = [...data].sort((a, b) => {
+        if (!a.week || !b.week) return 0;
+        
+        const dateA = new Date(a.week.period_from);
+        const dateB = new Date(b.week.period_from);
+        return dateA.getTime() - dateB.getTime();
+      });
+      
+      const firstUnderReview = sortedWeeks.find(status => 
+        status.status?.name === 'under-review'
+      );
+      
+      setFirstUnderReviewWeek(firstUnderReview);
+    } catch (error) {
+      console.error('Error finding first under-review week:', error);
+      setFirstUnderReviewWeek(null);
+    }
+  };
+
+  const navigateToFirstUnderReviewWeek = () => {
+    if (firstUnderReviewWeek && selectedTeamMember) {
+      fetchWeekStatuses(selectedTeamMember);
+      
+      toast({
+        title: "Navigated to First Week Under Review",
+        description: `Week: ${firstUnderReviewWeek.week?.name}`,
+      });
+    } else {
+      toast({
+        title: "No Weeks Under Review",
+        description: "There are no weeks currently under review.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -112,27 +164,29 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
   const checkForEarlierWeeksUnderReview = (weekId: string) => {
     if (!weekStatuses.length) return false;
     
-    // Find the current week
     const currentWeek = weekStatuses.find(status => 
-      status.week_id === weekId && status.status?.name === 'under-review'
+      status.week_id === weekId
     );
     
     if (!currentWeek || !currentWeek.week) return false;
     
-    // Check if there are any earlier weeks that are under review
-    return weekStatuses.some(status => {
-      if (status.status?.name !== 'under-review') return false;
+    const sortedWeeks = [...weekStatuses].sort((a, b) => {
+      if (!a.week || !b.week) return 0;
       
-      // Skip the current week
-      if (status.week_id === weekId) return false;
-      
-      // Compare dates
-      const currentWeekDate = parse(currentWeek.week.period_from, 'yyyy-MM-dd', new Date());
-      const otherWeekDate = parse(status.week.period_from, 'yyyy-MM-dd', new Date());
-      
-      // Return true if the other week is earlier than the current week
-      return isBefore(otherWeekDate, currentWeekDate);
+      const dateA = new Date(a.week.period_from);
+      const dateB = new Date(b.week.period_from);
+      return dateA.getTime() - dateB.getTime();
     });
+    
+    const currentIndex = sortedWeeks.findIndex(status => 
+      status.week_id === weekId
+    );
+    
+    if (currentIndex <= 0) return false;
+    
+    return sortedWeeks.slice(0, currentIndex).some(status => 
+      status.status?.name === 'under-review'
+    );
   };
 
   const handleSubmitForReview = async (userId: string, weekId: string) => {
@@ -148,11 +202,11 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
           description: "Timesheet has been submitted for review",
         });
         
-        // Refresh week statuses
         fetchWeekStatuses(userId);
         
         if (selectedTeamMember) {
           fetchFirstUnconfirmedWeek(selectedTeamMember);
+          findFirstUnderReviewWeek(selectedTeamMember);
         }
       }
     } catch (error) {
@@ -167,15 +221,17 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
 
   const handleApprove = async (userId: string, weekId: string) => {
     try {
-      // First check if there are earlier weeks under review
       const hasEarlierWeeks = checkForEarlierWeeksUnderReview(weekId);
       
       if (hasEarlierWeeks) {
         toast({
           title: "Cannot Approve",
-          description: "Earlier weeks must be approved first",
+          description: "Earlier weeks must be approved first. Navigating to the first week under review.",
           variant: "destructive"
         });
+        
+        findFirstUnderReviewWeek(userId);
+        navigateToFirstUnderReviewWeek();
         return;
       }
       
@@ -190,11 +246,11 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
           description: "Timesheet has been approved",
         });
         
-        // Refresh week statuses
         fetchWeekStatuses(userId);
         
         if (selectedTeamMember) {
           fetchFirstUnconfirmedWeek(selectedTeamMember);
+          findFirstUnderReviewWeek(selectedTeamMember);
         }
       }
     } catch (error) {
@@ -220,11 +276,11 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
           description: "Timesheet has been rejected and needs revision",
         });
         
-        // Refresh week statuses
         fetchWeekStatuses(userId);
         
         if (selectedTeamMember) {
           fetchFirstUnconfirmedWeek(selectedTeamMember);
+          findFirstUnderReviewWeek(selectedTeamMember);
         }
       }
     } catch (error) {
@@ -237,7 +293,6 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
     }
   };
 
-  // Add this new function to handle updating hours
   const handleTimeUpdate = async (userId: string, weekId: string, client: string, mediaType: string, hours: number) => {
     try {
       console.log(`Updating hours for user ${userId}, week ${weekId}, client ${client}, mediaType ${mediaType}, hours ${hours}`);
@@ -304,25 +359,41 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       user_head_id: teamMember.user_head_id
     };
     
-    const initialWeekId = firstUnconfirmedWeek ? firstUnconfirmedWeek.id : null;
+    const initialWeekId = firstUnderReviewWeek ? 
+      firstUnderReviewWeek.week_id : 
+      (firstUnconfirmedWeek ? firstUnconfirmedWeek.id : null);
     
     return (
       <>
-        {firstUnconfirmedWeek && (
-          <div className="mb-4 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded">
-            <h3 className="font-medium">First Week Needing Attention</h3>
-            <p>Week: {firstUnconfirmedWeek.name} ({format(new Date(firstUnconfirmedWeek.period_from), 'MMM d')} - {format(new Date(firstUnconfirmedWeek.period_to), 'MMM d, yyyy')})</p>
-            <div className="mt-2 flex gap-2">
-              <Button 
-                size="sm" 
-                onClick={() => handleSubmitForReview(teamMember.id, firstUnconfirmedWeek.id)}
-              >
-                <Send className="h-4 w-4 mr-2" />
-                Submit for Review
-              </Button>
+        <div className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          {firstUnconfirmedWeek && (
+            <div className="p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded">
+              <h3 className="font-medium">First Week Needing Attention</h3>
+              <p>Week: {firstUnconfirmedWeek.name} ({format(new Date(firstUnconfirmedWeek.period_from), 'MMM d')} - {format(new Date(firstUnconfirmedWeek.period_to), 'MMM d, yyyy')})</p>
+              <div className="mt-2 flex gap-2">
+                <Button 
+                  size="sm" 
+                  onClick={() => handleSubmitForReview(teamMember.id, firstUnconfirmedWeek.id)}
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  Submit for Review
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+          
+          {firstUnderReviewWeek && (
+            <Button 
+              variant="outline" 
+              className="bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100"
+              onClick={navigateToFirstUnderReviewWeek}
+            >
+              <AlertCircle className="h-4 w-4 mr-2" />
+              Go to First Week Under Review
+            </Button>
+          )}
+        </div>
+        
         <TimeSheet
           userRole={teamMember.type as 'admin' | 'user' | 'manager'}
           firstWeek={teamMember.first_week}
