@@ -71,7 +71,7 @@ const TimeSheet = ({
 }: TimeSheetProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [customWeeks, setCustomWeeks] = useState<any[]>([]);
-  const viewedUser = impersonatedUser || currentUser;
+  const [viewedUser, setViewedUser] = useState<User>(impersonatedUser || currentUser);
   const viewedUserId = viewedUser.id;
   
   const [currentDate, setCurrentDate] = useState<Date>(() => {
@@ -690,14 +690,14 @@ const TimeSheet = ({
           
           let weekId = null;
           const customWeek = customWeeks.find(week => 
-            format(parse(week.period_from, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === currentWeekKey
+            isSameDay(parse(week.period_from, 'yyyy-MM-dd', new Date()), currentDate)
           );
           
           if (customWeek) {
             weekId = customWeek.id;
           } else {
             const defaultWeek = userWeeks.find(w => 
-              format(parse(w.startDate, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === currentWeekKey
+              isSameDay(parse(w.startDate, 'yyyy-MM-dd', new Date()), currentDate)
             );
             if (defaultWeek) {
               weekId = defaultWeek.id;
@@ -765,14 +765,14 @@ const TimeSheet = ({
         let weekId = null;
         
         const customWeek = customWeeks.find(week => 
-          format(parse(week.period_from, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === currentWeekKey
+          isSameDay(parse(week.period_from, 'yyyy-MM-dd', new Date()), currentDate)
         );
         
         if (customWeek) {
           weekId = customWeek.id;
         } else {
           const defaultWeek = userWeeks.find(w => 
-            format(parse(w.startDate, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === currentWeekKey
+            isSameDay(parse(w.startDate, 'yyyy-MM-dd', new Date()), currentDate)
           );
           if (defaultWeek) {
             weekId = defaultWeek.id;
@@ -852,211 +852,4 @@ const TimeSheet = ({
       
       if (currentVisible) {
         for (const visible of currentVisible) {
-          const client = clientsData.find(c => c.id === visible.client_id);
-          
-          if (client && !clients.includes(client.name)) {
-            await removeUserVisibleClient(visible.id);
-          }
-        }
-      }
-      
-      await updateVisibleClientsOrder(currentUser.id, clients);
-      
-      toast({
-        title: "Visible Clients Updated",
-        description: "Your visible clients have been updated",
-      });
-    } catch (error) {
-      console.error('Error updating visible clients:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update visible clients",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleSaveVisibleMediaTypes = async (types: string[]) => {
-    if (!currentUser.id || readOnly) return;
-    
-    try {
-      const { data: mediaTypesData } = await getMediaTypes();
-      if (!mediaTypesData) return;
-      
-      const { data: currentVisible } = await getUserVisibleTypes(currentUser.id);
-      
-      const typeMap = new Map(mediaTypesData.map(t => [t.name, t.id]));
-      
-      for (const typeName of types) {
-        const typeId = typeMap.get(typeName);
-        
-        if (typeId && !currentVisible?.some(v => v.type_id === typeId)) {
-          await addUserVisibleType(currentUser.id, typeId);
-        }
-      }
-      
-      if (currentVisible) {
-        for (const visible of currentVisible) {
-          const type = mediaTypesData.find(t => t.id === visible.type_id);
-          
-          if (type && !types.includes(type.name)) {
-            await removeUserVisibleType(visible.id);
-          }
-        }
-      }
-      
-      await updateVisibleTypesOrder(currentUser.id, types);
-      
-      toast({
-        title: "Visible Media Types Updated",
-        description: "Your visible media types have been updated",
-      });
-    } catch (error) {
-      console.error('Error updating visible media types:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update visible media types",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleReorderClients = (newOrder: string[]) => {
-    setSelectedClients(newOrder);
-  };
-
-  const handleReorderMediaTypes = (newOrder: string[]) => {
-    setSelectedMediaTypes(newOrder);
-  };
-
-  return (
-    <div className="space-y-6">
-      {userRole === 'manager' && !impersonatedUser && (
-        <div className="mb-4">
-          <h3 className="text-sm font-medium mb-2">View Timesheet For:</h3>
-          <TeamMemberSelector
-            currentUser={currentUser}
-            users={users}
-            onUserSelect={setViewedUser}
-            selectedUser={viewedUser}
-          />
-        </div>
-      )}
-
-      {adminOverride && (
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-yellow-700">
-                <strong>Admin Override Mode:</strong> You have full control over this user's timesheet, including submitting, approving, rejecting, and modifying hours regardless of week status.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <TimeSheetHeader
-        userRole={userRole}
-        remainingHours={Math.round(weekHours * (weekPercentage / 100)) - getTotalHoursForWeek()}
-        status={getCurrentWeekStatus()}
-        onReturnToFirstUnsubmittedWeek={handleReturnToFirstUnsubmittedWeek}
-        onToggleSettings={() => setShowSettings(!showSettings)}
-        firstWeek={viewedUser.firstWeek || firstWeek}
-        weekPercentage={weekPercentage}
-        weekHours={weekHours}
-        hasCustomWeeks={customWeeks.length > 0}
-        showSettings={showSettings}
-      />
-
-      {hasUnsubmittedEarlierWeek() && !readOnly && !isCurrentWeekSubmitted() && !adminOverride && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertDescription>
-            You have unsubmitted timesheets from previous weeks. Please submit them in chronological order.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <TimeSheetControls
-        currentDate={currentDate}
-        onWeekChange={(date) => {
-          setCurrentDate(date);
-          const selectedWeek = customWeeks.find(week => 
-            isSameDay(parse(week.period_from, 'yyyy-MM-dd', new Date()), date)
-          );
-          
-          if (selectedWeek) {
-            setWeekHours(selectedWeek.required_hours);
-            setCurrentCustomWeek(selectedWeek);
-          } else {
-            const defaultWeek = userWeeks.find(w => 
-              isSameDay(parse(w.startDate, 'yyyy-MM-dd', new Date()), date)
-            );
-            if (defaultWeek) {
-              setWeekHours(defaultWeek.hours);
-              setCurrentCustomWeek(null);
-            }
-          }
-        }}
-        onWeekHoursChange={handleWeekHoursChange}
-        status={getCurrentWeekStatus()}
-        isManager={userRole === 'manager' || userRole === 'admin'}
-        isViewingOwnTimesheet={isViewingOwnTimesheet}
-        onSubmitForReview={handleSubmitForReview}
-        onApprove={handleApprove}
-        onReject={handleReject}
-        readOnly={readOnly || (!isViewingOwnTimesheet && userRole !== 'manager' && userRole !== 'admin' && !adminOverride && !isUserHead)}
-        firstWeek={viewedUser.firstWeek || firstWeek}
-        weekId={currentCustomWeek?.id}
-        weekPercentage={weekPercentage}
-        customWeeks={customWeeks}
-        adminOverride={adminOverride}
-        isUserHead={isUserHead}
-        viewedUserId={viewedUserId}
-        hasEarlierWeeksUnderReview={isUserHead && checkEarlierWeeksUnderReview && currentCustomWeek?.id 
-          ? checkEarlierWeeksUnderReview(currentCustomWeek.id) 
-          : false}
-        onNavigateToFirstUnderReview={isUserHead && findFirstUnderReviewWeek ? handleNavigateToFirstUnderReviewWeek : undefined}
-      />
-
-      <TimeSheetContent
-        showSettings={showSettings}
-        clients={availableClients}
-        mediaTypes={availableMediaTypes}
-        timeEntries={timeEntries[format(currentDate, 'yyyy-MM-dd')] || {}}
-        status={getCurrentWeekStatus()}
-        onTimeUpdate={handleTimeUpdate}
-        onAddClient={handleAddClient}
-        onRemoveClient={handleRemoveClient}
-        onAddMediaType={handleAddMediaType}
-        onRemoveMediaType={handleRemoveMediaType}
-        onSaveVisibleClients={handleSaveVisibleClients}
-        onSaveVisibleMediaTypes={handleSaveVisibleMediaTypes}
-        readOnly={readOnly || (!isViewingOwnTimesheet && !adminOverride && !isUserHead)}
-        weekHours={weekHours}
-        weekPercentage={weekPercentage}
-        userRole={userRole}
-        availableClients={availableClients}
-        availableMediaTypes={availableMediaTypes}
-        selectedClients={selectedClients}
-        selectedMediaTypes={selectedMediaTypes}
-        onSelectClient={handleSelectClient}
-        onSelectMediaType={handleSelectMediaType}
-        isViewingOwnTimesheet={isViewingOwnTimesheet || adminOverride || isUserHead}
-        clientObjects={clients}
-        adminOverride={adminOverride}
-        onReorderClients={handleReorderClients}
-        onReorderMediaTypes={handleReorderMediaTypes}
-        currentUserId={currentUser.id}
-        isUserHead={isUserHead}
-      />
-    </div>
-  );
-};
-
-export default TimeSheet;
-
+          const client = clientsData.
