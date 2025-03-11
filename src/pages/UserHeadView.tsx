@@ -230,6 +230,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
           variant: "destructive"
         });
         
+        await fetchWeekStatuses(userId);
         findFirstUnderReviewWeek(userId);
         navigateToFirstUnderReviewWeek();
         return;

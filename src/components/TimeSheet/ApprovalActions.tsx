@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { TimeSheetStatus } from '@/types/timesheet';
-import { Check, X, Send, RotateCcw } from "lucide-react";
+import { Check, X, Send, RotateCcw, AlertCircle } from "lucide-react";
 
 interface ApprovalActionsProps {
   status?: TimeSheetStatus;
@@ -16,6 +16,7 @@ interface ApprovalActionsProps {
   weekId?: string;
   adminOverride?: boolean; // Add this prop for admin override
   hasEarlierWeeksUnderReview?: boolean; // New prop to check if there are earlier weeks under review
+  onNavigateToFirstUnderReview?: () => void; // Add this for navigation to first under review week
 }
 
 export const ApprovalActions = ({
@@ -29,7 +30,8 @@ export const ApprovalActions = ({
   disabled = false,
   weekId,
   adminOverride = false,
-  hasEarlierWeeksUnderReview = false // Default to false
+  hasEarlierWeeksUnderReview = false, // Default to false
+  onNavigateToFirstUnderReview
 }: ApprovalActionsProps) => {
   const handleReject = () => {
     onReject();
@@ -79,7 +81,7 @@ export const ApprovalActions = ({
   if (isUserHead && !isViewingOwnTimesheet) {
     if (status === 'under-review') {
       return (
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button 
             onClick={onApprove} 
             variant="default" 
@@ -93,15 +95,48 @@ export const ApprovalActions = ({
             <X className="h-4 w-4 mr-2" />
             Reject
           </Button>
+          {hasEarlierWeeksUnderReview && onNavigateToFirstUnderReview && (
+            <Button 
+              onClick={onNavigateToFirstUnderReview}
+              variant="outline"
+              className="bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100"
+            >
+              <AlertCircle className="h-4 w-4 mr-2" />
+              Go to First Week Under Review
+            </Button>
+          )}
         </div>
       );
     } else if (status === 'unconfirmed' || status === 'needs-revision') {
       return (
-        <Button onClick={onSubmitForReview} disabled={disabled}>
-          <Send className="h-4 w-4 mr-2" />
-          Submit for Review
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={onSubmitForReview} disabled={disabled}>
+            <Send className="h-4 w-4 mr-2" />
+            Submit for Review
+          </Button>
+          {onNavigateToFirstUnderReview && (
+            <Button 
+              onClick={onNavigateToFirstUnderReview}
+              variant="outline"
+              className="bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100"
+            >
+              <AlertCircle className="h-4 w-4 mr-2" />
+              Go to First Week Under Review
+            </Button>
+          )}
+        </div>
       );
+    } else {
+      return onNavigateToFirstUnderReview ? (
+        <Button 
+          onClick={onNavigateToFirstUnderReview}
+          variant="outline"
+          className="bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100"
+        >
+          <AlertCircle className="h-4 w-4 mr-2" />
+          Go to First Week Under Review
+        </Button>
+      ) : null;
     }
   }
 

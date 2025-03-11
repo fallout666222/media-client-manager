@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 
 // Custom Weeks
@@ -158,6 +157,28 @@ export const getWeekStatuses = async (userId: string) => {
     week:custom_weeks(*),
     status:week_status_names(*)
   `).eq('user_id', userId);
+};
+
+export const getWeekStatusesChronological = async (userId: string) => {
+  const { data, error } = await supabase.from('week_statuses').select(`
+    *,
+    week:custom_weeks(*),
+    status:week_status_names(*)
+  `).eq('user_id', userId);
+  
+  if (error) throw error;
+  
+  // Sort by week's period_from date if data exists
+  return {
+    data: data?.sort((a, b) => {
+      if (!a.week || !b.week) return 0;
+      
+      const dateA = new Date(a.week.period_from);
+      const dateB = new Date(b.week.period_from);
+      return dateA.getTime() - dateB.getTime();
+    }),
+    error
+  };
 };
 
 export const updateWeekStatus = async (userId: string, weekId: string, statusId: string) => {
@@ -448,4 +469,3 @@ export const updateVisibleTypesOrder = async (userId: string, typeNames: string[
   
   return { data: true };
 };
-
