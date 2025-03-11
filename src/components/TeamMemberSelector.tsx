@@ -22,7 +22,6 @@ interface TeamMemberSelectorProps {
   users: User[];
   onUserSelect: (user: User) => void;
   selectedUser: User;
-  onUserChange?: (userId: string) => void; // Add this prop
 }
 
 export function TeamMemberSelector({
@@ -30,7 +29,6 @@ export function TeamMemberSelector({
   users,
   onUserSelect,
   selectedUser,
-  onUserChange
 }: TeamMemberSelectorProps) {
   const [open, setOpen] = useState(false);
 
@@ -56,15 +54,6 @@ export function TeamMemberSelector({
   
   // Disable the dropdown if there's only one team member (themselves)
   const isDisabled = teamMembers.length === 1;
-  
-  // Handle user selection and call the onUserChange prop if it exists
-  const handleUserSelect = (user: User) => {
-    onUserSelect(user);
-    if (onUserChange && user.id) {
-      onUserChange(user.id);
-    }
-    setOpen(false);
-  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -89,7 +78,10 @@ export function TeamMemberSelector({
               <CommandItem
                 key={user.id}
                 value={user.username}
-                onSelect={() => handleUserSelect(user)}
+                onSelect={() => {
+                  onUserSelect(user);
+                  setOpen(false);
+                }}
               >
                 <Check
                   className={cn(

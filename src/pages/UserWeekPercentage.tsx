@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from "react";
 import { User, CustomWeek, WeekPercentage } from "@/types/timesheet";
 import {
@@ -26,32 +27,18 @@ const DEFAULT_WEEKS: CustomWeek[] = [
 ];
 
 const UserWeekPercentage = () => {
-  const [selectedUser, setSelectedUser] = useState<string>(() => {
-    return localStorage.getItem('userWeekPercentage_selectedUser') || "";
-  });
-  
+  const [selectedUser, setSelectedUser] = useState<string>("");
   const [weekPercentages, setWeekPercentages] = useState<WeekPercentageEntry[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [customWeeks, setCustomWeeks] = useState<CustomWeek[]>([]);
   const [loading, setLoading] = useState(true);
+  // Track the last modified week as a reference for subsequent weeks
   const [lastModifiedWeek, setLastModifiedWeek] = useState<string | null>(null);
-  
-  const [selectedYear, setSelectedYear] = useState<string>(() => {
-    return localStorage.getItem('userWeekPercentage_selectedYear') || "all";
-  });
-  
+  // Add year filter state
+  const [selectedYear, setSelectedYear] = useState<string>("all");
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (selectedUser) {
-      localStorage.setItem('userWeekPercentage_selectedUser', selectedUser);
-    }
-  }, [selectedUser]);
-
-  useEffect(() => {
-    localStorage.setItem('userWeekPercentage_selectedYear', selectedYear);
-  }, [selectedYear]);
-
+  // Define the structure for week percentage entries
   interface WeekPercentageEntry {
     userId: string;
     weekId: string;
@@ -62,10 +49,12 @@ const UserWeekPercentage = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
+        // Fetch users from the database
         const { data: usersData, error: usersError } = await getUsers();
         if (usersError) throw usersError;
         setUsers(usersData || []);
         
+        // Fetch custom weeks
         const { data: weeksData, error: weeksError } = await getCustomWeeks();
         if (weeksError) throw weeksError;
         setCustomWeeks(weeksData || []);
@@ -84,6 +73,7 @@ const UserWeekPercentage = () => {
     fetchData();
   }, [toast]);
 
+  // Extract unique years from custom weeks
   const availableYears = useMemo(() => {
     const years = new Set<string>();
     
@@ -100,6 +90,7 @@ const UserWeekPercentage = () => {
     return Array.from(years).sort();
   }, [customWeeks]);
 
+  // Fetch week percentages when a user is selected
   useEffect(() => {
     const fetchWeekPercentages = async () => {
       if (!selectedUser) return;
@@ -109,6 +100,7 @@ const UserWeekPercentage = () => {
         if (error) throw error;
         
         if (data) {
+          // Convert to the expected format
           const formattedData: WeekPercentageEntry[] = data.map(wp => ({
             userId: wp.user_id,
             weekId: wp.week_id,
@@ -131,6 +123,7 @@ const UserWeekPercentage = () => {
   }, [selectedUser, toast]);
 
   const getWeekPercentage = (userId: string, weekId: string): number => {
+    // First check if this exact week has a stored percentage
     const exactMatch = weekPercentages.find(
       (wp) => wp.userId === userId && wp.weekId === weekId
     );
@@ -139,11 +132,14 @@ const UserWeekPercentage = () => {
       return exactMatch.percentage;
     }
     
+    // No exact match, so let's find the most recent modified week before this one
     const weeks = customWeeks.length > 0 ? customWeeks : DEFAULT_WEEKS;
     
+    // Convert weeks to numeric IDs for comparison
     const currentWeekIndex = weeks.findIndex(week => week.id === weekId);
-    if (currentWeekIndex === -1) return 100;
+    if (currentWeekIndex === -1) return 100; // Default if week not found
     
+    // Check all previous weeks in reverse order (from most recent to oldest)
     const previousWeeks = weeks.slice(0, currentWeekIndex);
     
     for (let i = previousWeeks.length - 1; i >= 0; i--) {
@@ -157,6 +153,7 @@ const UserWeekPercentage = () => {
       }
     }
     
+    // If no previous week has a percentage, return default 100%
     return 100;
   };
 
@@ -174,9 +171,12 @@ const UserWeekPercentage = () => {
       return;
     }
 
+    // Set this as the last modified week
     setLastModifiedWeek(weekId);
 
+    // Only update the database for the specific week being changed
     try {
+      // Update local state for the specific changed week
       const updatedPercentages = [...weekPercentages];
       const existingIndex = updatedPercentages.findIndex(
         (wp) => wp.userId === userId && wp.weekId === weekId
@@ -188,6 +188,8 @@ const UserWeekPercentage = () => {
         updatedPercentages.push({ userId, weekId, percentage });
       }
 
+      // Remove any subsequent week entries from local state
+      // (they will be calculated dynamically by getWeekPercentage)
       const weeks = customWeeks.length > 0 ? customWeeks : DEFAULT_WEEKS;
       const currentWeekIndex = weeks.findIndex(week => week.id === weekId);
       
@@ -205,6 +207,7 @@ const UserWeekPercentage = () => {
         setWeekPercentages(updatedPercentages);
       }
 
+      // Update in the database (only for the changed week)
       await updateWeekPercentage(userId, weekId, percentage);
 
       toast({
@@ -223,6 +226,7 @@ const UserWeekPercentage = () => {
 
   const selectedUserData = users.find((user) => user.id === selectedUser);
   
+  // Filter weeks by selected year
   const getFilteredWeeks = () => {
     const weeksToFilter = customWeeks.length > 0 ? customWeeks : DEFAULT_WEEKS;
     

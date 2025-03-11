@@ -1,3 +1,4 @@
+
 import React, { useMemo, useEffect } from 'react';
 import { TimeSheetGrid } from './TimeSheetGrid';
 import { Settings } from './Settings';
@@ -27,7 +28,6 @@ interface TimeSheetContentProps {
   onRemoveMediaType: (type: string) => void;
   onSaveVisibleClients?: (clients: string[]) => void;
   onSaveVisibleMediaTypes?: (types: string[]) => void;
-  onSaveVisibleOrder?: (clients: string[], types: string[]) => void;
   readOnly?: boolean;
   weekHours?: number;
   weekPercentage?: number;
@@ -60,7 +60,6 @@ export const TimeSheetContent = ({
   onRemoveMediaType,
   onSaveVisibleClients,
   onSaveVisibleMediaTypes,
-  onSaveVisibleOrder,
   readOnly = false,
   weekHours = 40,
   weekPercentage = 100,
@@ -231,9 +230,6 @@ export const TimeSheetContent = ({
           if (onSaveVisibleClients) {
             onSaveVisibleClients(newOrder);
           }
-          if (onSaveVisibleOrder) {
-            onSaveVisibleOrder(newOrder, selectedMediaTypes);
-          }
         }}
         onReorderMediaTypes={(newOrder) => {
           if (onReorderMediaTypes) {
@@ -241,9 +237,6 @@ export const TimeSheetContent = ({
           }
           if (onSaveVisibleMediaTypes) {
             onSaveVisibleMediaTypes(newOrder);
-          }
-          if (onSaveVisibleOrder) {
-            onSaveVisibleOrder(selectedClients, newOrder);
           }
         }}
         currentUserId={currentUserId}

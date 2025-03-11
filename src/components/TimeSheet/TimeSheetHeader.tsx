@@ -2,7 +2,6 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { RotateCcw, Settings2 } from "lucide-react";
-import { User } from "@/types/timesheet";
 
 interface TimeSheetHeaderProps {
   userRole: string;
@@ -15,12 +14,7 @@ interface TimeSheetHeaderProps {
   weekPercentage?: number;
   weekHours?: number;
   hasCustomWeeks?: boolean;
-  showSettings?: boolean; // Prop to track if settings are shown
-  setShowSettings?: React.Dispatch<React.SetStateAction<boolean>>; // Add this prop
-  viewedUser?: User; // Add this prop
-  isManager?: boolean; // Add this prop
-  readOnly?: boolean; // Add this prop
-  adminOverride?: boolean; // Add this prop
+  showSettings?: boolean; // New prop to track if settings are shown
 }
 
 export const TimeSheetHeader = ({
@@ -33,13 +27,7 @@ export const TimeSheetHeader = ({
   weekPercentage = 100,
   weekHours = 40,
   hasCustomWeeks = true,
-  showSettings = false,
-  // New props are unused in this component but needed for TypeScript compatibility
-  setShowSettings,
-  viewedUser,
-  isManager,
-  readOnly,
-  adminOverride
+  showSettings = false, // Default to false
 }: TimeSheetHeaderProps) => {
   // Calculate the effective hours based on percentage
   const effectiveWeekHours = Math.round(weekHours * (weekPercentage / 100));

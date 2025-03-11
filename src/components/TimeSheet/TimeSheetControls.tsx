@@ -22,8 +22,6 @@ interface TimeSheetControlsProps {
   adminOverride?: boolean;
   isUserHead?: boolean;
   hasEarlierWeeksUnderReview?: boolean;
-  viewedUserId?: string;
-  onNavigateToFirstUnderReview?: () => void;
 }
 
 export const TimeSheetControls = ({
@@ -43,9 +41,7 @@ export const TimeSheetControls = ({
   customWeeks = [],
   adminOverride = false,
   isUserHead = false,
-  hasEarlierWeeksUnderReview = false,
-  viewedUserId,
-  onNavigateToFirstUnderReview
+  hasEarlierWeeksUnderReview = false
 }: TimeSheetControlsProps) => {
   return (
     <div className="flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center">
@@ -56,8 +52,6 @@ export const TimeSheetControls = ({
         firstWeek={firstWeek}
         status={status}
         customWeeks={customWeeks}
-        viewedUserId={viewedUserId}
-        weekPercentage={weekPercentage}
       />
       <ApprovalActions
         status={status}
@@ -71,7 +65,6 @@ export const TimeSheetControls = ({
         adminOverride={adminOverride}
         isUserHead={isUserHead}
         hasEarlierWeeksUnderReview={hasEarlierWeeksUnderReview}
-        onNavigateToFirstUnderReview={onNavigateToFirstUnderReview}
       />
     </div>
   );
