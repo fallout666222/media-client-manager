@@ -56,7 +56,7 @@ export const useTimeSheetStatusChanges = ({
   const { toast } = useToast();
 
   const handleSubmitForReview = async () => {
-    if (!isViewingOwnTimesheet && !adminOverride) return;
+    if (!isViewingOwnTimesheet && !adminOverride && !isUserHead) return;
     
     const firstUnsubmittedWeek = findFirstUnsubmittedWeek();
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
@@ -65,7 +65,7 @@ export const useTimeSheetStatusChanges = ({
     const effectiveHours = Math.round(weekHours * (weekPercentage / 100));
     const remainingHours = effectiveHours - totalHours;
     
-    if (remainingHours !== 0 && !adminOverride) {
+    if (remainingHours !== 0 && !adminOverride && !isUserHead) {
       toast({
         title: "Cannot Submit Timesheet",
         description: `You must fill in exactly ${effectiveHours} hours for this week (${weekPercentage}% of ${weekHours}). Remaining: ${remainingHours} hours`,
@@ -74,7 +74,7 @@ export const useTimeSheetStatusChanges = ({
       return;
     }
     
-    if (firstUnsubmittedWeek && !isSameDay(firstUnsubmittedWeek.date, currentDate) && !adminOverride) {
+    if (firstUnsubmittedWeek && !isSameDay(firstUnsubmittedWeek.date, currentDate) && !adminOverride && !isUserHead) {
       toast({
         title: "Cannot Submit This Week",
         description: `Week not submitted because previous weeks haven't been filled in yet.`,

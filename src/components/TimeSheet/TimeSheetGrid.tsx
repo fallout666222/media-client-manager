@@ -16,6 +16,7 @@ interface TimeSheetGridProps {
   weekHours?: number;
   readOnly?: boolean;
   weekPercentage?: number;
+  isUserHead?: boolean;
 }
 
 export const TimeSheetGrid = ({ 
@@ -26,7 +27,8 @@ export const TimeSheetGrid = ({
   status,
   weekHours = 40,
   readOnly = false,
-  weekPercentage = 100
+  weekPercentage = 100,
+  isUserHead = false
 }: TimeSheetGridProps) => {
   const isFormDisabled = readOnly || status === 'under-review' || status === 'accepted';
   const { toast } = useToast();
@@ -81,7 +83,7 @@ export const TimeSheetGrid = ({
       
       console.log(`Current total: ${currentTotal}, New total: ${newTotal}, Limit: ${effectiveWeekHours}`);
       
-      if (newTotal > effectiveWeekHours) {
+      if (newTotal > effectiveWeekHours && !isUserHead) {
         toast({
           title: "Cannot Add Hours",
           description: `Total hours cannot exceed ${effectiveWeekHours} for the week (${weekPercentage}% of ${weekHours})`,
