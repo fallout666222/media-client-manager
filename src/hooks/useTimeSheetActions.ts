@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parse, format, isSameDay, isBefore } from 'date-fns';
@@ -13,7 +12,9 @@ import {
   removeUserVisibleClient,
   removeUserVisibleType,
   updateVisibleClientsOrder,
-  updateVisibleTypesOrder
+  updateVisibleTypesOrder,
+  getUserVisibleClients,
+  getUserVisibleTypes
 } from '@/integrations/supabase/database';
 import { User, TimeSheetStatus } from '@/types/timesheet';
 
@@ -140,7 +141,6 @@ export const useTimeSheetActions = ({
 
   const findFirstUnderReviewWeek = () => {
     if (customWeeks.length > 0) {
-      // Sort custom weeks chronologically
       const sortedWeeks = [...customWeeks].sort((a, b) => {
         const dateA = parse(a.period_from, 'yyyy-MM-dd', new Date());
         const dateB = parse(b.period_from, 'yyyy-MM-dd', new Date());
@@ -149,7 +149,6 @@ export const useTimeSheetActions = ({
       
       for (const week of sortedWeeks) {
         const weekKey = week.period_from;
-        // Check if the week is under review
         if (weekStatuses[weekKey] === 'under-review') {
           return {
             date: parse(weekKey, 'yyyy-MM-dd', new Date()),
@@ -166,8 +165,8 @@ export const useTimeSheetActions = ({
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
     const weekEntries = timeEntries[currentWeekKey] || {};
     
-    return Object.values(weekEntries).reduce((clientSum, mediaEntries) => {
-      return clientSum + Object.values(mediaEntries).reduce((mediaSum, entry) => {
+    return Object.values(weekEntries).reduce((clientSum: number, mediaEntries: any) => {
+      return clientSum + Object.values(mediaEntries).reduce((mediaSum: number, entry: any) => {
         return mediaSum + (entry.hours || 0);
       }, 0);
     }, 0);
@@ -319,7 +318,6 @@ export const useTimeSheetActions = ({
     const effectiveHours = Math.round(weekHours * (weekPercentage / 100));
     const remainingHours = effectiveHours - totalHours;
     
-    // Skip hours validation in admin override mode
     if (remainingHours !== 0 && !adminOverride) {
       toast({
         title: "Cannot Submit Timesheet",
@@ -329,7 +327,6 @@ export const useTimeSheetActions = ({
       return;
     }
     
-    // Skip order validation in admin override mode
     if (firstUnsubmittedWeek && !isSameDay(firstUnsubmittedWeek.date, currentDate) && !adminOverride) {
       toast({
         title: "Cannot Submit This Week",
@@ -395,12 +392,12 @@ export const useTimeSheetActions = ({
             }
           }
           
-          setWeekStatuses(prev => ({
+          setWeekStatuses((prev: Record<string, TimeSheetStatus>) => ({
             ...prev,
             [currentWeekKey]: 'under-review'
           }));
           
-          setSubmittedWeeks(prev => {
+          setSubmittedWeeks((prev: string[]) => {
             if (!prev.includes(currentWeekKey)) {
               return [...prev, currentWeekKey];
             }
@@ -466,7 +463,7 @@ export const useTimeSheetActions = ({
         if (acceptedStatus) {
           await updateWeekStatus(viewedUser.id, currentWeekData.id, acceptedStatus.id);
           
-          setWeekStatuses(prev => ({
+          setWeekStatuses((prev: Record<string, TimeSheetStatus>) => ({
             ...prev,
             [currentWeekKey]: 'accepted'
           }));
@@ -509,13 +506,13 @@ export const useTimeSheetActions = ({
         if (targetStatus) {
           await updateWeekStatus(viewedUser.id, currentWeekData.id, targetStatus.id);
           
-          setWeekStatuses(prev => ({
+          setWeekStatuses((prev: Record<string, TimeSheetStatus>) => ({
             ...prev,
             [currentWeekKey]: targetStatusName as TimeSheetStatus
           }));
           
           if (currentStatus === 'accepted' || currentStatus === 'under-review') {
-            setSubmittedWeeks(prev => prev.filter(week => week !== currentWeekKey));
+            setSubmittedWeeks((prev: string[]) => prev.filter(week => week !== currentWeekKey));
           }
           
           const message = currentStatus === 'accepted' ? 

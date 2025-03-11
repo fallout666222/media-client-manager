@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { parse, format, isSameDay } from 'date-fns';
+import { parse, format, isSameDay, isBefore } from 'date-fns';
 import { TimeSheetStatus, TimeSheetData, User, TimeEntry } from '@/types/timesheet';
 import { 
   getCustomWeeks, 
