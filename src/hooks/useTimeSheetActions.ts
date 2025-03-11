@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parse, format, isSameDay, isBefore } from 'date-fns';
@@ -112,8 +113,14 @@ export const useTimeSheetActions = ({
         });
         
         for (const week of userWeeks) {
-          if (!submittedWeeks.includes(week.period_from)) {
-            console.log(`Found first unsubmitted week: ${week.name} (${week.period_from})`);
+          const weekKey = week.period_from;
+          const weekStatus = weekStatuses[weekKey];
+          
+          // Only consider weeks that are not already submitted or under review
+          if (!submittedWeeks.includes(weekKey) && 
+              weekStatus !== 'under-review' && 
+              weekStatus !== 'accepted') {
+            console.log(`Found first unsubmitted week: ${week.name} (${week.period_from}), status: ${weekStatus || 'unconfirmed'}`);
             return {
               date: parse(week.period_from, 'yyyy-MM-dd', new Date()),
               weekData: week
@@ -165,8 +172,8 @@ export const useTimeSheetActions = ({
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
     const weekEntries = timeEntries[currentWeekKey] || {};
     
-    return Object.entries(weekEntries).reduce((clientSum: number, [clientKey, mediaEntries]) => {
-      return clientSum + Object.entries(mediaEntries).reduce((mediaSum: number, [mediaTypeKey, entry]) => {
+    return Object.entries(weekEntries).reduce((clientSum: number, [_, mediaEntries]) => {
+      return clientSum + Object.entries(mediaEntries).reduce((mediaSum: number, [_, entry]) => {
         return mediaSum + (typeof entry.hours === 'number' ? entry.hours : 0);
       }, 0);
     }, 0);
@@ -175,14 +182,24 @@ export const useTimeSheetActions = ({
   const handleReturnToFirstUnsubmittedWeek = () => {
     const firstUnsubmitted = findFirstUnsubmittedWeek();
     if (firstUnsubmitted) {
-      setCurrentDate(firstUnsubmitted.date);
-      
+      // First, save the week data
       if (firstUnsubmitted.weekData) {
+        console.log(`Setting current custom week to: ${firstUnsubmitted.weekData.name}`);
         if ('required_hours' in firstUnsubmitted.weekData) {
           setCurrentCustomWeek(firstUnsubmitted.weekData);
         } else {
           setCurrentCustomWeek(null);
         }
+      }
+      
+      // Then update the current date
+      console.log(`Navigating to date: ${format(firstUnsubmitted.date, 'yyyy-MM-dd')}`);
+      setCurrentDate(firstUnsubmitted.date);
+      
+      // Save to localStorage if needed
+      if (viewedUser.id && firstUnsubmitted.weekData) {
+        localStorage.setItem(`selectedWeek_${viewedUser.id}`, firstUnsubmitted.weekData.id || '');
+        console.log(`Saved week ${firstUnsubmitted.weekData.id} to localStorage for user ${viewedUser.id}`);
       }
       
       toast({
