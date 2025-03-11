@@ -37,12 +37,18 @@ export const ApprovalActions = ({
     onReject();
   };
 
+  const handleSubmitForReview = () => {
+    if (onSubmitForReview) {
+      onSubmitForReview();
+    }
+  };
+
   // For admin override, show all possible actions based on current status
   if (adminOverride) {
     return (
       <div className="flex gap-2 flex-wrap">
         {(status === 'unconfirmed' || status === 'needs-revision') && (
-          <Button onClick={onSubmitForReview} disabled={disabled}>
+          <Button onClick={handleSubmitForReview} disabled={disabled}>
             <Send className="h-4 w-4 mr-2" />
             Submit for Review
           </Button>
@@ -110,7 +116,7 @@ export const ApprovalActions = ({
     } else if (status === 'unconfirmed' || status === 'needs-revision') {
       return (
         <div className="flex gap-2">
-          <Button onClick={onSubmitForReview} disabled={disabled}>
+          <Button onClick={handleSubmitForReview} disabled={disabled}>
             <Send className="h-4 w-4 mr-2" />
             Submit for Review
           </Button>
@@ -158,7 +164,7 @@ export const ApprovalActions = ({
 
   if (isViewingOwnTimesheet && (status === 'unconfirmed' || status === 'needs-revision')) {
     return (
-      <Button onClick={onSubmitForReview} disabled={disabled}>
+      <Button onClick={handleSubmitForReview} disabled={disabled}>
         <Send className="h-4 w-4 mr-2" />
         Submit for Review
       </Button>
