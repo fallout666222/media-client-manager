@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parse, format, isAfter, isBefore, addWeeks, startOfWeek, isEqual, isSameDay } from 'date-fns';
@@ -71,7 +72,7 @@ const TimeSheet = ({
 }: TimeSheetProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [customWeeks, setCustomWeeks] = useState<any[]>([]);
-  const viewedUser = impersonatedUser || currentUser;
+  const [viewedUser, setViewedUser] = useState<User>(impersonatedUser || currentUser);
   const viewedUserId = viewedUser.id;
   
   const [currentDate, setCurrentDate] = useState<Date>(() => {
@@ -139,6 +140,15 @@ const TimeSheet = ({
     
     fetchCustomWeeks();
   }, [currentUser.firstCustomWeekId, propCustomWeeks, initialWeekId, viewedUserId]);
+
+  useEffect(() => {
+    // Update viewedUser when impersonatedUser changes
+    if (impersonatedUser) {
+      setViewedUser(impersonatedUser);
+    } else {
+      setViewedUser(currentUser);
+    }
+  }, [impersonatedUser, currentUser]);
 
   useEffect(() => {
     const fetchUserVisibles = async () => {
@@ -335,6 +345,30 @@ const TimeSheet = ({
     return null;
   };
 
+  const findFirstUnderReviewWeek = () => {
+    if (customWeeks.length > 0) {
+      // Sort custom weeks chronologically
+      const sortedWeeks = [...customWeeks].sort((a, b) => {
+        const dateA = parse(a.period_from, 'yyyy-MM-dd', new Date());
+        const dateB = parse(b.period_from, 'yyyy-MM-dd', new Date());
+        return dateA.getTime() - dateB.getTime();
+      });
+      
+      for (const week of sortedWeeks) {
+        const weekKey = week.period_from;
+        // Check if the week is under review
+        if (weekStatuses[weekKey] === 'under-review') {
+          return {
+            date: parse(weekKey, 'yyyy-MM-dd', new Date()),
+            weekData: week
+          };
+        }
+      }
+    }
+    
+    return null;
+  };
+
   const handleReturnToFirstUnsubmittedWeek = () => {
     const firstUnsubmitted = findFirstUnsubmittedWeek();
     if (firstUnsubmitted) {
@@ -360,6 +394,33 @@ const TimeSheet = ({
         description: adminOverride 
           ? "There are no unsubmitted weeks in the database for this user" 
           : "All your weeks have been submitted",
+      });
+    }
+  };
+
+  const handleNavigateToFirstUnderReviewWeek = () => {
+    const firstUnderReview = findFirstUnderReviewWeek();
+    if (firstUnderReview) {
+      setCurrentDate(firstUnderReview.date);
+      
+      if (firstUnderReview.weekData) {
+        if ('required_hours' in firstUnderReview.weekData) {
+          setWeekHours(firstUnderReview.weekData.required_hours);
+          setCurrentCustomWeek(firstUnderReview.weekData);
+        } else {
+          setWeekHours(firstUnderReview.weekData.hours);
+          setCurrentCustomWeek(null);
+        }
+      }
+      
+      toast({
+        title: "Navigated to First Week Under Review",
+        description: `Showing week of ${format(firstUnderReview.date, 'MMM d, yyyy')}`,
+      });
+    } else {
+      toast({
+        title: "No Weeks Under Review",
+        description: "There are no weeks currently under review",
       });
     }
   };
@@ -390,7 +451,8 @@ const TimeSheet = ({
     const effectiveHours = Math.round(weekHours * (weekPercentage / 100));
     const remainingHours = effectiveHours - totalHours;
     
-    if (remainingHours !== 0) {
+    // Skip hours validation in admin override mode
+    if (remainingHours !== 0 && !adminOverride) {
       toast({
         title: "Cannot Submit Timesheet",
         description: `You must fill in exactly ${effectiveHours} hours for this week (${weekPercentage}% of ${weekHours}). Remaining: ${remainingHours} hours`,
@@ -399,7 +461,8 @@ const TimeSheet = ({
       return;
     }
     
-    if (firstUnsubmittedWeek && !isSameDay(firstUnsubmittedWeek.date, currentDate)) {
+    // Skip order validation in admin override mode
+    if (firstUnsubmittedWeek && !isSameDay(firstUnsubmittedWeek.date, currentDate) && !adminOverride) {
       toast({
         title: "Cannot Submit This Week",
         description: `Week not submitted because previous weeks haven't been filled in yet.`,
@@ -421,14 +484,25 @@ const TimeSheet = ({
       const currentWeekData = currentCustomWeek || 
         userWeeks.find(w => format(parse(w.startDate, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === currentWeekKey);
       
-      if (currentWeekData && currentUser.id) {
+      if (currentWeekData && viewedUser.id) {
         const { data: statusNames } = await getWeekStatusNames();
         const underReviewStatus = statusNames?.find(status => status.name === 'under-review');
         
         if (underReviewStatus) {
           const submittedWeekData = { ...currentWeekData };
           
-          await updateWeekStatus(currentUser.id, currentWeekData.id, underReviewStatus.id);
+          console.log(`Updating week status for user ${viewedUser.id}, week ${currentWeekData.id} to under-review (${underReviewStatus.id})`);
+          const updateResult = await updateWeekStatus(viewedUser.id, currentWeekData.id, underReviewStatus.id);
+          
+          if (updateResult.error) {
+            console.error("Error updating week status:", updateResult.error);
+            toast({
+              title: "Error Updating Status",
+              description: "Failed to update timesheet status. Please try again.",
+              variant: "destructive"
+            });
+            return;
+          }
           
           const weekEntries = timeEntries[currentWeekKey] || {};
           const { data: clientsData } = await getClients();
@@ -448,7 +522,7 @@ const TimeSheet = ({
                 if (mediaTypeObj && entry.hours > 0) {
                   console.log(`Saving hours for ${clientName}/${mediaTypeName}: ${entry.hours}`);
                   await updateWeekHours(
-                    currentUser.id, 
+                    viewedUser.id, 
                     currentWeekData.id, 
                     clientObj.id, 
                     mediaTypeObj.id, 
@@ -750,7 +824,7 @@ const TimeSheet = ({
     const existingHours = timeEntries[format(currentDate, 'yyyy-MM-dd')]?.[client]?.[mediaType]?.hours || 0;
     const newTotalHours = currentTotal - existingHours + hours;
     
-    if (newTotalHours > weekHours) {
+    if (newTotalHours > weekHours && !adminOverride) {
       toast({
         title: "Cannot Add Hours",
         description: `Total hours cannot exceed ${weekHours} for this week`,
@@ -929,6 +1003,10 @@ const TimeSheet = ({
     setSelectedMediaTypes(newOrder);
   };
 
+  const handleUserSelect = (user: User) => {
+    setViewedUser(user);
+  };
+
   return (
     <div className="space-y-6">
       {userRole === 'manager' && !impersonatedUser && (
@@ -937,7 +1015,7 @@ const TimeSheet = ({
           <TeamMemberSelector
             currentUser={currentUser}
             users={users}
-            onUserSelect={setViewedUser}
+            onUserSelect={handleUserSelect}
             selectedUser={viewedUser}
           />
         </div>
@@ -1020,7 +1098,7 @@ const TimeSheet = ({
         hasEarlierWeeksUnderReview={isUserHead && checkEarlierWeeksUnderReview && currentCustomWeek?.id 
           ? checkEarlierWeeksUnderReview(currentCustomWeek.id) 
           : false}
-        onNavigateToFirstUnderReview={isUserHead && findFirstUnderReviewWeek ? handleNavigateToFirstUnderReviewWeek : undefined}
+        onNavigateToFirstUnderReview={isUserHead ? handleNavigateToFirstUnderReviewWeek : undefined}
       />
 
       <TimeSheetContent
@@ -1059,4 +1137,3 @@ const TimeSheet = ({
 };
 
 export default TimeSheet;
-
