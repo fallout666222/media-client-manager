@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parse, format, isSameDay, isBefore } from 'date-fns';
@@ -166,11 +165,11 @@ export const useTimeSheetActions = ({
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
     const weekEntries = timeEntries[currentWeekKey] || {};
     
-    return Object.values(weekEntries).reduce((clientSum: number, mediaEntries: Record<string, { hours?: number }>) => {
-      return clientSum + Object.values(mediaEntries).reduce((mediaSum: number, entry: { hours?: number }) => {
-        // Explicitly convert hours to a number to fix type error
-        const entryHours = typeof entry.hours === 'number' ? entry.hours : 0;
-        return mediaSum + entryHours;
+    return Object.values(weekEntries).reduce((clientSum: number, mediaEntries: Record<string, { hours?: number | undefined }>) => {
+      return clientSum + Object.values(mediaEntries).reduce((mediaSum: number, entry: { hours?: number | undefined }) => {
+        const hours = entry.hours;
+        const numericHours = typeof hours === 'number' ? hours : 0;
+        return mediaSum + numericHours;
       }, 0);
     }, 0);
   };
@@ -516,15 +515,16 @@ export const useTimeSheetActions = ({
           await updateWeekStatus(viewedUser.id, currentWeekData.id, targetStatus.id);
           
           setWeekStatuses((prev: Record<string, TimeSheetStatus>) => {
-            const newStatuses: Record<string, TimeSheetStatus> = {
+            return {
               ...prev,
               [currentWeekKey]: targetStatusName as TimeSheetStatus
             };
-            return newStatuses;
           });
           
           if (currentStatus === 'accepted' || currentStatus === 'under-review') {
-            setSubmittedWeeks((prev: string[]) => prev.filter(week => week !== currentWeekKey));
+            setSubmittedWeeks((prev: string[]) => {
+              return prev.filter(week => week !== currentWeekKey);
+            });
           }
           
           const message = currentStatus === 'accepted' ? 
