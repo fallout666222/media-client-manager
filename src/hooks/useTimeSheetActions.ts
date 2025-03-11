@@ -165,8 +165,8 @@ export const useTimeSheetActions = ({
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
     const weekEntries = timeEntries[currentWeekKey] || {};
     
-    return Object.values(weekEntries).reduce((clientSum: number, mediaEntries: any) => {
-      return clientSum + Object.values(mediaEntries).reduce((mediaSum: number, entry: any) => {
+    return Object.values(weekEntries).reduce((clientSum: number, mediaEntries: Record<string, any>) => {
+      return clientSum + Object.values(mediaEntries).reduce((mediaSum: number, entry: { hours?: number }) => {
         return mediaSum + (entry.hours || 0);
       }, 0);
     }, 0);
@@ -392,12 +392,14 @@ export const useTimeSheetActions = ({
             }
           }
           
-          setWeekStatuses((prev: Record<string, TimeSheetStatus>) => ({
-            ...prev,
-            [currentWeekKey]: 'under-review'
-          }));
+          setWeekStatuses(prev => {
+            return {
+              ...prev,
+              [currentWeekKey]: 'under-review' as TimeSheetStatus
+            };
+          });
           
-          setSubmittedWeeks((prev: string[]) => {
+          setSubmittedWeeks(prev => {
             if (!prev.includes(currentWeekKey)) {
               return [...prev, currentWeekKey];
             }
@@ -463,10 +465,12 @@ export const useTimeSheetActions = ({
         if (acceptedStatus) {
           await updateWeekStatus(viewedUser.id, currentWeekData.id, acceptedStatus.id);
           
-          setWeekStatuses((prev: Record<string, TimeSheetStatus>) => ({
-            ...prev,
-            [currentWeekKey]: 'accepted'
-          }));
+          setWeekStatuses(prev => {
+            return {
+              ...prev,
+              [currentWeekKey]: 'accepted' as TimeSheetStatus
+            };
+          });
           
           toast({
             title: "Timesheet Approved",
@@ -506,13 +510,15 @@ export const useTimeSheetActions = ({
         if (targetStatus) {
           await updateWeekStatus(viewedUser.id, currentWeekData.id, targetStatus.id);
           
-          setWeekStatuses((prev: Record<string, TimeSheetStatus>) => ({
-            ...prev,
-            [currentWeekKey]: targetStatusName as TimeSheetStatus
-          }));
+          setWeekStatuses(prev => {
+            return {
+              ...prev,
+              [currentWeekKey]: targetStatusName as TimeSheetStatus
+            };
+          });
           
           if (currentStatus === 'accepted' || currentStatus === 'under-review') {
-            setSubmittedWeeks((prev: string[]) => prev.filter(week => week !== currentWeekKey));
+            setSubmittedWeeks(prev => prev.filter(week => week !== currentWeekKey));
           }
           
           const message = currentStatus === 'accepted' ? 
