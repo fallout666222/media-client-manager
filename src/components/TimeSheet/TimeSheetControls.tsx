@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { TimeSheetStatus } from '@/types/timesheet';
 import { WeekPicker } from './WeekPicker';
 import { ApprovalActions } from './ApprovalActions';
@@ -47,6 +47,16 @@ export const TimeSheetControls = ({
   viewedUserId,
   onNavigateToFirstUnderReview
 }: TimeSheetControlsProps) => {
+  
+  // Add debug logging
+  useEffect(() => {
+    if (isUserHead && status === 'under-review') {
+      console.log("TimeSheetControls Debug:");
+      console.log("- WeekId:", weekId);
+      console.log("- hasEarlierWeeksUnderReview:", hasEarlierWeeksUnderReview);
+    }
+  }, [isUserHead, status, weekId, hasEarlierWeeksUnderReview]);
+
   return (
     <div className="flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center">
       <WeekPicker

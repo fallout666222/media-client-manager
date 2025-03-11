@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { TimeSheetStatus } from '@/types/timesheet';
 import { Check, X, Send, RotateCcw, AlertCircle } from "lucide-react";
@@ -33,6 +33,17 @@ export const ApprovalActions = ({
   hasEarlierWeeksUnderReview = false,
   onNavigateToFirstUnderReview
 }: ApprovalActionsProps) => {
+  // Debug logging
+  useEffect(() => {
+    if (isUserHead && status === 'under-review') {
+      console.log("ApprovalActions Debug:");
+      console.log("- Status:", status);
+      console.log("- IsUserHead:", isUserHead);
+      console.log("- WeekId:", weekId);
+      console.log("- hasEarlierWeeksUnderReview:", hasEarlierWeeksUnderReview);
+    }
+  }, [isUserHead, status, weekId, hasEarlierWeeksUnderReview]);
+
   const handleReject = () => {
     onReject();
   };
@@ -85,7 +96,7 @@ export const ApprovalActions = ({
   // User Head can approve/reject timesheets under review for their team members
   if (isUserHead && !isViewingOwnTimesheet) {
     if (status === 'under-review') {
-      // Log the hasEarlierWeeksUnderReview value for debugging
+      console.log("Rendering buttons for user head view with under-review status");
       console.log("hasEarlierWeeksUnderReview:", hasEarlierWeeksUnderReview);
       
       return (

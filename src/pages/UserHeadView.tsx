@@ -181,23 +181,27 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
     
     if (!currentWeek || !currentWeek.week) return false;
     
-    const sortedWeeks = [...weekStatuses].sort((a, b) => {
-      if (!a.week || !b.week) return 0;
+    const currentWeekDate = new Date(currentWeek.week.period_from);
+    console.log("Current week date:", format(currentWeekDate, 'yyyy-MM-dd'));
+    
+    const earlierWeeksUnderReview = weekStatuses.filter(status => {
+      if (!status.week || !status.status) return false;
       
-      const dateA = new Date(a.week.period_from);
-      const dateB = new Date(b.week.period_from);
-      return dateA.getTime() - dateB.getTime();
+      const weekDate = new Date(status.week.period_from);
+      
+      const isEarlier = isBefore(weekDate, currentWeekDate);
+      const isUnderReview = status.status.name === 'under-review';
+      
+      if (isEarlier && isUnderReview) {
+        console.log(`Earlier week ${status.week.name} is still under review`);
+        return true;
+      }
+      
+      return false;
     });
     
-    const currentIndex = sortedWeeks.findIndex(status => 
-      status.week_id === weekId
-    );
-    
-    if (currentIndex <= 0) return false;
-    
-    return sortedWeeks.slice(0, currentIndex).some(status => 
-      status.status?.name === 'under-review' && status.week_id !== weekId
-    );
+    console.log(`Found ${earlierWeeksUnderReview.length} earlier weeks under review`);
+    return earlierWeeksUnderReview.length > 0;
   };
 
   const handleSubmitForReview = async (userId: string, weekId: string) => {
