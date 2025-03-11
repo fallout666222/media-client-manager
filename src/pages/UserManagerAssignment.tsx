@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Table,
@@ -41,7 +40,6 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Search and pagination state
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -53,12 +51,10 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch users from the database
       const { data: usersData, error: usersError } = await getUsers();
       if (usersError) throw usersError;
       setUsers(usersData || []);
       
-      // Fetch departments
       const { data: deptsData, error: deptsError } = await getDepartments();
       if (deptsError) throw deptsError;
       setDepartments(deptsData || []);
@@ -89,7 +85,6 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
       
       onUpdateUserManager(user.login || user.username || '', managerId);
       
-      // Update the users state to reflect the changes immediately
       setUsers(prevUsers => 
         prevUsers.map(u => 
           u.id === user.id ? { ...u, manager_id: managerId } : u
@@ -121,15 +116,12 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
     }
     
     try {
-      // Log the value being sent to the database
       console.log('Updating user head, user_head_id value:', userHeadId);
       
-      // Make sure to send null (not undefined) when "none" is selected
       const updatedValue = userHeadId === undefined || userHeadId === "none" ? null : userHeadId;
       
       await updateUser(user.id, { user_head_id: updatedValue });
       
-      // Update the users state to reflect the changes immediately
       setUsers(prevUsers => 
         prevUsers.map(u => 
           u.id === user.id ? { ...u, user_head_id: updatedValue } : u
@@ -161,27 +153,34 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
     }
     
     try {
-      await updateUser(user.id, { department_id: departmentId });
+      console.log('Updating department, department_id value:', departmentId);
       
-      onUpdateUserDepartment(user.login || user.username || '', departmentId);
+      const updatedValue = departmentId === undefined || departmentId === "none" ? null : departmentId;
       
-      // Find department name for immediate UI update
-      const departmentName = departmentId 
-        ? departments.find(dept => dept.id === departmentId)?.name || null
+      await updateUser(user.id, { department_id: updatedValue });
+      
+      onUpdateUserDepartment(user.login || user.username || '', updatedValue || undefined);
+      
+      const departmentName = updatedValue 
+        ? departments.find(dept => dept.id === updatedValue)?.name || null
         : null;
       
-      // Update the users state to reflect the changes immediately
       setUsers(prevUsers => 
         prevUsers.map(u => 
           u.id === user.id 
-            ? { ...u, department_id: departmentId, departmentId: departmentId, departmentName: departmentName } 
+            ? { 
+                ...u, 
+                department_id: updatedValue, 
+                departmentId: updatedValue, 
+                departmentName: departmentName 
+              } 
             : u
         )
       );
       
       toast({
         title: "Department Updated",
-        description: `Department updated for ${user.login || user.username}`,
+        description: `Department ${updatedValue ? 'updated' : 'removed'} for ${user.login || user.username}`,
       });
     } catch (error) {
       console.error('Error updating user department:', error);
@@ -208,7 +207,6 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
       
       onToggleUserHidden(user.login || user.username || '', hidden);
       
-      // Update the users state to reflect the changes immediately
       setUsers(prevUsers => 
         prevUsers.map(u => 
           u.id === user.id ? { ...u, hidden } : u
@@ -229,7 +227,6 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
     }
   };
 
-  // Filter users based on search term
   const filteredUsers = users.filter(user => {
     const searchValue = searchTerm.toLowerCase();
     const username = (user.login || user.username || "").toLowerCase();
@@ -241,23 +238,20 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
            department.includes(searchValue);
   });
 
-  // Pagination logic
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const paginatedUsers = filteredUsers.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
-  // Handle search change
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
-    setCurrentPage(1); // Reset to first page when searching
+    setCurrentPage(1);
   };
 
-  // Handle items per page change
   const handleItemsPerPageChange = (value: string) => {
     setItemsPerPage(Number(value));
-    setCurrentPage(1); // Reset to first page when changing items per page
+    setCurrentPage(1);
   };
 
   if (loading) {
@@ -348,7 +342,6 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
                   <Select
                     value={user.user_head_id || "none"}
                     onValueChange={(value) => {
-                      // Pass undefined to handleUserHeadChange when "none" is selected
                       handleUserHeadChange(user, value === "none" ? undefined : value);
                     }}
                   >
@@ -358,7 +351,7 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
                     <SelectContent>
                       <SelectItem value="none">No User Head</SelectItem>
                       {users
-                        .filter((head) => head.id !== user.id || user.user_head_id === user.id) // Allow self-assignment if already self-assigned
+                        .filter((head) => head.id !== user.id || user.user_head_id === user.id)
                         .map((head) => (
                           <SelectItem key={head.id} value={head.id}>
                             {head.login || head.username} ({head.type || head.role})
@@ -384,7 +377,6 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
         </Table>
       </div>
       
-      {/* Pagination controls */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-4">
           <div className="text-sm text-muted-foreground">
