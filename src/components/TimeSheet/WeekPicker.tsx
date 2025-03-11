@@ -36,7 +36,17 @@ export const WeekPicker = ({
 }: WeekPickerProps) => {
   const [availableWeeks, setAvailableWeeks] = useState<CustomWeek[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedYear, setSelectedYear] = useState<string>('all');
+  
+  // Initialize selectedYear from localStorage or default to 'all'
+  const [selectedYear, setSelectedYear] = useState<string>(() => {
+    const savedYear = localStorage.getItem('selectedYear');
+    return savedYear || 'all';
+  });
+
+  // Save selectedYear to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('selectedYear', selectedYear);
+  }, [selectedYear]);
 
   // Get unique years from available weeks
   const availableYears = useMemo(() => {
@@ -133,11 +143,23 @@ export const WeekPicker = ({
   const currentWeek = getCurrentWeek();
   const currentWeekId = currentWeek?.id || filteredWeeks[0]?.id;
 
+  // Save current week ID to localStorage whenever it changes
+  useEffect(() => {
+    if (currentWeekId && viewedUserId) {
+      localStorage.setItem(`selectedWeek_${viewedUserId}`, currentWeekId);
+    }
+  }, [currentWeekId, viewedUserId]);
+
   const handleCustomWeekSelect = (weekId: string) => {
     const selectedWeek = filteredWeeks.find(week => week.id === weekId);
     if (selectedWeek) {
       const date = parse(selectedWeek.startDate, "yyyy-MM-dd", new Date());
       onWeekChange(date);
+      
+      // Save selected week to localStorage
+      if (viewedUserId) {
+        localStorage.setItem(`selectedWeek_${viewedUserId}`, weekId);
+      }
       
       // Pass the base hours (not adjusted by percentage) - the TimeSheet component will apply the percentage
       onWeekHoursChange(selectedWeek.hours);
@@ -160,6 +182,11 @@ export const WeekPicker = ({
     const newWeek = filteredWeeks[newIndex];
     const date = parse(newWeek.startDate, "yyyy-MM-dd", new Date());
     onWeekChange(date);
+    
+    // Save selected week to localStorage
+    if (viewedUserId) {
+      localStorage.setItem(`selectedWeek_${viewedUserId}`, newWeek.id);
+    }
     
     // Pass the base hours (not adjusted by percentage)
     onWeekHoursChange(newWeek.hours);
@@ -241,4 +268,3 @@ export const WeekPicker = ({
     </div>
   );
 };
-
