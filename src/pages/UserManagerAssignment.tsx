@@ -121,18 +121,24 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
     }
     
     try {
-      await updateUser(user.id, { user_head_id: userHeadId });
+      // Log the value being sent to the database
+      console.log('Updating user head, user_head_id value:', userHeadId);
+      
+      // Make sure to send null (not undefined) when "none" is selected
+      const updatedValue = userHeadId === undefined || userHeadId === "none" ? null : userHeadId;
+      
+      await updateUser(user.id, { user_head_id: updatedValue });
       
       // Update the users state to reflect the changes immediately
       setUsers(prevUsers => 
         prevUsers.map(u => 
-          u.id === user.id ? { ...u, user_head_id: userHeadId } : u
+          u.id === user.id ? { ...u, user_head_id: updatedValue } : u
         )
       );
       
       toast({
         title: "User Head Updated",
-        description: `User Head updated for ${user.login || user.username}`,
+        description: `User Head ${updatedValue ? 'updated' : 'removed'} for ${user.login || user.username}`,
       });
     } catch (error) {
       console.error('Error updating user head:', error);
@@ -342,6 +348,7 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
                   <Select
                     value={user.user_head_id || "none"}
                     onValueChange={(value) => {
+                      // Pass undefined to handleUserHeadChange when "none" is selected
                       handleUserHeadChange(user, value === "none" ? undefined : value);
                     }}
                   >
