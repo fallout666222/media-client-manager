@@ -165,8 +165,8 @@ export const useTimeSheetActions = ({
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
     const weekEntries = timeEntries[currentWeekKey] || {};
     
-    return Object.values(weekEntries).reduce((clientSum: number, mediaEntries) => {
-      return clientSum + Object.values(mediaEntries).reduce((mediaSum: number, entry) => {
+    return Object.entries(weekEntries).reduce((clientSum: number, [clientKey, mediaEntries]) => {
+      return clientSum + Object.entries(mediaEntries).reduce((mediaSum: number, [mediaTypeKey, entry]) => {
         return mediaSum + (typeof entry.hours === 'number' ? entry.hours : 0);
       }, 0);
     }, 0);
