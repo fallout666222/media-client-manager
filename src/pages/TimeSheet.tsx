@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parse, format, isAfter, isBefore, addWeeks, startOfWeek, isEqual, isSameDay } from 'date-fns';
@@ -51,6 +50,7 @@ interface TimeSheetProps {
   initialWeekId?: string | null;
   isUserHead?: boolean;
   onTimeUpdate?: (weekId: string, client: string, mediaType: string, hours: number) => void;
+  checkEarlierWeeksUnderReview?: (weekId: string) => boolean;
 }
 
 const TimeSheet = ({ 
@@ -65,7 +65,8 @@ const TimeSheet = ({
   customWeeks: propCustomWeeks,
   initialWeekId = null,
   isUserHead = false,
-  onTimeUpdate
+  onTimeUpdate,
+  checkEarlierWeeksUnderReview
 }: TimeSheetProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [customWeeks, setCustomWeeks] = useState<any[]>([]);
@@ -490,6 +491,18 @@ const TimeSheet = ({
         userWeeks.find(w => format(parse(w.startDate, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === currentWeekKey);
       
       if (currentWeekData && viewedUser.id) {
+        if (isUserHead && checkEarlierWeeksUnderReview && currentWeekData.id) {
+          const hasEarlierWeeks = checkEarlierWeeksUnderReview(currentWeekData.id);
+          if (hasEarlierWeeks) {
+            toast({
+              title: "Cannot Approve",
+              description: "Earlier weeks must be approved first",
+              variant: "destructive"
+            });
+            return;
+          }
+        }
+        
         const { data: statusNames } = await getWeekStatusNames();
         const acceptedStatus = statusNames?.find(status => status.name === 'accepted');
         
@@ -939,7 +952,7 @@ const TimeSheet = ({
         weekPercentage={weekPercentage}
         weekHours={weekHours}
         hasCustomWeeks={customWeeks.length > 0}
-        showSettings={showSettings} // Pass the showSettings state
+        showSettings={showSettings}
       />
 
       {hasUnsubmittedEarlierWeek() && !readOnly && !isCurrentWeekSubmitted() && !adminOverride && (
@@ -985,6 +998,9 @@ const TimeSheet = ({
         customWeeks={customWeeks}
         adminOverride={adminOverride}
         isUserHead={isUserHead}
+        hasEarlierWeeksUnderReview={isUserHead && checkEarlierWeeksUnderReview && currentCustomWeek?.id 
+          ? checkEarlierWeeksUnderReview(currentCustomWeek.id) 
+          : false}
       />
 
       <TimeSheetContent

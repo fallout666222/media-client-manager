@@ -23,7 +23,7 @@ import {
 } from '@/integrations/supabase/database';
 import { useQuery } from '@tanstack/react-query';
 import SearchBar from '@/components/SearchBar';
-import { format } from 'date-fns';
+import { format, parse, isBefore } from 'date-fns';
 
 interface UserHeadViewProps {
   currentUser: User;
@@ -34,6 +34,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
   const [selectedTeamMember, setSelectedTeamMember] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [firstUnconfirmedWeek, setFirstUnconfirmedWeek] = useState<any>(null);
+  const [weekStatuses, setWeekStatuses] = useState<any[]>([]);
   const { toast } = useToast();
 
   const { data: users = [], isLoading, error } = useQuery({
@@ -61,6 +62,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
   const handleTeamMemberSelect = (userId: string) => {
     setSelectedTeamMember(userId);
     fetchFirstUnconfirmedWeek(userId);
+    fetchWeekStatuses(userId);
   };
 
   const fetchFirstUnconfirmedWeek = async (userId: string) => {
@@ -79,10 +81,22 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
     }
   };
 
+  const fetchWeekStatuses = async (userId: string) => {
+    try {
+      const { data } = await getWeekStatuses(userId);
+      if (data) {
+        setWeekStatuses(data);
+      }
+    } catch (error) {
+      console.error('Error fetching week statuses:', error);
+    }
+  };
+
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
     setSelectedTeamMember(null);
     setFirstUnconfirmedWeek(null);
+    setWeekStatuses([]);
   };
 
   useEffect(() => {
@@ -94,6 +108,32 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       });
     }
   }, [error, toast]);
+
+  const checkForEarlierWeeksUnderReview = (weekId: string) => {
+    if (!weekStatuses.length) return false;
+    
+    // Find the current week
+    const currentWeek = weekStatuses.find(status => 
+      status.week_id === weekId && status.status?.name === 'under-review'
+    );
+    
+    if (!currentWeek || !currentWeek.week) return false;
+    
+    // Check if there are any earlier weeks that are under review
+    return weekStatuses.some(status => {
+      if (status.status?.name !== 'under-review') return false;
+      
+      // Skip the current week
+      if (status.week_id === weekId) return false;
+      
+      // Compare dates
+      const currentWeekDate = parse(currentWeek.week.period_from, 'yyyy-MM-dd', new Date());
+      const otherWeekDate = parse(status.week.period_from, 'yyyy-MM-dd', new Date());
+      
+      // Return true if the other week is earlier than the current week
+      return isBefore(otherWeekDate, currentWeekDate);
+    });
+  };
 
   const handleSubmitForReview = async (userId: string, weekId: string) => {
     try {
@@ -107,6 +147,9 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
           title: "Timesheet Submitted",
           description: "Timesheet has been submitted for review",
         });
+        
+        // Refresh week statuses
+        fetchWeekStatuses(userId);
         
         if (selectedTeamMember) {
           fetchFirstUnconfirmedWeek(selectedTeamMember);
@@ -124,6 +167,18 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
 
   const handleApprove = async (userId: string, weekId: string) => {
     try {
+      // First check if there are earlier weeks under review
+      const hasEarlierWeeks = checkForEarlierWeeksUnderReview(weekId);
+      
+      if (hasEarlierWeeks) {
+        toast({
+          title: "Cannot Approve",
+          description: "Earlier weeks must be approved first",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       const { data: statusNames } = await getWeekStatusNames();
       const acceptedStatus = statusNames?.find(status => status.name === 'accepted');
       
@@ -134,6 +189,9 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
           title: "Timesheet Approved",
           description: "Timesheet has been approved",
         });
+        
+        // Refresh week statuses
+        fetchWeekStatuses(userId);
         
         if (selectedTeamMember) {
           fetchFirstUnconfirmedWeek(selectedTeamMember);
@@ -161,6 +219,9 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
           title: "Timesheet Rejected",
           description: "Timesheet has been rejected and needs revision",
         });
+        
+        // Refresh week statuses
+        fetchWeekStatuses(userId);
         
         if (selectedTeamMember) {
           fetchFirstUnconfirmedWeek(selectedTeamMember);
@@ -274,6 +335,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
           onTimeUpdate={(weekId, client, mediaType, hours) => 
             handleTimeUpdate(teamMember.id, weekId, client, mediaType, hours)
           }
+          checkEarlierWeeksUnderReview={(weekId) => checkForEarlierWeeksUnderReview(weekId)}
         />
       </>
     );

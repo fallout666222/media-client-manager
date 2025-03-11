@@ -15,6 +15,7 @@ interface ApprovalActionsProps {
   disabled?: boolean;
   weekId?: string;
   adminOverride?: boolean; // Add this prop for admin override
+  hasEarlierWeeksUnderReview?: boolean; // New prop to check if there are earlier weeks under review
 }
 
 export const ApprovalActions = ({
@@ -27,7 +28,8 @@ export const ApprovalActions = ({
   onReject,
   disabled = false,
   weekId,
-  adminOverride = false
+  adminOverride = false,
+  hasEarlierWeeksUnderReview = false // Default to false
 }: ApprovalActionsProps) => {
   const handleReject = () => {
     onReject();
@@ -73,12 +75,17 @@ export const ApprovalActions = ({
   }
 
   // User Head can approve/reject timesheets under review for their team members
-  // REMOVED: Revert to Unconfirmed button for User Heads
+  // But only in chronological order (no earlier weeks under review)
   if (isUserHead && !isViewingOwnTimesheet) {
     if (status === 'under-review') {
       return (
         <div className="flex gap-2">
-          <Button onClick={onApprove} variant="default" disabled={disabled}>
+          <Button 
+            onClick={onApprove} 
+            variant="default" 
+            disabled={disabled || hasEarlierWeeksUnderReview}
+            title={hasEarlierWeeksUnderReview ? "Earlier weeks need to be approved first" : "Approve timesheet"}
+          >
             <Check className="h-4 w-4 mr-2" />
             Approve
           </Button>
@@ -96,7 +103,6 @@ export const ApprovalActions = ({
         </Button>
       );
     }
-    // REMOVED: User Head can no longer revert accepted weeks
   }
 
   // Original logic for managers
