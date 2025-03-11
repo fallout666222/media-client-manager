@@ -35,7 +35,7 @@ interface UseTimeSheetActionsProps {
   submittedWeeks: string[];
   setWeekStatuses: (statuses: Record<string, TimeSheetStatus> | ((prev: Record<string, TimeSheetStatus>) => Record<string, TimeSheetStatus>)) => void;
   setSubmittedWeeks: (weeks: string[] | ((prev: string[]) => string[])) => void;
-  timeEntries: any;
+  timeEntries: Record<string, Record<string, { hours?: number | undefined }>>;
   setTimeEntries: (entries: any) => void;
   getCurrentWeekStatus: (weekKey: string) => TimeSheetStatus;
   checkEarlierWeeksUnderReview?: (weekId: string) => boolean;
@@ -165,11 +165,9 @@ export const useTimeSheetActions = ({
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
     const weekEntries = timeEntries[currentWeekKey] || {};
     
-    return Object.values(weekEntries).reduce((clientSum: number, mediaEntries: Record<string, { hours?: number | undefined }>) => {
-      return clientSum + Object.values(mediaEntries).reduce((mediaSum: number, entry: { hours?: number | undefined }) => {
-        const hours = entry.hours;
-        const numericHours = typeof hours === 'number' ? hours : 0;
-        return mediaSum + numericHours;
+    return Object.values(weekEntries).reduce((clientSum: number, mediaEntries) => {
+      return clientSum + Object.values(mediaEntries).reduce((mediaSum: number, entry) => {
+        return mediaSum + (typeof entry.hours === 'number' ? entry.hours : 0);
       }, 0);
     }, 0);
   };
