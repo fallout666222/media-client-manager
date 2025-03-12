@@ -62,6 +62,7 @@ function AppContent() {
   const [users, setUsers] = useState<User[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [customWeeks, setCustomWeeks] = useState<any[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -161,6 +162,7 @@ function AppContent() {
       
       const { data: weeksData, error: weeksError } = await db.getCustomWeeks();
       if (weeksError) throw weeksError;
+      setCustomWeeks(weeksData || []);
     } catch (error) {
       console.error('Error fetching initial data:', error);
       toast({
@@ -604,7 +606,6 @@ function AppContent() {
   );
 }
 
-// Create a new component to handle fetching and displaying progress bar
 function UserProgressBar({ userId, customWeeks }: { userId: string, customWeeks: any[] }) {
   const [weeks, setWeeks] = useState<any[]>([]);
   const [selectedWeek, setSelectedWeek] = useState<any>(null);
