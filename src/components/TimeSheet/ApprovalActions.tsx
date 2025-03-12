@@ -40,7 +40,8 @@ export const ApprovalActions: React.FC<ApprovalActionsProps> = ({
     toast({
       title: 'Admin Override Active',
       description: 'You are making changes with admin override. Use caution.',
-      variant: 'warning',
+      // Change from 'warning' to 'destructive' as 'warning' is not a valid variant
+      variant: 'destructive',
     });
   };
 
@@ -80,7 +81,8 @@ export const ApprovalActions: React.FC<ApprovalActionsProps> = ({
   const renderUserControls = () => {
     if (!isViewingOwnTimesheet && !adminOverride) return null;
 
-    if (status === 'unconfirmed' || status === 'under-revision') {
+    // Fix the comparison by using 'needs-revision' instead of 'under-revision'
+    if (status === 'unconfirmed' || status === 'needs-revision') {
       return (
         <Button
           onClick={handleSubmit}
