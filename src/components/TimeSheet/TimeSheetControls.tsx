@@ -1,8 +1,8 @@
 
-import React, { useEffect } from 'react';
-import { TimeSheetStatus } from '@/types/timesheet';
+import React from 'react';
 import { WeekPicker } from './WeekPicker';
 import { ApprovalActions } from './ApprovalActions';
+import { TimeSheetStatus } from '@/types/timesheet';
 
 interface TimeSheetControlsProps {
   currentDate: Date;
@@ -21,12 +21,13 @@ interface TimeSheetControlsProps {
   customWeeks?: any[];
   adminOverride?: boolean;
   isUserHead?: boolean;
-  hasEarlierWeeksUnderReview?: boolean;
   viewedUserId?: string;
+  hasEarlierWeeksUnderReview?: boolean;
   onNavigateToFirstUnderReview?: () => void;
+  filterYear?: number | null;
 }
 
-export const TimeSheetControls = ({
+export const TimeSheetControls: React.FC<TimeSheetControlsProps> = ({
   currentDate,
   onWeekChange,
   onWeekHoursChange,
@@ -39,45 +40,37 @@ export const TimeSheetControls = ({
   readOnly = false,
   firstWeek,
   weekId,
-  weekPercentage = 100,
-  customWeeks = [],
+  weekPercentage,
+  customWeeks,
   adminOverride = false,
   isUserHead = false,
-  hasEarlierWeeksUnderReview = false,
   viewedUserId,
-  onNavigateToFirstUnderReview
-}: TimeSheetControlsProps) => {
-  
-  // Add debug logging
-  useEffect(() => {
-    if (isUserHead && status === 'under-review') {
-      console.log("TimeSheetControls Debug:");
-      console.log("- WeekId:", weekId);
-      console.log("- hasEarlierWeeksUnderReview:", hasEarlierWeeksUnderReview);
-    }
-  }, [isUserHead, status, weekId, hasEarlierWeeksUnderReview]);
-
+  hasEarlierWeeksUnderReview = false,
+  onNavigateToFirstUnderReview,
+  filterYear
+}) => {
   return (
-    <div className="flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center">
-      <WeekPicker
-        currentDate={currentDate}
-        onWeekChange={onWeekChange}
-        onWeekHoursChange={onWeekHoursChange}
+    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-4 border rounded-lg bg-gray-50 dark:bg-gray-900">
+      <WeekPicker 
+        currentDate={currentDate} 
+        onWeekChange={onWeekChange} 
+        onWeekHoursChange={onWeekHoursChange} 
+        weekPercentage={weekPercentage}
         firstWeek={firstWeek}
-        status={status}
         customWeeks={customWeeks}
         viewedUserId={viewedUserId}
-        weekPercentage={weekPercentage}
+        status={status}
+        filterYear={filterYear}
       />
-      <ApprovalActions
+      
+      <ApprovalActions 
         status={status}
         isManager={isManager}
         isViewingOwnTimesheet={isViewingOwnTimesheet}
         onSubmitForReview={onSubmitForReview}
         onApprove={onApprove}
         onReject={onReject}
-        disabled={readOnly}
-        weekId={weekId}
+        readOnly={readOnly}
         adminOverride={adminOverride}
         isUserHead={isUserHead}
         hasEarlierWeeksUnderReview={hasEarlierWeeksUnderReview}
