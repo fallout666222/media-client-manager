@@ -73,6 +73,7 @@ export const StatusCell: React.FC<StatusCellProps> = ({
         </TooltipTrigger>
         <TooltipContent>
           <p>{weekData.week}</p>
+          <p className="font-medium">{getStatusText(weekData.status)}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
