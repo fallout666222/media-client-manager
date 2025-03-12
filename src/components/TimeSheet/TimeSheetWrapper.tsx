@@ -10,6 +10,7 @@ import { AdminOverrideAlert } from './AdminOverrideAlert';
 import { UnsubmittedWeeksAlert } from './UnsubmittedWeeksAlert';
 import { useTimeSheet } from './TimeSheetProvider';
 import { WeekData, StatusTimeline, WeekDetails } from '@/components/ProgressBar';
+import { mapTimeSheetStatusToWeekStatus } from '@/utils/statusMappers';
 
 interface TimeSheetWrapperProps {
   userRole: 'admin' | 'user' | 'manager';
@@ -79,10 +80,12 @@ export const TimeSheetWrapper: React.FC<TimeSheetWrapperProps> = ({
 
   // Convert customWeeks and weekStatuses to WeekData format for ProgressBar
   const progressBarWeeks: WeekData[] = customWeeks.map(week => {
-    const status = getCurrentWeekStatus(week.period_from);
+    const timeSheetStatus = getCurrentWeekStatus(week.period_from);
+    const weekStatus = mapTimeSheetStatusToWeekStatus(timeSheetStatus);
+    
     return {
       week: week.name,
-      status: status,
+      status: weekStatus,
       weekId: week.id,
       periodFrom: week.period_from
     };
@@ -91,7 +94,7 @@ export const TimeSheetWrapper: React.FC<TimeSheetWrapperProps> = ({
   // Current selected week for progress bar
   const selectedProgressWeek = currentCustomWeek ? {
     week: currentCustomWeek.name,
-    status: getCurrentWeekStatus(currentCustomWeek.period_from),
+    status: mapTimeSheetStatusToWeekStatus(getCurrentWeekStatus(currentCustomWeek.period_from)),
     weekId: currentCustomWeek.id,
     periodFrom: currentCustomWeek.period_from
   } : null;

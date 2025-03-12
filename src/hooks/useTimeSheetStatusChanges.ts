@@ -135,10 +135,10 @@ export const useTimeSheetStatusChanges = ({
       if (underReviewStatus && viewedUser.id) {
         await updateWeekStatus(viewedUser.id, currentCustomWeek.id, underReviewStatus.id);
         
-        // Update local state
+        // Update local state with the correct TimeSheetStatus value
         setWeekStatuses(prev => ({
           ...prev,
-          [currentWeekKey]: 'under review'
+          [currentWeekKey]: 'under-review' as TimeSheetStatus
         }));
         
         setSubmittedWeeks(prev => [...prev, currentWeekKey]);
@@ -202,7 +202,7 @@ export const useTimeSheetStatusChanges = ({
         // Update local state
         setWeekStatuses(prev => ({
           ...prev,
-          [currentWeekKey]: 'accepted'
+          [currentWeekKey]: 'accepted' as TimeSheetStatus
         }));
         
         // Fetch updated week statuses
@@ -249,10 +249,10 @@ export const useTimeSheetStatusChanges = ({
       if (needsRevisionStatus && viewedUser.id) {
         await updateWeekStatus(viewedUser.id, currentCustomWeek.id, needsRevisionStatus.id);
         
-        // Update local state
+        // Update local state with the correct TimeSheetStatus value
         setWeekStatuses(prev => ({
           ...prev,
-          [currentWeekKey]: 'under revision'
+          [currentWeekKey]: 'needs-revision' as TimeSheetStatus
         }));
         
         setSubmittedWeeks(prev => prev.filter(week => week !== currentWeekKey));

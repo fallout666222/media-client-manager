@@ -103,7 +103,11 @@ export const useTimeSheetActions = ({
     setTimeEntries,
     getCurrentWeekStatus,
     getTotalHoursForWeek: timeEntryOperations.getTotalHoursForWeek,
-    findFirstUnsubmittedWeek: timeSheetWeeks.findFirstUnsubmittedWeek,
+    findFirstUnsubmittedWeek: () => {
+      const result = timeSheetWeeks.findFirstUnsubmittedWeek();
+      // Ensure this function returns a string as expected
+      return result ? typeof result === 'string' ? result : null : null;
+    },
     checkEarlierWeeksUnderReview
   });
 
