@@ -17,45 +17,29 @@ import MediaTypeManagement from "./pages/MediaTypeManagement";
 import { useState, useEffect } from "react";
 import { User, Client } from "./types/timesheet";
 import { Button } from "./components/ui/button";
-import { 
-  LogOut, 
-  Users, 
-  Calendar, 
-  UserCog, 
-  CalendarDays, 
-  Percent, 
-  Eye, 
-  Building, 
-  ArrowLeft, 
-  TreeDeciduous,
-  Film
-} from "lucide-react";
+import { LogOut, Users, Calendar, UserCog, CalendarDays, Percent, Eye, Building, ArrowLeft, TreeDeciduous, Film } from "lucide-react";
 import { useToast } from "./hooks/use-toast";
 import * as db from "./integrations/supabase/database";
 import UserHeadView from "./pages/UserHeadView";
 import { UserCircle } from "lucide-react";
 import { AdfsCallback } from "./pages/AuthCallbacks";
 import { StatusTimeline, WeekDetails } from "./components/ProgressBar";
-
 const queryClient = new QueryClient();
-
-function NavButton({ to, children }: { to: string; children: React.ReactNode }) {
+function NavButton({
+  to,
+  children
+}: {
+  to: string;
+  children: React.ReactNode;
+}) {
   const location = useLocation();
   const isActive = location.pathname === to;
-  
-  return (
-    <Link to={to}>
-      <Button 
-        variant={isActive ? "active" : "outline"} 
-        size="sm" 
-        className="flex items-center gap-2"
-      >
+  return <Link to={to}>
+      <Button variant={isActive ? "active" : "outline"} size="sm" className="flex items-center gap-2">
         {children}
       </Button>
-    </Link>
-  );
+    </Link>;
 }
-
 function AppContent() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,8 +47,9 @@ function AppContent() {
   const [departments, setDepartments] = useState<any[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [customWeeks, setCustomWeeks] = useState<any[]>([]);
-  const { toast } = useToast();
-
+  const {
+    toast
+  } = useToast();
   useEffect(() => {
     const loadUserSession = () => {
       try {
@@ -83,10 +68,8 @@ function AppContent() {
         }
       }
     };
-
     loadUserSession();
   }, []);
-
   useEffect(() => {
     if (user) {
       fetchInitialData();
@@ -94,21 +77,19 @@ function AppContent() {
       setLoading(false);
     }
   }, [user]);
-
   const handleLogin = async (userData: any) => {
     try {
       console.log('Login received user data:', userData);
-      
-      const { data, error } = await db.getUserById(userData.id || '');
-      
+      const {
+        data,
+        error
+      } = await db.getUserById(userData.id || '');
       if (error) {
         console.error('Error getting user details:', error);
         throw error;
       }
-      
       if (data) {
         console.log('Setting user state with data:', data);
-        
         const fullUserData: User = {
           ...userData,
           id: data.id,
@@ -129,9 +110,7 @@ function AppContent() {
           firstCustomWeekId: data.first_custom_week_id,
           deletion_mark: data.deletion_mark
         };
-        
         setUser(fullUserData);
-        
         localStorage.setItem('userSession', JSON.stringify(fullUserData));
       }
     } catch (error) {
@@ -139,28 +118,36 @@ function AppContent() {
       toast({
         title: "Error",
         description: "Failed to get user details",
-        variant: "destructive",
+        variant: "destructive"
       });
       setLoading(false);
     }
   };
-
   const fetchInitialData = async () => {
     try {
       setLoading(true);
-      const { data: usersData, error: usersError } = await db.getUsers();
+      const {
+        data: usersData,
+        error: usersError
+      } = await db.getUsers();
       if (usersError) throw usersError;
       setUsers(usersData || []);
-      
-      const { data: departmentsData, error: departmentsError } = await db.getDepartments();
+      const {
+        data: departmentsData,
+        error: departmentsError
+      } = await db.getDepartments();
       if (departmentsError) throw departmentsError;
       setDepartments(departmentsData || []);
-      
-      const { data: clientsData, error: clientsError } = await db.getClients();
+      const {
+        data: clientsData,
+        error: clientsError
+      } = await db.getClients();
       if (clientsError) throw clientsError;
       setClients(clientsData || []);
-      
-      const { data: weeksData, error: weeksError } = await db.getCustomWeeks();
+      const {
+        data: weeksData,
+        error: weeksError
+      } = await db.getCustomWeeks();
       if (weeksError) throw weeksError;
       setCustomWeeks(weeksData || []);
     } catch (error) {
@@ -168,205 +155,175 @@ function AppContent() {
       toast({
         title: "Error",
         description: "Failed to load initial data",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
   };
-
   const handleCreateUser = async (userData: any) => {
     try {
       toast({
         title: "User Creation Moved",
         description: "Please use the User Management page to create users",
-        variant: "destructive",
+        variant: "destructive"
       });
     } catch (error) {
       console.error('Error creating user:', error);
       toast({
         title: "Error",
         description: "Failed to create user",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('userSession');
     localStorage.removeItem('redirectToWeek');
     toast({
       title: "Logged out",
-      description: "You have been successfully logged out",
+      description: "You have been successfully logged out"
     });
   };
-
   const handleSetFirstWeek = (username: string, date: string, weekId?: string) => {
-    setUsers((prevUsers) =>
-      prevUsers.map((u) =>
-        u.username === username ? { 
-          ...u, 
-          firstWeek: date,
-          firstCustomWeekId: weekId || u.firstCustomWeekId 
-        } : u
-      )
-    );
-    
+    setUsers(prevUsers => prevUsers.map(u => u.username === username ? {
+      ...u,
+      firstWeek: date,
+      firstCustomWeekId: weekId || u.firstCustomWeekId
+    } : u));
     if (user && user.username === username) {
-      setUser((prevUser) => prevUser ? { 
-        ...prevUser, 
+      setUser(prevUser => prevUser ? {
+        ...prevUser,
         firstWeek: date,
-        firstCustomWeekId: weekId || prevUser.firstCustomWeekId 
+        firstCustomWeekId: weekId || prevUser.firstCustomWeekId
       } : null);
     }
-    
     toast({
       title: "First Week Set",
-      description: `First week set for ${username}: ${date}`,
+      description: `First week set for ${username}: ${date}`
     });
   };
-
   const handleUpdateUserManager = (username: string, managerId: string | undefined) => {
-    setUsers((prevUsers) =>
-      prevUsers.map((u) =>
-        u.username === username ? { ...u, managerId } : u
-      )
-    );
+    setUsers(prevUsers => prevUsers.map(u => u.username === username ? {
+      ...u,
+      managerId
+    } : u));
     if (user && user.username === username) {
-      setUser((prevUser) => prevUser ? { ...prevUser, managerId } : null);
+      setUser(prevUser => prevUser ? {
+        ...prevUser,
+        managerId
+      } : null);
     }
   };
-
   const handleUpdateUserDepartment = (username: string, departmentId: string | undefined) => {
-    setUsers((prevUsers) =>
-      prevUsers.map((u) =>
-        u.username === username ? { ...u, departmentId } : u
-      )
-    );
+    setUsers(prevUsers => prevUsers.map(u => u.username === username ? {
+      ...u,
+      departmentId
+    } : u));
     if (user && user.username === username) {
-      setUser((prevUser) => prevUser ? { ...prevUser, departmentId } : null);
+      setUser(prevUser => prevUser ? {
+        ...prevUser,
+        departmentId
+      } : null);
     }
   };
-
   const handleToggleUserHidden = (username: string, hidden: boolean) => {
-    setUsers((prevUsers) =>
-      prevUsers.map((u) =>
-        u.username === username ? { ...u, hidden } : u
-      )
-    );
+    setUsers(prevUsers => prevUsers.map(u => u.username === username ? {
+      ...u,
+      hidden
+    } : u));
     if (user && user.username === username) {
-      setUser((prevUser) => prevUser ? { ...prevUser, hidden } : null);
+      setUser(prevUser => prevUser ? {
+        ...prevUser,
+        hidden
+      } : null);
     }
   };
-
   const handleAddClient = (clientData: Omit<Client, "id">) => {
     const newId = `${clients.length + 1}`;
     const newClient: Client = {
       id: newId,
       ...clientData
     };
-    setClients((prevClients) => [...prevClients, newClient]);
+    setClients(prevClients => [...prevClients, newClient]);
   };
-
   const handleUpdateClient = (id: string, clientData: Partial<Client>) => {
-    setClients((prevClients) =>
-      prevClients.map((client) =>
-        client.id === id ? { ...client, ...clientData } : client
-      )
-    );
+    setClients(prevClients => prevClients.map(client => client.id === id ? {
+      ...client,
+      ...clientData
+    } : client));
   };
-
   const handleDeleteClient = (id: string) => {
     const clientToDelete = clients.find(client => client.id === id);
     if (clientToDelete?.isDefault) {
       toast({
         title: "Cannot Delete",
         description: "Default clients cannot be deleted",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-    
     const hasChildren = clients.some(client => client.parentId === id);
     if (hasChildren) {
       toast({
         title: "Cannot Delete",
         description: "This client has child clients. Please reassign or delete them first.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-    
-    setUsers((prevUsers) => 
-      prevUsers.map((user) => {
-        if (user.selectedClients && user.selectedClients.includes(id)) {
-          return {
-            ...user,
-            selectedClients: user.selectedClients.filter(clientId => clientId !== id)
-          };
-        }
-        return user;
-      })
-    );
-    
-    setClients((prevClients) => prevClients.filter((client) => client.id !== id));
+    setUsers(prevUsers => prevUsers.map(user => {
+      if (user.selectedClients && user.selectedClients.includes(id)) {
+        return {
+          ...user,
+          selectedClients: user.selectedClients.filter(clientId => clientId !== id)
+        };
+      }
+      return user;
+    }));
+    setClients(prevClients => prevClients.filter(client => client.id !== id));
   };
-
   const handleAddDepartment = (departmentData: any) => {
     const newId = `${departments.length + 1}`;
     const newDepartment = {
       id: newId,
       ...departmentData
     };
-    setDepartments((prevDepartments) => [...prevDepartments, newDepartment]);
+    setDepartments(prevDepartments => [...prevDepartments, newDepartment]);
   };
-
   const handleDeleteDepartment = (id: string) => {
     const usersInDepartment = users.filter(u => u.departmentId === id);
-    
     if (usersInDepartment.length > 0) {
       toast({
         title: "Cannot Delete",
         description: "There are users assigned to this department",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-    
-    setDepartments((prevDepartments) => 
-      prevDepartments.filter((dept) => dept.id !== id)
-    );
-    
+    setDepartments(prevDepartments => prevDepartments.filter(dept => dept.id !== id));
     toast({
       title: "Department Deleted",
-      description: "Department has been removed",
+      description: "Department has been removed"
     });
   };
-
   const getVisibleUsers = () => {
     return users.filter(u => !u.hidden);
   };
-
   const getVisibleClients = () => {
     return clients.filter(c => !c.hidden).map(c => c.name);
   };
-
-  const isUserHead = (user && users.some(u => u.user_head_id === user.id)) || false;
-
+  const isUserHead = user && users.some(u => u.user_head_id === user.id) || false;
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
-
-  return (
-    <>
-      {user && (
-        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 flex-wrap justify-end">
+  return <>
+      {user && <div className="fixed top-4 right-4 z-50 flex items-center gap-2 flex-wrap justify-end">
           <span className="text-sm text-gray-600">
             Logged in as: {user.username} ({user.role})
           </span>
-          {user.role === 'admin' && (
-            <>
+          {user.role === 'admin' && <>
               <NavButton to="/view-users">
                 <Users className="h-4 w-4" />
                 View Users
@@ -399,165 +356,43 @@ function AppContent() {
                 <Film className="h-4 w-4" />
                 Media Types
               </NavButton>
-            </>
-          )}
-          {user.role === 'manager' && (
-            <NavButton to="/manager-view">
+            </>}
+          {user.role === 'manager' && <NavButton to="/manager-view">
               <Eye className="h-4 w-4" />
               View Team
-            </NavButton>
-          )}
-          {isUserHead && (
-            <NavButton to="/user-head-view">
+            </NavButton>}
+          {isUserHead && <NavButton to="/user-head-view">
               <UserCircle className="h-4 w-4" />
               User Head View
-            </NavButton>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleLogout}
-            className="flex items-center gap-2"
-          >
+            </NavButton>}
+          <Button variant="outline" size="sm" onClick={handleLogout} className="flex items-center gap-2">
             <LogOut className="h-4 w-4" />
             Logout
           </Button>
-        </div>
-      )}
+        </div>}
       <Routes>
-        <Route
-          path="/"
-          element={
-            user ? (
-              <div className="container mx-auto p-4 pt-16">
-                {user.role === 'admin' || user.firstWeek || user.firstCustomWeekId ? (
-                  <>
-                    {customWeeks.length > 0 && (
-                      <div className="mb-8">
-                        <UserProgressBar
-                          userId={user.id}
-                          customWeeks={customWeeks}
-                        />
-                      </div>
-                    )}
-                    <TimeSheet 
-                      userRole={user.role} 
-                      firstWeek={user.firstWeek || (user.role === 'admin' ? '2024-01-01' : '')} 
-                      currentUser={user}
-                      users={users}
-                      clients={clients}
-                    />
-                  </>
-                ) : (
-                  <div className="text-center p-8">
+        <Route path="/" element={user ? <div className="container mx-auto p-4 pt-16">
+                {user.role === 'admin' || user.firstWeek || user.firstCustomWeekId ? <>
+                    {customWeeks.length > 0 && <div className="mb-8">
+                        <UserProgressBar userId={user.id} customWeeks={customWeeks} />
+                      </div>}
+                    <TimeSheet userRole={user.role} firstWeek={user.firstWeek || (user.role === 'admin' ? '2024-01-01' : '')} currentUser={user} users={users} clients={clients} />
+                  </> : <div className="text-center p-8">
                     <h2 className="text-xl font-semibold mb-4">
                       Welcome! Please wait for an admin to set your first working week.
                     </h2>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
-        <Route
-          path="/login"
-          element={
-            !user ? (
-              <Login onLogin={handleLogin} users={users} />
-            ) : (
-              <Navigate to="/" replace />
-            )
-          }
-        />
-        <Route
-          path="/auth/adfs-callback"
-          element={<AdfsCallback />}
-        />
-        <Route
-          path="/view-users"
-          element={
-            user?.role === 'admin' ? (
-              <UserImpersonation clients={clients} />
-            ) : (
-              <Navigate to="/" replace />
-            )
-          }
-        />
-        <Route
-          path="/custom-weeks"
-          element={
-            user?.role === 'admin' ? (
-              <CustomWeeks />
-            ) : (
-              <Navigate to="/" replace />
-            )
-          }
-        />
-        <Route
-          path="/user-manager"
-          element={
-            user?.role === 'admin' ? (
-              <UserManagerAssignment 
-                onUpdateUserManager={handleUpdateUserManager}
-                onUpdateUserDepartment={handleUpdateUserDepartment}
-                onToggleUserHidden={handleToggleUserHidden}
-              />
-            ) : (
-              <Navigate to="/" replace />
-            )
-          }
-        />
-        <Route
-          path="/first-weeks"
-          element={
-            user?.role === 'admin' ? (
-              <UserFirstWeekManagement />
-            ) : (
-              <Navigate to="/" replace />
-            )
-          }
-        />
-        <Route
-          path="/week-percentage"
-          element={
-            user?.role === 'admin' ? (
-              <UserWeekPercentage />
-            ) : (
-              <Navigate to="/" replace />
-            )
-          }
-        />
-        <Route
-          path="/manager-view"
-          element={
-            user?.role === 'manager' ? (
-              <ManagerView 
-                currentUser={user}
-                users={getVisibleUsers()}
-                clients={clients}
-              />
-            ) : (
-              <Navigate to="/" replace />
-            )
-          }
-        />
-        <Route
-          path="/client-tree"
-          element={
-            user?.role === 'admin' ? (
-              <ClientTree />
-            ) : (
-              <Navigate to="/" replace />
-            )
-          }
-        />
-        <Route
-          path="/departments"
-          element={
-            user?.role === 'admin' ? (
-              <div className="container mx-auto p-4 pt-16">
+                  </div>}
+              </div> : <Navigate to="/login" replace />} />
+        <Route path="/login" element={!user ? <Login onLogin={handleLogin} users={users} /> : <Navigate to="/" replace />} />
+        <Route path="/auth/adfs-callback" element={<AdfsCallback />} />
+        <Route path="/view-users" element={user?.role === 'admin' ? <UserImpersonation clients={clients} /> : <Navigate to="/" replace />} />
+        <Route path="/custom-weeks" element={user?.role === 'admin' ? <CustomWeeks /> : <Navigate to="/" replace />} />
+        <Route path="/user-manager" element={user?.role === 'admin' ? <UserManagerAssignment onUpdateUserManager={handleUpdateUserManager} onUpdateUserDepartment={handleUpdateUserDepartment} onToggleUserHidden={handleToggleUserHidden} /> : <Navigate to="/" replace />} />
+        <Route path="/first-weeks" element={user?.role === 'admin' ? <UserFirstWeekManagement /> : <Navigate to="/" replace />} />
+        <Route path="/week-percentage" element={user?.role === 'admin' ? <UserWeekPercentage /> : <Navigate to="/" replace />} />
+        <Route path="/manager-view" element={user?.role === 'manager' ? <ManagerView currentUser={user} users={getVisibleUsers()} clients={clients} /> : <Navigate to="/" replace />} />
+        <Route path="/client-tree" element={user?.role === 'admin' ? <ClientTree /> : <Navigate to="/" replace />} />
+        <Route path="/departments" element={user?.role === 'admin' ? <div className="container mx-auto p-4 pt-16">
                 <div className="flex items-center justify-between mb-6">
                   <h1 className="text-2xl font-bold">Department Management</h1>
                   <Link to="/">
@@ -567,66 +402,36 @@ function AppContent() {
                     </Button>
                   </Link>
                 </div>
-                <DepartmentManagement 
-                  departments={departments}
-                  onAddDepartment={handleAddDepartment}
-                  onDeleteDepartment={handleDeleteDepartment}
-                />
-              </div>
-            ) : (
-              <Navigate to="/" replace />
-            )
-          }
-        />
-        <Route
-          path="/media-types"
-          element={
-            user?.role === 'admin' ? (
-              <MediaTypeManagement />
-            ) : (
-              <Navigate to="/" replace />
-            )
-          }
-        />
-        <Route
-          path="/user-head-view"
-          element={
-            user && isUserHead ? (
-              <UserHeadView
-                currentUser={user}
-                clients={clients}
-              />
-            ) : (
-              <Navigate to="/" replace />
-            )
-          }
-        />
+                <DepartmentManagement departments={departments} onAddDepartment={handleAddDepartment} onDeleteDepartment={handleDeleteDepartment} />
+              </div> : <Navigate to="/" replace />} />
+        <Route path="/media-types" element={user?.role === 'admin' ? <MediaTypeManagement /> : <Navigate to="/" replace />} />
+        <Route path="/user-head-view" element={user && isUserHead ? <UserHeadView currentUser={user} clients={clients} /> : <Navigate to="/" replace />} />
       </Routes>
-    </>
-  );
+    </>;
 }
-
-function UserProgressBar({ userId, customWeeks }: { userId: string, customWeeks: any[] }) {
+function UserProgressBar({
+  userId,
+  customWeeks
+}: {
+  userId: string;
+  customWeeks: any[];
+}) {
   const [weeks, setWeeks] = useState<any[]>([]);
   const [selectedWeek, setSelectedWeek] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  
   useEffect(() => {
     const fetchWeekStatuses = async () => {
       if (!userId || customWeeks.length === 0) {
         setLoading(false);
         return;
       }
-      
       try {
         setLoading(true);
-        
         const allAvailableWeeks = [...customWeeks];
-        
-        const { data: weekStatuses } = await db.getWeekStatusesChronological(userId);
-        
+        const {
+          data: weekStatuses
+        } = await db.getWeekStatusesChronological(userId);
         let formattedWeeks = [];
-        
         if (weekStatuses && weekStatuses.length > 0) {
           const existingStatusMap = new Map();
           weekStatuses.forEach(statusData => {
@@ -637,7 +442,6 @@ function UserProgressBar({ userId, customWeeks }: { userId: string, customWeeks:
               });
             }
           });
-          
           formattedWeeks = allAvailableWeeks.map(week => {
             const existingStatus = existingStatusMap.get(week.id);
             return existingStatus || {
@@ -645,13 +449,10 @@ function UserProgressBar({ userId, customWeeks }: { userId: string, customWeeks:
               status: 'Unconfirmed' as 'accepted' | 'under revision' | 'under review' | 'Unconfirmed'
             };
           });
-          
           formattedWeeks.sort((a, b) => {
             const weekA = allAvailableWeeks.find(w => w.name === a.week);
             const weekB = allAvailableWeeks.find(w => w.name === b.week);
-            
             if (!weekA || !weekB) return 0;
-            
             return new Date(weekA.period_from).getTime() - new Date(weekB.period_from).getTime();
           });
         } else {
@@ -659,17 +460,13 @@ function UserProgressBar({ userId, customWeeks }: { userId: string, customWeeks:
             week: week.name,
             status: 'Unconfirmed' as 'accepted' | 'under revision' | 'under review' | 'Unconfirmed'
           }));
-          
           formattedWeeks.sort((a, b) => {
             const weekA = allAvailableWeeks.find(w => w.name === a.week);
             const weekB = allAvailableWeeks.find(w => w.name === b.week);
-            
             if (!weekA || !weekB) return 0;
-            
             return new Date(weekA.period_from).getTime() - new Date(weekB.period_from).getTime();
           });
         }
-        
         setWeeks(formattedWeeks);
         setSelectedWeek(formattedWeeks[0] || null);
       } catch (error) {
@@ -678,42 +475,24 @@ function UserProgressBar({ userId, customWeeks }: { userId: string, customWeeks:
         setLoading(false);
       }
     };
-    
     fetchWeekStatuses();
   }, [userId, customWeeks]);
-  
   const handleSelectWeek = (weekData: any) => {
     setSelectedWeek(weekData);
   };
-  
   if (loading) {
     return <div className="flex justify-center items-center h-12">Loading progress...</div>;
   }
-  
   if (weeks.length === 0) {
     return null;
   }
-  
-  return (
-    <div className="w-full max-w-3xl mx-auto">
-      <h2 className="text-xl font-semibold mb-2 text-center">Weekly Progress</h2>
-      <div className="bg-white dark:bg-gray-900 p-4 rounded-lg shadow">
-        <StatusTimeline 
-          weeks={weeks} 
-          selectedWeek={selectedWeek} 
-          onSelectWeek={handleSelectWeek} 
-        />
-        <div className="mt-4">
-          <WeekDetails weekData={selectedWeek} />
-        </div>
-      </div>
-    </div>
-  );
+  return <div className="w-full max-w-3xl mx-auto">
+      
+      
+    </div>;
 }
-
 export function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
+  return <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -721,8 +500,6 @@ export function App() {
           <AppContent />
         </BrowserRouter>
       </TooltipProvider>
-    </QueryClientProvider>
-  );
+    </QueryClientProvider>;
 }
-
 export default App;
