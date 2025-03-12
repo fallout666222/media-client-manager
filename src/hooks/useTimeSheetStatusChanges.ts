@@ -1,14 +1,9 @@
 
-import { useToast } from '@/hooks/use-toast';
-import { format, parse, isSameDay } from 'date-fns';
-import { 
-  getWeekStatusNames, 
-  updateWeekStatus,
-  getClients,
-  getMediaTypes,
-  updateWeekHours
-} from '@/integrations/supabase/database';
+import { useState } from 'react';
 import { TimeSheetStatus, User } from '@/types/timesheet';
+import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
+import { getWeekStatusNames, updateWeekStatus, getWeekStatuses } from '@/integrations/supabase/database';
 
 interface UseTimeSheetStatusChangesProps {
   currentUser: User;
@@ -28,7 +23,7 @@ interface UseTimeSheetStatusChangesProps {
   setTimeEntries: (entries: any) => void;
   getCurrentWeekStatus: (weekKey: string) => TimeSheetStatus;
   getTotalHoursForWeek: () => number;
-  findFirstUnsubmittedWeek: () => { date: Date; weekData: any } | null;
+  findFirstUnsubmittedWeek: () => string | null;
   checkEarlierWeeksUnderReview?: (weekId: string) => boolean;
 }
 
@@ -53,174 +48,170 @@ export const useTimeSheetStatusChanges = ({
   findFirstUnsubmittedWeek,
   checkEarlierWeeksUnderReview
 }: UseTimeSheetStatusChangesProps) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-
-  const handleSubmitForReview = async () => {
-    if (!isViewingOwnTimesheet && !adminOverride && !isUserHead) return;
-    
-    const firstUnsubmittedWeek = findFirstUnsubmittedWeek();
-    const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
-    const totalHours = getTotalHoursForWeek();
-    
-    const effectiveHours = Math.round(weekHours * (weekPercentage / 100));
-    const remainingHours = effectiveHours - totalHours;
-    
-    if (remainingHours !== 0 && !adminOverride && !isUserHead) {
-      toast({
-        title: "Cannot Submit Timesheet",
-        description: `You must fill in exactly ${effectiveHours} hours for this week (${weekPercentage}% of ${weekHours}). Remaining: ${remainingHours} hours`,
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (firstUnsubmittedWeek && !isSameDay(firstUnsubmittedWeek.date, currentDate) && !adminOverride && !isUserHead) {
-      toast({
-        title: "Cannot Submit This Week",
-        description: `Week not submitted because previous weeks haven't been filled in yet.`,
-        variant: "destructive"
-      });
-      
-      return;
-    }
-
+  
+  // Helper function to refresh week statuses
+  const refreshWeekStatuses = async () => {
     try {
-      const currentWeekData = customWeeks.find(week => 
-        format(parse(week.period_from, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === currentWeekKey
-      );
+      const { data } = await getWeekStatuses(viewedUser.id);
       
-      if (currentWeekData && viewedUser.id) {
-        const { data: statusNames } = await getWeekStatusNames();
-        const underReviewStatus = statusNames?.find(status => status.name === 'under-review');
+      if (data && data.length > 0) {
+        const newStatuses: Record<string, TimeSheetStatus> = {};
+        const newSubmitted: string[] = [];
         
-        if (underReviewStatus) {
-          console.log(`Updating week status for user ${viewedUser.id}, week ${currentWeekData.id} to under-review (${underReviewStatus.id})`);
-          const updateResult = await updateWeekStatus(viewedUser.id, currentWeekData.id, underReviewStatus.id);
-          
-          if (updateResult.error) {
-            console.error("Error updating week status:", updateResult.error);
-            toast({
-              title: "Error Updating Status",
-              description: "Failed to update timesheet status. Please try again.",
-              variant: "destructive"
-            });
-            return;
-          }
-          
-          const weekEntries = timeEntries[currentWeekKey] || {};
-          const { data: clientsData } = await getClients();
-          const { data: mediaTypesData } = await getMediaTypes();
-          
-          console.log("Saving time entries for week:", currentWeekData.id);
-          
-          for (const clientName in weekEntries) {
-            const mediaEntries = weekEntries[clientName];
-            const clientObj = clientsData?.find(c => c.name === clientName);
+        data.forEach(statusEntry => {
+          if (statusEntry.week && statusEntry.status) {
+            const weekKey = statusEntry.week.period_from;
+            newStatuses[weekKey] = statusEntry.status.name as TimeSheetStatus;
             
-            if (clientObj) {
-              for (const mediaTypeName in mediaEntries) {
-                const entry = mediaEntries[mediaTypeName];
-                const mediaTypeObj = mediaTypesData?.find(m => m.name === mediaTypeName);
-                
-                if (mediaTypeObj && entry && typeof entry.hours === 'number' && entry.hours > 0) {
-                  console.log(`Saving hours for ${clientName}/${mediaTypeName}: ${entry.hours}`);
-                  await updateWeekHours(
-                    viewedUser.id, 
-                    currentWeekData.id, 
-                    clientObj.id, 
-                    mediaTypeObj.id, 
-                    entry.hours
-                  );
-                }
-              }
+            if (statusEntry.status.name === 'under-review' || statusEntry.status.name === 'accepted') {
+              newSubmitted.push(weekKey);
             }
           }
-          
-          setWeekStatuses((prev: Record<string, TimeSheetStatus>) => {
-            const newStatuses: Record<string, TimeSheetStatus> = {
-              ...prev,
-              [currentWeekKey]: 'under-review' as TimeSheetStatus
-            };
-            return newStatuses;
-          });
-          
-          setSubmittedWeeks((prev: string[]) => {
-            if (!prev.includes(currentWeekKey)) {
-              return [...prev, currentWeekKey];
-            }
-            return prev;
-          });
-          
-          const updatedEntries = { ...timeEntries };
-          if (updatedEntries[currentWeekKey]) {
-            for (const client in updatedEntries[currentWeekKey]) {
-              for (const mediaType in updatedEntries[currentWeekKey][client]) {
-                if (updatedEntries[currentWeekKey][client][mediaType]) {
-                  updatedEntries[currentWeekKey][client][mediaType].status = 'under-review';
-                }
-              }
-            }
-            setTimeEntries(updatedEntries);
-          }
-          
-          toast({
-            title: "Timesheet Under Review",
-            description: `Week of ${format(currentDate, 'MMM d, yyyy')} has been submitted and is now under review`,
-          });
-        }
+        });
+        
+        setWeekStatuses(newStatuses);
+        setSubmittedWeeks(newSubmitted);
       }
     } catch (error) {
-      console.error('Error updating week status:', error);
+      console.error('Error refreshing week statuses:', error);
+    }
+  };
+
+  const handleSubmitForReview = async () => {
+    const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
+    const currentCustomWeek = customWeeks.find(week => 
+      format(new Date(week.period_from), 'yyyy-MM-dd') === currentWeekKey
+    );
+    
+    if (!currentCustomWeek) {
       toast({
         title: "Error",
-        description: "Failed to update timesheet status",
+        description: "Could not find current week data",
         variant: "destructive"
       });
+      return;
+    }
+    
+    if (!isViewingOwnTimesheet && !adminOverride && !isUserHead) {
+      toast({
+        title: "Access Denied",
+        description: "You can only submit your own timesheets",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Check if there are earlier weeks that need to be submitted first
+    if (findFirstUnsubmittedWeek()) {
+      toast({
+        title: "Earlier Weeks",
+        description: "Please submit earlier weeks first",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Check if there are enough hours logged
+    const totalHours = getTotalHoursForWeek();
+    const requiredHours = Math.round(weekHours * (weekPercentage / 100));
+    
+    if (totalHours < requiredHours && !adminOverride) {
+      toast({
+        title: "Insufficient Hours",
+        description: `You need to log at least ${requiredHours} hours (currently: ${totalHours})`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      setIsSubmitting(true);
+      
+      const { data: statusNames } = await getWeekStatusNames();
+      const underReviewStatus = statusNames?.find(status => status.name === 'under-review');
+      
+      if (underReviewStatus && viewedUser.id) {
+        await updateWeekStatus(viewedUser.id, currentCustomWeek.id, underReviewStatus.id);
+        
+        // Update local state
+        setWeekStatuses(prev => ({
+          ...prev,
+          [currentWeekKey]: 'under review'
+        }));
+        
+        setSubmittedWeeks(prev => [...prev, currentWeekKey]);
+        
+        // Fetch updated week statuses
+        await refreshWeekStatuses();
+        
+        toast({
+          title: "Success",
+          description: "Timesheet submitted for review"
+        });
+      }
+    } catch (error) {
+      console.error('Error submitting timesheet:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit timesheet for review",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleApprove = async () => {
-    if (!adminOverride && !isUserHead) return;
-    
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
+    const currentCustomWeek = customWeeks.find(week => 
+      format(new Date(week.period_from), 'yyyy-MM-dd') === currentWeekKey
+    );
+    
+    if (!currentCustomWeek) {
+      toast({
+        title: "Error",
+        description: "Could not find current week data",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (isUserHead && checkEarlierWeeksUnderReview) {
+      const hasEarlierWeeks = checkEarlierWeeksUnderReview(currentCustomWeek.id);
+      if (hasEarlierWeeks) {
+        toast({
+          title: "Error",
+          description: "Please approve earlier weeks first",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
     
     try {
-      const currentWeekData = customWeeks.find(week => 
-        format(parse(week.period_from, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === currentWeekKey
-      );
+      setIsSubmitting(true);
       
-      if (currentWeekData && viewedUser.id) {
-        if (isUserHead && checkEarlierWeeksUnderReview && currentWeekData.id) {
-          const hasEarlierWeeks = checkEarlierWeeksUnderReview(currentWeekData.id);
-          if (hasEarlierWeeks) {
-            toast({
-              title: "Cannot Approve",
-              description: "Earlier weeks must be approved first",
-              variant: "destructive"
-            });
-            return;
-          }
-        }
+      const { data: statusNames } = await getWeekStatusNames();
+      const acceptedStatus = statusNames?.find(status => status.name === 'accepted');
+      
+      if (acceptedStatus && viewedUser.id) {
+        await updateWeekStatus(viewedUser.id, currentCustomWeek.id, acceptedStatus.id);
         
-        const { data: statusNames } = await getWeekStatusNames();
-        const acceptedStatus = statusNames?.find(status => status.name === 'accepted');
+        // Update local state
+        setWeekStatuses(prev => ({
+          ...prev,
+          [currentWeekKey]: 'accepted'
+        }));
         
-        if (acceptedStatus) {
-          await updateWeekStatus(viewedUser.id, currentWeekData.id, acceptedStatus.id);
-          
-          setWeekStatuses((prev: Record<string, TimeSheetStatus>) => {
-            const newStatuses: Record<string, TimeSheetStatus> = {
-              ...prev,
-              [currentWeekKey]: 'accepted' as TimeSheetStatus
-            };
-            return newStatuses;
-          });
-          
-          toast({
-            title: "Timesheet Approved",
-            description: `Week of ${format(currentDate, 'MMM d, yyyy')} has been approved`,
-          });
-        }
+        // Fetch updated week statuses
+        await refreshWeekStatuses();
+        
+        toast({
+          title: "Success",
+          description: "Timesheet approved"
+        });
       }
     } catch (error) {
       console.error('Error approving timesheet:', error);
@@ -229,65 +220,67 @@ export const useTimeSheetStatusChanges = ({
         description: "Failed to approve timesheet",
         variant: "destructive"
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleReject = async () => {
-    if (!adminOverride && !isUserHead) return;
-    
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
-    const currentStatus = getCurrentWeekStatus(currentWeekKey);
+    const currentCustomWeek = customWeeks.find(week => 
+      format(new Date(week.period_from), 'yyyy-MM-dd') === currentWeekKey
+    );
     
-    try {
-      const currentWeekData = customWeeks.find(week => 
-        format(parse(week.period_from, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === currentWeekKey
-      );
-      
-      if (currentWeekData && viewedUser.id) {
-        const { data: statusNames } = await getWeekStatusNames();
-        
-        const targetStatusName = (currentStatus === 'accepted' && adminOverride) ? 'unconfirmed' : 'needs-revision';
-        const targetStatus = statusNames?.find(status => status.name === targetStatusName);
-        
-        if (targetStatus) {
-          await updateWeekStatus(viewedUser.id, currentWeekData.id, targetStatus.id);
-          
-          setWeekStatuses((prev: Record<string, TimeSheetStatus>) => {
-            return {
-              ...prev,
-              [currentWeekKey]: targetStatusName as TimeSheetStatus
-            };
-          });
-          
-          if (currentStatus === 'accepted' || currentStatus === 'under-review') {
-            setSubmittedWeeks((prev: string[]) => {
-              return prev.filter(week => week !== currentWeekKey);
-            });
-          }
-          
-          const message = currentStatus === 'accepted' ? 
-            `Week of ${format(currentDate, 'MMM d, yyyy')} reverted to unconfirmed` : 
-            `Week of ${format(currentDate, 'MMM d, yyyy')} needs revision`;
-          
-          toast({
-            title: currentStatus === 'accepted' ? "Timesheet Reverted" : "Timesheet Rejected",
-            description: message,
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error rejecting/reverting timesheet:', error);
+    if (!currentCustomWeek) {
       toast({
         title: "Error",
-        description: "Failed to process timesheet action",
+        description: "Could not find current week data",
         variant: "destructive"
       });
+      return;
+    }
+    
+    try {
+      setIsSubmitting(true);
+      
+      const { data: statusNames } = await getWeekStatusNames();
+      const needsRevisionStatus = statusNames?.find(status => status.name === 'needs-revision');
+      
+      if (needsRevisionStatus && viewedUser.id) {
+        await updateWeekStatus(viewedUser.id, currentCustomWeek.id, needsRevisionStatus.id);
+        
+        // Update local state
+        setWeekStatuses(prev => ({
+          ...prev,
+          [currentWeekKey]: 'under revision'
+        }));
+        
+        setSubmittedWeeks(prev => prev.filter(week => week !== currentWeekKey));
+        
+        // Fetch updated week statuses
+        await refreshWeekStatuses();
+        
+        toast({
+          title: "Success",
+          description: "Timesheet sent back for revision"
+        });
+      }
+    } catch (error) {
+      console.error('Error rejecting timesheet:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reject timesheet",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return {
     handleSubmitForReview,
     handleApprove,
-    handleReject
+    handleReject,
+    isSubmitting
   };
 };

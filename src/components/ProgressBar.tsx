@@ -1,9 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Check, Info, AlertCircle, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { parse, format, isWithinInterval, getYear } from 'date-fns';
 
 // ------------------- Type Definitions -------------------
 
@@ -12,6 +13,8 @@ export type WeekStatus = 'accepted' | 'under revision' | 'under review' | 'Uncon
 export interface WeekData {
   week: string;
   status: WeekStatus;
+  weekId?: string;  // Added weekId to identify the week for navigation
+  periodFrom?: string; // For date filtering by year
 }
 
 // ------------------- StatusCell Component -------------------
@@ -86,24 +89,37 @@ interface StatusTimelineProps {
   weeks: WeekData[];
   selectedWeek: WeekData | null;
   onSelectWeek: (week: WeekData) => void;
+  filterYear?: number | null;
 }
 
 export const StatusTimeline: React.FC<StatusTimelineProps> = ({ 
   weeks, 
   selectedWeek, 
-  onSelectWeek 
+  onSelectWeek,
+  filterYear = null
 }) => {
+  // Filter weeks by year if filterYear is provided
+  const filteredWeeks = filterYear 
+    ? weeks.filter(week => {
+        if (week.periodFrom) {
+          const weekDate = parse(week.periodFrom, 'yyyy-MM-dd', new Date());
+          return getYear(weekDate) === filterYear;
+        }
+        return true;
+      })
+    : weeks;
+
   return (
     <div className="w-full overflow-x-auto py-4">
       <div className="flex items-center w-full min-w-min px-4">
-        {weeks.map((weekData, index) => (
+        {filteredWeeks.map((weekData, index) => (
           <React.Fragment key={weekData.week}>
             <StatusCell
               weekData={weekData}
               onSelect={onSelectWeek}
               isSelected={selectedWeek?.week === weekData.week}
               isFirst={index === 0}
-              isLast={index === weeks.length - 1}
+              isLast={index === filteredWeeks.length - 1}
               className="flex-1"
             />
           </React.Fragment>
@@ -167,3 +183,4 @@ export const WeekDetails: React.FC<WeekDetailsProps> = ({ weekData }) => {
     </Card>
   );
 };
+

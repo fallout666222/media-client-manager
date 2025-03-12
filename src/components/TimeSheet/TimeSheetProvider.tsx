@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { format, parse, isSameDay } from 'date-fns';
 import { TimeSheetStatus, User, Client } from '@/types/timesheet';
@@ -54,6 +55,9 @@ interface TimeSheetContextType {
   mediaTypesWithEntries: string[];
   getCurrentWeekStatus: (weekKey: string) => TimeSheetStatus;
   currentCustomWeek: any;
+  handleProgressBarWeekSelect: (weekId: string) => void;
+  filterYear: number | null;
+  setFilterYear: React.Dispatch<React.SetStateAction<number | null>>;
 }
 
 // Create context with a default undefined value
@@ -107,6 +111,7 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
   const [customWeeks, setCustomWeeks] = useState<any[]>([]);
   const [viewedUser, setViewedUser] = useState<User>(impersonatedUser || currentUser);
   const viewedUserId = viewedUser.id;
+  const [filterYear, setFilterYear] = useState<number | null>(null);
   
   const [currentDate, setCurrentDate] = useState<Date>(() => {
     if (initialWeekId) return new Date();
@@ -251,6 +256,23 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
     }
   }, [impersonatedUser, currentUser]);
 
+  // Function to handle week selection from progress bar
+  const handleProgressBarWeekSelect = (weekId: string) => {
+    if (!customWeeks.length) return;
+    
+    const selectedWeek = customWeeks.find(week => week.id === weekId);
+    if (selectedWeek) {
+      setCurrentDate(parse(selectedWeek.period_from, 'yyyy-MM-dd', new Date()));
+      setCurrentCustomWeek(selectedWeek);
+      setWeekHours(selectedWeek.required_hours);
+      
+      // Save selected week to localStorage
+      if (viewedUserId) {
+        localStorage.setItem(`selectedWeek_${viewedUserId}`, selectedWeek.id);
+      }
+    }
+  };
+
   const handleUserSelect = (user: User) => {
     setViewedUser(user);
   };
@@ -394,7 +416,10 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
     clientsWithEntries,
     mediaTypesWithEntries,
     getCurrentWeekStatus,
-    currentCustomWeek
+    currentCustomWeek,
+    handleProgressBarWeekSelect,
+    filterYear,
+    setFilterYear
   };
 
   return (

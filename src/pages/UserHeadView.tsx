@@ -225,6 +225,9 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
           fetchFirstUnconfirmedWeek(selectedTeamMember);
           findFirstUnderReviewWeek(selectedTeamMember);
         }
+        
+        // Refresh the component to update the progress bar
+        setForceRefresh(prev => prev + 1);
       }
     } catch (error) {
       console.error('Error submitting timesheet:', error);
@@ -270,6 +273,9 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
           fetchFirstUnconfirmedWeek(selectedTeamMember);
           findFirstUnderReviewWeek(selectedTeamMember);
         }
+        
+        // Refresh the component to update the progress bar
+        setForceRefresh(prev => prev + 1);
       }
     } catch (error) {
       console.error('Error approving timesheet:', error);
@@ -300,6 +306,9 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
           fetchFirstUnconfirmedWeek(selectedTeamMember);
           findFirstUnderReviewWeek(selectedTeamMember);
         }
+        
+        // Refresh the component to update the progress bar
+        setForceRefresh(prev => prev + 1);
       }
     } catch (error) {
       console.error('Error rejecting timesheet:', error);

@@ -101,7 +101,7 @@ export const useTimeSheetData = ({
     };
     
     loadWeekStatuses();
-  }, [viewedUser.id, customWeeks]);
+  }, [viewedUser.id, customWeeks, currentDate]); // Added currentDate to refresh when dates change
 
   // Load week percentage
   useEffect(() => {

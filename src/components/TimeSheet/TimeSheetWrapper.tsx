@@ -9,6 +9,7 @@ import { TeamMemberSelectorSection } from './TeamMemberSelectorSection';
 import { AdminOverrideAlert } from './AdminOverrideAlert';
 import { UnsubmittedWeeksAlert } from './UnsubmittedWeeksAlert';
 import { useTimeSheet } from './TimeSheetProvider';
+import { WeekData, StatusTimeline, WeekDetails } from '@/components/ProgressBar';
 
 interface TimeSheetWrapperProps {
   userRole: 'admin' | 'user' | 'manager';
@@ -69,8 +70,38 @@ export const TimeSheetWrapper: React.FC<TimeSheetWrapperProps> = ({
     handleReorderMediaTypes,
     timeUpdateHandler,
     handleWeekHoursChange,
-    getCurrentWeekStatus
+    getCurrentWeekStatus,
+    weekStatuses,
+    handleProgressBarWeekSelect,
+    filterYear,
+    setFilterYear
   } = useTimeSheet();
+
+  // Convert customWeeks and weekStatuses to WeekData format for ProgressBar
+  const progressBarWeeks: WeekData[] = customWeeks.map(week => {
+    const status = getCurrentWeekStatus(week.period_from);
+    return {
+      week: week.name,
+      status: status,
+      weekId: week.id,
+      periodFrom: week.period_from
+    };
+  });
+
+  // Current selected week for progress bar
+  const selectedProgressWeek = currentCustomWeek ? {
+    week: currentCustomWeek.name,
+    status: getCurrentWeekStatus(currentCustomWeek.period_from),
+    weekId: currentCustomWeek.id,
+    periodFrom: currentCustomWeek.period_from
+  } : null;
+
+  // Handle week selection in the progress bar
+  const handleProgressWeekSelect = (week: WeekData) => {
+    if (week.weekId) {
+      handleProgressBarWeekSelect(week.weekId);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -95,6 +126,38 @@ export const TimeSheetWrapper: React.FC<TimeSheetWrapperProps> = ({
         hasCustomWeeks={customWeeks.length > 0}
         showSettings={showSettings}
       />
+
+      {/* Weekly Progress Bar Section */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="text-lg font-medium">Weekly Progress</h3>
+          <div className="flex items-center gap-2">
+            <span className="text-sm">Filter by year:</span>
+            <select 
+              className="border rounded px-2 py-1 text-sm"
+              value={filterYear || ''}
+              onChange={(e) => setFilterYear(e.target.value ? parseInt(e.target.value) : null)}
+            >
+              <option value="">All Years</option>
+              {Array.from(new Set(progressBarWeeks.map(week => {
+                if (week.periodFrom) {
+                  return new Date(week.periodFrom).getFullYear();
+                }
+                return null;
+              }).filter(Boolean))).sort().map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <StatusTimeline 
+          weeks={progressBarWeeks} 
+          selectedWeek={selectedProgressWeek} 
+          onSelectWeek={handleProgressWeekSelect}
+          filterYear={filterYear}
+        />
+        <WeekDetails weekData={selectedProgressWeek} />
+      </div>
 
       <UnsubmittedWeeksAlert 
         readOnly={readOnly} 
