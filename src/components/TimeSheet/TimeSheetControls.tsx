@@ -1,8 +1,8 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { TimeSheetStatus } from '@/types/timesheet';
 import { WeekPicker } from './WeekPicker';
 import { ApprovalActions } from './ApprovalActions';
-import { TimeSheetStatus } from '@/types/timesheet';
 
 interface TimeSheetControlsProps {
   currentDate: Date;
@@ -21,13 +21,12 @@ interface TimeSheetControlsProps {
   customWeeks?: any[];
   adminOverride?: boolean;
   isUserHead?: boolean;
-  viewedUserId?: string;
   hasEarlierWeeksUnderReview?: boolean;
+  viewedUserId?: string;
   onNavigateToFirstUnderReview?: () => void;
-  filterYear?: number | null;
 }
 
-export const TimeSheetControls: React.FC<TimeSheetControlsProps> = ({
+export const TimeSheetControls = ({
   currentDate,
   onWeekChange,
   onWeekHoursChange,
@@ -40,37 +39,45 @@ export const TimeSheetControls: React.FC<TimeSheetControlsProps> = ({
   readOnly = false,
   firstWeek,
   weekId,
-  weekPercentage,
-  customWeeks,
+  weekPercentage = 100,
+  customWeeks = [],
   adminOverride = false,
   isUserHead = false,
-  viewedUserId,
   hasEarlierWeeksUnderReview = false,
-  onNavigateToFirstUnderReview,
-  filterYear
-}) => {
+  viewedUserId,
+  onNavigateToFirstUnderReview
+}: TimeSheetControlsProps) => {
+  
+  // Add debug logging
+  useEffect(() => {
+    if (isUserHead && status === 'under-review') {
+      console.log("TimeSheetControls Debug:");
+      console.log("- WeekId:", weekId);
+      console.log("- hasEarlierWeeksUnderReview:", hasEarlierWeeksUnderReview);
+    }
+  }, [isUserHead, status, weekId, hasEarlierWeeksUnderReview]);
+
   return (
-    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-4 border rounded-lg bg-gray-50 dark:bg-gray-900">
-      <WeekPicker 
-        currentDate={currentDate} 
-        onWeekChange={onWeekChange} 
-        onWeekHoursChange={onWeekHoursChange} 
-        weekPercentage={weekPercentage}
+    <div className="flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center">
+      <WeekPicker
+        currentDate={currentDate}
+        onWeekChange={onWeekChange}
+        onWeekHoursChange={onWeekHoursChange}
         firstWeek={firstWeek}
+        status={status}
         customWeeks={customWeeks}
         viewedUserId={viewedUserId}
-        status={status}
-        filterYear={filterYear}
+        weekPercentage={weekPercentage}
       />
-      
-      <ApprovalActions 
+      <ApprovalActions
         status={status}
         isManager={isManager}
         isViewingOwnTimesheet={isViewingOwnTimesheet}
         onSubmitForReview={onSubmitForReview}
         onApprove={onApprove}
         onReject={onReject}
-        readOnly={readOnly}
+        disabled={readOnly}
+        weekId={weekId}
         adminOverride={adminOverride}
         isUserHead={isUserHead}
         hasEarlierWeeksUnderReview={hasEarlierWeeksUnderReview}

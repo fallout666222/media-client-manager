@@ -106,28 +106,6 @@ export const TimeSheetWrapper: React.FC<TimeSheetWrapperProps> = ({
     }
   };
 
-  // Filter by year control shared between components
-  const renderYearFilter = () => (
-    <div className="flex items-center gap-2">
-      <span className="text-sm">Filter by year:</span>
-      <select 
-        className="border rounded px-2 py-1 text-sm"
-        value={filterYear || ''}
-        onChange={(e) => setFilterYear(e.target.value ? parseInt(e.target.value) : null)}
-      >
-        <option value="">All Years</option>
-        {Array.from(new Set(progressBarWeeks.map(week => {
-          if (week.periodFrom) {
-            return new Date(week.periodFrom).getFullYear();
-          }
-          return null;
-        }).filter(Boolean))).sort().map(year => (
-          <option key={year} value={year}>{year}</option>
-        ))}
-      </select>
-    </div>
-  );
-
   return (
     <div className="space-y-6">
       <TeamMemberSelectorSection 
@@ -152,14 +130,29 @@ export const TimeSheetWrapper: React.FC<TimeSheetWrapperProps> = ({
         showSettings={showSettings}
       />
 
-      {/* Shared year filter above both week-related components */}
-      <div className="flex justify-end mb-2">
-        {renderYearFilter()}
-      </div>
-
       {/* Weekly Progress Bar Section */}
       <div className="mb-6">
-        <h3 className="text-lg font-medium mb-2">Weekly Progress</h3>
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="text-lg font-medium">Weekly Progress</h3>
+          <div className="flex items-center gap-2">
+            <span className="text-sm">Filter by year:</span>
+            <select 
+              className="border rounded px-2 py-1 text-sm"
+              value={filterYear || ''}
+              onChange={(e) => setFilterYear(e.target.value ? parseInt(e.target.value) : null)}
+            >
+              <option value="">All Years</option>
+              {Array.from(new Set(progressBarWeeks.map(week => {
+                if (week.periodFrom) {
+                  return new Date(week.periodFrom).getFullYear();
+                }
+                return null;
+              }).filter(Boolean))).sort().map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+          </div>
+        </div>
         <StatusTimeline 
           weeks={progressBarWeeks} 
           selectedWeek={selectedProgressWeek} 
@@ -198,7 +191,6 @@ export const TimeSheetWrapper: React.FC<TimeSheetWrapperProps> = ({
           ? checkEarlierWeeksUnderReview(currentCustomWeek.id) 
           : false}
         onNavigateToFirstUnderReview={isUserHead ? handleNavigateToFirstUnderReviewWeek : undefined}
-        filterYear={filterYear}
       />
 
       <TimeSheetContent

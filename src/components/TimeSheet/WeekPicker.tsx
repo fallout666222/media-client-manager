@@ -22,7 +22,6 @@ interface WeekPickerProps {
   customWeeks?: any[];
   viewedUserId?: string;
   status?: TimeSheetStatus;
-  filterYear?: number | null;
 }
 
 export const WeekPicker = ({ 
@@ -33,14 +32,35 @@ export const WeekPicker = ({
   firstWeek = "2025-01-01", // Default to the earliest week if not specified
   customWeeks: propCustomWeeks = [],
   viewedUserId,
-  status,
-  filterYear
+  status
 }: WeekPickerProps) => {
   const [availableWeeks, setAvailableWeeks] = useState<CustomWeek[]>([]);
   const [loading, setLoading] = useState(true);
   
+  const [selectedYear, setSelectedYear] = useState<string>(() => {
+    const savedYear = localStorage.getItem('selectedYear');
+    return savedYear || 'all';
+  });
+
   // Add this to track the currently selected week ID
   const [currentWeekId, setCurrentWeekId] = useState<string | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem('selectedYear', selectedYear);
+  }, [selectedYear]);
+
+  const availableYears = useMemo(() => {
+    if (availableWeeks.length === 0) return [];
+    
+    const years = new Set<string>();
+    
+    availableWeeks.forEach(week => {
+      const year = getYear(parse(week.startDate, 'yyyy-MM-dd', new Date())).toString();
+      years.add(year);
+    });
+    
+    return Array.from(years).sort();
+  }, [availableWeeks]);
 
   useEffect(() => {
     const fetchWeeks = async () => {
@@ -89,10 +109,10 @@ export const WeekPicker = ({
       return !isBefore(weekStartDate, firstWeekDate);
     });
     
-    if (filterYear) {
+    if (selectedYear !== 'all') {
       filtered = filtered.filter(week => {
-        const weekYear = getYear(parse(week.startDate, 'yyyy-MM-dd', new Date()));
-        return weekYear === filterYear;
+        const weekYear = getYear(parse(week.startDate, 'yyyy-MM-dd', new Date())).toString();
+        return weekYear === selectedYear;
       });
     }
     
@@ -240,6 +260,26 @@ export const WeekPicker = ({
 
   return (
     <div className="w-full max-w-md mb-4 space-y-2">
+      <div className="flex items-center gap-2 mb-2">
+        <label className="text-sm font-medium whitespace-nowrap">Filter by year:</label>
+        <Select
+          value={selectedYear}
+          onValueChange={setSelectedYear}
+        >
+          <SelectTrigger className="h-8 flex-1">
+            <SelectValue placeholder="All years" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All years</SelectItem>
+            {availableYears.map((year) => (
+              <SelectItem key={year} value={year}>
+                {year}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="flex items-center gap-2">
         <Button
           variant="outline"
