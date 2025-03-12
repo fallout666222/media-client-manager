@@ -24,6 +24,8 @@ interface TimeSheetControlsProps {
   hasEarlierWeeksUnderReview?: boolean;
   viewedUserId?: string;
   onNavigateToFirstUnderReview?: () => void;
+  filterYear: number | null;
+  setFilterYear: (year: number | null) => void;
 }
 
 export const TimeSheetControls = ({
@@ -45,7 +47,9 @@ export const TimeSheetControls = ({
   isUserHead = false,
   hasEarlierWeeksUnderReview = false,
   viewedUserId,
-  onNavigateToFirstUnderReview
+  onNavigateToFirstUnderReview,
+  filterYear,
+  setFilterYear
 }: TimeSheetControlsProps) => {
   
   // Add debug logging
@@ -68,6 +72,8 @@ export const TimeSheetControls = ({
         customWeeks={customWeeks}
         viewedUserId={viewedUserId}
         weekPercentage={weekPercentage}
+        filterYear={filterYear}
+        setFilterYear={setFilterYear}
       />
       <ApprovalActions
         status={status}

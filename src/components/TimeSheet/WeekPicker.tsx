@@ -22,6 +22,8 @@ interface WeekPickerProps {
   customWeeks?: any[];
   viewedUserId?: string;
   status?: TimeSheetStatus;
+  filterYear: number | null;
+  setFilterYear: (year: number | null) => void;
 }
 
 export const WeekPicker = ({ 
@@ -32,22 +34,15 @@ export const WeekPicker = ({
   firstWeek = "2025-01-01", // Default to the earliest week if not specified
   customWeeks: propCustomWeeks = [],
   viewedUserId,
-  status
+  status,
+  filterYear,
+  setFilterYear
 }: WeekPickerProps) => {
   const [availableWeeks, setAvailableWeeks] = useState<CustomWeek[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  const [selectedYear, setSelectedYear] = useState<string>(() => {
-    const savedYear = localStorage.getItem('selectedYear');
-    return savedYear || 'all';
-  });
 
   // Add this to track the currently selected week ID
   const [currentWeekId, setCurrentWeekId] = useState<string | null>(null);
-
-  useEffect(() => {
-    localStorage.setItem('selectedYear', selectedYear);
-  }, [selectedYear]);
 
   const availableYears = useMemo(() => {
     if (availableWeeks.length === 0) return [];
@@ -109,10 +104,10 @@ export const WeekPicker = ({
       return !isBefore(weekStartDate, firstWeekDate);
     });
     
-    if (selectedYear !== 'all') {
+    if (filterYear !== null) {
       filtered = filtered.filter(week => {
         const weekYear = getYear(parse(week.startDate, 'yyyy-MM-dd', new Date())).toString();
-        return weekYear === selectedYear;
+        return weekYear === filterYear.toString();
       });
     }
     
@@ -263,8 +258,8 @@ export const WeekPicker = ({
       <div className="flex items-center gap-2 mb-2">
         <label className="text-sm font-medium whitespace-nowrap">Filter by year:</label>
         <Select
-          value={selectedYear}
-          onValueChange={setSelectedYear}
+          value={filterYear ? filterYear.toString() : "all"}
+          onValueChange={(value) => setFilterYear(value === "all" ? null : parseInt(value))}
         >
           <SelectTrigger className="h-8 flex-1">
             <SelectValue placeholder="All years" />

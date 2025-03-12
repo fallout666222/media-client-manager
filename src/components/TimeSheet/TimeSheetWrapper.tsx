@@ -132,27 +132,7 @@ export const TimeSheetWrapper: React.FC<TimeSheetWrapperProps> = ({
 
       {/* Weekly Progress Bar Section */}
       <div className="mb-6">
-        <div className="flex justify-between items-center mb-2">
-          <h3 className="text-lg font-medium">Weekly Progress</h3>
-          <div className="flex items-center gap-2">
-            <span className="text-sm">Filter by year:</span>
-            <select 
-              className="border rounded px-2 py-1 text-sm"
-              value={filterYear || ''}
-              onChange={(e) => setFilterYear(e.target.value ? parseInt(e.target.value) : null)}
-            >
-              <option value="">All Years</option>
-              {Array.from(new Set(progressBarWeeks.map(week => {
-                if (week.periodFrom) {
-                  return new Date(week.periodFrom).getFullYear();
-                }
-                return null;
-              }).filter(Boolean))).sort().map(year => (
-                <option key={year} value={year}>{year}</option>
-              ))}
-            </select>
-          </div>
-        </div>
+        <h3 className="text-lg font-medium mb-2">Weekly Progress</h3>
         <StatusTimeline 
           weeks={progressBarWeeks} 
           selectedWeek={selectedProgressWeek} 
@@ -191,6 +171,8 @@ export const TimeSheetWrapper: React.FC<TimeSheetWrapperProps> = ({
           ? checkEarlierWeeksUnderReview(currentCustomWeek.id) 
           : false}
         onNavigateToFirstUnderReview={isUserHead ? handleNavigateToFirstUnderReviewWeek : undefined}
+        filterYear={filterYear}
+        setFilterYear={setFilterYear}
       />
 
       <TimeSheetContent
