@@ -35,6 +35,7 @@ import * as db from "./integrations/supabase/database";
 import UserHeadView from "./pages/UserHeadView";
 import { UserCircle } from "lucide-react";
 import { AdfsCallback } from "./pages/AuthCallbacks";
+import { StatusTimeline, WeekDetails } from "./components/ProgressBar";
 
 const queryClient = new QueryClient();
 
@@ -428,13 +429,23 @@ function AppContent() {
             user ? (
               <div className="container mx-auto p-4 pt-16">
                 {user.role === 'admin' || user.firstWeek || user.firstCustomWeekId ? (
-                  <TimeSheet 
-                    userRole={user.role} 
-                    firstWeek={user.firstWeek || (user.role === 'admin' ? '2024-01-01' : '')} 
-                    currentUser={user}
-                    users={users}
-                    clients={clients}
-                  />
+                  <>
+                    {customWeeks.length > 0 && (
+                      <div className="mb-8">
+                        <UserProgressBar
+                          userId={user.id}
+                          customWeeks={customWeeks}
+                        />
+                      </div>
+                    )}
+                    <TimeSheet 
+                      userRole={user.role} 
+                      firstWeek={user.firstWeek || (user.role === 'admin' ? '2024-01-01' : '')} 
+                      currentUser={user}
+                      users={users}
+                      clients={clients}
+                    />
+                  </>
                 ) : (
                   <div className="text-center p-8">
                     <h2 className="text-xl font-semibold mb-4">
@@ -590,6 +601,93 @@ function AppContent() {
         />
       </Routes>
     </>
+  );
+}
+
+// Create a new component to handle fetching and displaying progress bar
+function UserProgressBar({ userId, customWeeks }: { userId: string, customWeeks: any[] }) {
+  const [weeks, setWeeks] = useState<any[]>([]);
+  const [selectedWeek, setSelectedWeek] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchWeekStatuses = async () => {
+      if (!userId || customWeeks.length === 0) return;
+      
+      try {
+        setLoading(true);
+        const { data: weekStatuses } = await db.getWeekStatuses(userId);
+        
+        if (weekStatuses && weekStatuses.length > 0) {
+          // Format data for ProgressBar component
+          const formattedWeeks = weekStatuses.map(statusData => {
+            const week = statusData.week;
+            const status = statusData.status?.name || 'unconfirmed';
+            
+            return {
+              week: week.name,
+              status: status as 'accepted' | 'under revision' | 'under review' | 'Unconfirmed'
+            };
+          });
+          
+          // Sort weeks by their period_from date
+          formattedWeeks.sort((a, b) => {
+            const weekA = customWeeks.find(w => w.name === a.week);
+            const weekB = customWeeks.find(w => w.name === b.week);
+            
+            if (!weekA || !weekB) return 0;
+            
+            return new Date(weekA.period_from).getTime() - new Date(weekB.period_from).getTime();
+          });
+          
+          setWeeks(formattedWeeks);
+          setSelectedWeek(formattedWeeks[0] || null);
+        } else {
+          // If no status data exists, create default entries based on custom weeks
+          const defaultWeeks = customWeeks.map(week => ({
+            week: week.name,
+            status: 'Unconfirmed' as 'accepted' | 'under revision' | 'under review' | 'Unconfirmed'
+          }));
+          
+          setWeeks(defaultWeeks);
+          setSelectedWeek(defaultWeeks[0] || null);
+        }
+      } catch (error) {
+        console.error('Error fetching week statuses:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchWeekStatuses();
+  }, [userId, customWeeks]);
+  
+  const handleSelectWeek = (weekData: any) => {
+    setSelectedWeek(weekData);
+  };
+  
+  if (loading) {
+    return <div className="flex justify-center items-center h-12">Loading progress...</div>;
+  }
+  
+  if (weeks.length === 0) {
+    return null;
+  }
+  
+  return (
+    <div className="w-full max-w-3xl mx-auto">
+      <h2 className="text-xl font-semibold mb-2 text-center">Weekly Progress</h2>
+      <div className="bg-white dark:bg-gray-900 p-4 rounded-lg shadow">
+        <StatusTimeline 
+          weeks={weeks} 
+          selectedWeek={selectedWeek} 
+          onSelectWeek={handleSelectWeek} 
+        />
+        <div className="mt-4">
+          <WeekDetails weekData={selectedWeek} />
+        </div>
+      </div>
+    </div>
   );
 }
 
