@@ -613,46 +613,65 @@ function UserProgressBar({ userId, customWeeks }: { userId: string, customWeeks:
   
   useEffect(() => {
     const fetchWeekStatuses = async () => {
-      if (!userId || customWeeks.length === 0) return;
+      if (!userId || customWeeks.length === 0) {
+        setLoading(false);
+        return;
+      }
       
       try {
         setLoading(true);
-        const { data: weekStatuses } = await db.getWeekStatuses(userId);
+        
+        const allAvailableWeeks = [...customWeeks];
+        
+        const { data: weekStatuses } = await db.getWeekStatusesChronological(userId);
+        
+        let formattedWeeks = [];
         
         if (weekStatuses && weekStatuses.length > 0) {
-          // Format data for ProgressBar component
-          const formattedWeeks = weekStatuses.map(statusData => {
-            const week = statusData.week;
-            const status = statusData.status?.name || 'unconfirmed';
-            
-            return {
+          const existingStatusMap = new Map();
+          weekStatuses.forEach(statusData => {
+            if (statusData.week) {
+              existingStatusMap.set(statusData.week.id, {
+                week: statusData.week.name,
+                status: (statusData.status?.name || 'unconfirmed') as 'accepted' | 'under revision' | 'under review' | 'Unconfirmed'
+              });
+            }
+          });
+          
+          formattedWeeks = allAvailableWeeks.map(week => {
+            const existingStatus = existingStatusMap.get(week.id);
+            return existingStatus || {
               week: week.name,
-              status: status as 'accepted' | 'under revision' | 'under review' | 'Unconfirmed'
+              status: 'Unconfirmed' as 'accepted' | 'under revision' | 'under review' | 'Unconfirmed'
             };
           });
           
-          // Sort weeks by their period_from date
           formattedWeeks.sort((a, b) => {
-            const weekA = customWeeks.find(w => w.name === a.week);
-            const weekB = customWeeks.find(w => w.name === b.week);
+            const weekA = allAvailableWeeks.find(w => w.name === a.week);
+            const weekB = allAvailableWeeks.find(w => w.name === b.week);
             
             if (!weekA || !weekB) return 0;
             
             return new Date(weekA.period_from).getTime() - new Date(weekB.period_from).getTime();
           });
-          
-          setWeeks(formattedWeeks);
-          setSelectedWeek(formattedWeeks[0] || null);
         } else {
-          // If no status data exists, create default entries based on custom weeks
-          const defaultWeeks = customWeeks.map(week => ({
+          formattedWeeks = allAvailableWeeks.map(week => ({
             week: week.name,
             status: 'Unconfirmed' as 'accepted' | 'under revision' | 'under review' | 'Unconfirmed'
           }));
           
-          setWeeks(defaultWeeks);
-          setSelectedWeek(defaultWeeks[0] || null);
+          formattedWeeks.sort((a, b) => {
+            const weekA = allAvailableWeeks.find(w => w.name === a.week);
+            const weekB = allAvailableWeeks.find(w => w.name === b.week);
+            
+            if (!weekA || !weekB) return 0;
+            
+            return new Date(weekA.period_from).getTime() - new Date(weekB.period_from).getTime();
+          });
         }
+        
+        setWeeks(formattedWeeks);
+        setSelectedWeek(formattedWeeks[0] || null);
       } catch (error) {
         console.error('Error fetching week statuses:', error);
       } finally {
