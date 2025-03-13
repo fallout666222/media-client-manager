@@ -223,6 +223,46 @@ export const useTimeSheetWeeks = ({
     }
   };
 
+  const handleReturnToFirstUnsubmittedWeek = () => {
+    console.log("Executing handleReturnToFirstUnsubmittedWeek");
+    
+    const firstUnsubmitted = findFirstUnsubmittedWeek();
+    console.log("Result from findFirstUnsubmittedWeek:", firstUnsubmitted);
+    
+    if (firstUnsubmitted && firstUnsubmitted.date && firstUnsubmitted.weekData) {
+      if (firstUnsubmitted.weekData) {
+        console.log(`Setting current custom week to: ${firstUnsubmitted.weekData.name}`);
+        if ('required_hours' in firstUnsubmitted.weekData) {
+          setCurrentCustomWeek(firstUnsubmitted.weekData);
+        } else {
+          setCurrentCustomWeek(null);
+        }
+      }
+      
+      console.log(`Navigating to date: ${format(firstUnsubmitted.date, 'yyyy-MM-dd')}`);
+      setCurrentDate(firstUnsubmitted.date);
+      
+      if (viewedUser.id && firstUnsubmitted.weekData) {
+        localStorage.setItem(`selectedWeek_${viewedUser.id}`, firstUnsubmitted.weekData.id || '');
+        console.log(`Saved week ${firstUnsubmitted.weekData.id} to localStorage for user ${viewedUser.id}`);
+      }
+      
+      toast({
+        title: "Navigated to First Unsubmitted Week",
+        description: `Showing week of ${format(firstUnsubmitted.date, 'MMM d, yyyy')}`,
+      });
+      
+      return true;
+    } else {
+      toast({
+        title: "All Weeks Submitted",
+        description: "There are no unsubmitted weeks to navigate to",
+      });
+      console.log("No unsubmitted weeks found, staying on current week");
+      return false;
+    }
+  };
+
   const findWeekHours = (date: Date) => {
     const weekKey = format(date, 'yyyy-MM-dd');
     const selectedWeek = customWeeks.find(week => 
