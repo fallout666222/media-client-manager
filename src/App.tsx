@@ -26,6 +26,9 @@ import { AdfsCallback } from "./pages/AuthCallbacks";
 import { StatusTimeline, WeekDetails } from "./components/ProgressBar";
 import { parse, isBefore } from 'date-fns';
 
+// Initialize QueryClient
+const queryClient = new QueryClient();
+
 function NavButton({
   to,
   children

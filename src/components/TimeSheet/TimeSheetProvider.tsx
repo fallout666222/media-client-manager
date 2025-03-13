@@ -33,6 +33,7 @@ interface TimeSheetContextType {
   handleSubmitForReview: () => void;
   handleApprove: () => void;
   handleReject: () => void;
+  handleReturnToUnconfirmed: () => void;
   handleSaveVisibleClients: (clients: string[]) => void;
   handleSaveVisibleMediaTypes: (types: string[]) => void;
   getTotalHoursForWeek: () => number;
@@ -56,10 +57,6 @@ interface TimeSheetContextType {
   handleProgressBarWeekSelect: (weekId: string) => void;
   filterYear: number | null;
   setFilterYear: React.Dispatch<React.SetStateAction<number | null>>;
-  handleSubmitForReview: () => void;
-  handleApprove: () => void;
-  handleReject: () => void;
-  handleReturnToUnconfirmed: () => void;
 }
 
 const TimeSheetContext = createContext<TimeSheetContextType | undefined>(undefined);
@@ -71,8 +68,6 @@ export const useTimeSheet = () => {
   }
   return context;
 };
-
-const DEFAULT_AVAILABLE_MEDIA_TYPES = ['TV', 'Radio', 'Print', 'Digital'];
 
 interface TimeSheetProviderProps {
   userRole: 'admin' | 'user' | 'manager';
@@ -400,6 +395,7 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
     handleSubmitForReview,
     handleApprove,
     handleReject,
+    handleReturnToUnconfirmed,
     handleSaveVisibleClients,
     handleSaveVisibleMediaTypes,
     getTotalHoursForWeek,
@@ -422,11 +418,7 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
     currentCustomWeek,
     handleProgressBarWeekSelect,
     filterYear,
-    setFilterYear,
-    handleSubmitForReview,
-    handleApprove,
-    handleReject,
-    handleReturnToUnconfirmed
+    setFilterYear
   };
 
   return (
