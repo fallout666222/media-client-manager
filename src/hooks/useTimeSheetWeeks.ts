@@ -196,6 +196,7 @@ export const useTimeSheetWeeks = ({
         description: `Showing week of ${format(firstUnsubmitted.date, 'MMM d, yyyy')}`,
       });
     } else {
+      // Don't change current date or week when no unconfirmed weeks are found
       toast({
         title: "No Unconfirmed Weeks",
         description: adminOverride 
