@@ -87,7 +87,8 @@ export const ApprovalActions: React.FC<ApprovalActionsProps> = ({
   };
 
   const renderUserControls = () => {
-    if (!isViewingOwnTimesheet && !adminOverride) return null;
+    // Changed condition to allow isUserHead to also submit timesheets for review
+    if (!isViewingOwnTimesheet && !adminOverride && !isUserHead) return null;
 
     if (status === 'unconfirmed' || status === 'needs-revision') {
       return (
@@ -106,7 +107,6 @@ export const ApprovalActions: React.FC<ApprovalActionsProps> = ({
   };
 
   const renderManagerControls = () => {
-    // Modified to include isUserHead as a condition to show approval buttons
     if (
       status !== 'under-review' ||
       ((!isManager && !adminOverride && !isUserHead) || 
