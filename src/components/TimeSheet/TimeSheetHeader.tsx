@@ -1,8 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { RotateCcw, Settings } from "lucide-react";
-import { useSettings } from '@/contexts/SettingsContext';
+import { RotateCcw } from "lucide-react";
 
 interface TimeSheetHeaderProps {
   userRole: string;
@@ -32,75 +31,23 @@ export const TimeSheetHeader = ({
 }: TimeSheetHeaderProps) => {
   // Calculate the effective hours based on percentage
   const effectiveWeekHours = Math.round(weekHours * (weekPercentage / 100));
-  const { language } = useSettings();
-  
-  const translations = {
-    en: {
-      timesheet: "Timesheet",
-      status: "Status",
-      loggedInAs: "Logged in as",
-      remainingHours: "Remaining Hours This Week",
-      of: "of",
-      weekPercentage: "Week Percentage",
-      goToFirstWeek: "Go to First Unconfirmed/Revision Week",
-      unknown: "Unknown",
-      weeklyProgress: "Weekly Progress",
-      filterByYear: "Filter by year",
-      settings: "Settings"
-    },
-    ru: {
-      timesheet: "Табель",
-      status: "Статус",
-      loggedInAs: "Вы вошли как",
-      remainingHours: "Оставшиеся часы на этой неделе",
-      of: "из",
-      weekPercentage: "Процент недели",
-      goToFirstWeek: "Перейти к первой неподтвержденной неделе",
-      unknown: "Неизвестно",
-      weeklyProgress: "Прогресс по неделям",
-      filterByYear: "Фильтровать по году",
-      settings: "Настройки"
-    }
-  };
-  
-  const t = translations[language];
-  
-  // Map status to translated version
-  const getTranslatedStatus = (status: string) => {
-    const statusMap = {
-      en: {
-        'unconfirmed': 'unconfirmed',
-        'under-review': 'under review',
-        'needs-revision': 'needs revision',
-        'accepted': 'accepted'
-      },
-      ru: {
-        'unconfirmed': 'не подтверждено',
-        'under-review': 'на проверке',
-        'needs-revision': 'требует доработки',
-        'accepted': 'принято'
-      }
-    };
-    
-    return statusMap[language][status as keyof typeof statusMap['en']] || status.replace('-', ' ');
-  };
   
   return (
     <div className="flex items-center justify-between">
       <div>
-        <h1 className="text-2xl font-bold">{t.timesheet}</h1>
+        <h1 className="text-2xl font-bold">Timesheet</h1>
         <p className="text-sm text-muted-foreground">
-          {t.status}: <span className="font-medium capitalize">{getTranslatedStatus(status)}</span>
+          Status: <span className="font-medium capitalize">{status.replace('-', ' ')}</span>
         </p>
         <p className="text-sm text-muted-foreground">
-          {t.loggedInAs}: <span className="font-medium capitalize">{userRole || t.unknown}</span>
+          Logged in as: <span className="font-medium capitalize">{userRole || 'Unknown'}</span>
         </p>
         <p className="text-sm text-muted-foreground">
-          {t.remainingHours}: <span className="font-medium">{remainingHours}</span> {t.of} {effectiveWeekHours}
+          Remaining Hours This Week: <span className="font-medium">{remainingHours}</span> of {effectiveWeekHours}
         </p>
         {weekPercentage !== 100 && (
           <p className="text-sm text-muted-foreground">
-            {t.weekPercentage}: <span className="font-medium">{weekPercentage}%</span>
+            Week Percentage: <span className="font-medium">{weekPercentage}%</span>
           </p>
         )}
       </div>
@@ -111,24 +58,12 @@ export const TimeSheetHeader = ({
             onClick={onReturnToFirstUnsubmittedWeek}
             className="flex items-center gap-2"
             disabled={!hasCustomWeeks}
-            title={!hasCustomWeeks ? 
-              language === 'en' ? "No custom weeks available" : "Нет доступных недель" 
-              : language === 'en' ? "Go to the first week that needs your attention (Unconfirmed or Needs Revision)" 
-              : "Перейти к первой неделе, требующей вашего внимания (Неподтвержденная или Требует исправления)"}
+            title={!hasCustomWeeks ? "No custom weeks available" : "Go to the first week that needs your attention (Unconfirmed or Needs Revision)"}
           >
             <RotateCcw className="h-4 w-4" />
-            {t.goToFirstWeek}
+            Go to First Unconfirmed/Revision Week
           </Button>
         )}
-        <Button
-          variant={showSettings ? "default" : "outline"}
-          onClick={onToggleSettings}
-          className="flex items-center gap-2"
-          title={language === 'en' ? "Toggle settings panel" : "Переключить панель настроек"}
-        >
-          <Settings className="h-4 w-4" />
-          {t.settings}
-        </Button>
       </div>
     </div>
   );

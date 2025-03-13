@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -27,11 +28,9 @@ import { AdfsCallback } from "./pages/AuthCallbacks";
 import { StatusTimeline, WeekDetails } from "./components/ProgressBar";
 import { parse, isBefore } from 'date-fns';
 import { SettingsProvider } from "./contexts/SettingsContext";
-import { useSettings } from "./contexts/SettingsContext";
 
 // Initialize QueryClient
 const queryClient = new QueryClient();
-
 function NavButton({
   to,
   children
@@ -41,16 +40,12 @@ function NavButton({
 }) {
   const location = useLocation();
   const isActive = location.pathname === to;
-  
-  return (
-    <Link to={to}>
+  return <Link to={to}>
       <Button variant={isActive ? "active" : "outline"} size="sm" className="flex items-center gap-2">
         {children}
       </Button>
-    </Link>
-  );
+    </Link>;
 }
-
 function AppContent() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -58,47 +53,9 @@ function AppContent() {
   const [departments, setDepartments] = useState<any[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [customWeeks, setCustomWeeks] = useState<any[]>([]);
-  const { toast } = useToast();
-  const { language } = useSettings();
-
-  // Translations
-  const translations = {
-    en: {
-      settings: "Settings",
-      viewUsers: "View Users",
-      customWeeks: "Custom Weeks",
-      userManager: "User-Manager",
-      firstWeeks: "First Weeks",
-      weekPercentage: "Week Percentage",
-      departments: "Departments",
-      clientTree: "Client Tree",
-      mediaTypes: "Media Types",
-      viewTeam: "View Team",
-      userHeadView: "User Head View",
-      logout: "Logout",
-      loading: "Loading...",
-      welcome: "Welcome! Please wait for an admin to set your first working week."
-    },
-    ru: {
-      settings: "Настройки",
-      viewUsers: "Просмотр пользователей",
-      customWeeks: "Настраиваемые недели",
-      userManager: "Менеджер пользователей",
-      firstWeeks: "Первые недели",
-      weekPercentage: "Процент недели",
-      departments: "Отделы",
-      clientTree: "Дерево клиентов",
-      mediaTypes: "Типы медиа",
-      viewTeam: "Просмотр команды",
-      userHeadView: "Просмотр руководителя",
-      logout: "Выход",
-      loading: "Загрузка...",
-      welcome: "Добро пожаловать! Пожалуйста, дождитесь пока администратор установит вашу первую рабочую неделю."
-    }
-  };
-  
-  const t = translations[language || 'en'];
-  
+  const {
+    toast
+  } = useToast();
   useEffect(() => {
     const loadUserSession = () => {
       try {
@@ -119,7 +76,6 @@ function AppContent() {
     };
     loadUserSession();
   }, []);
-
   useEffect(() => {
     if (user) {
       fetchInitialData();
@@ -127,7 +83,6 @@ function AppContent() {
       setLoading(false);
     }
   }, [user]);
-
   const handleLogin = async (userData: any) => {
     try {
       console.log('Login received user data:', userData);
@@ -176,7 +131,6 @@ function AppContent() {
       setLoading(false);
     }
   };
-
   const fetchInitialData = async () => {
     try {
       setLoading(true);
@@ -215,7 +169,6 @@ function AppContent() {
       setLoading(false);
     }
   };
-
   const handleCreateUser = async (userData: any) => {
     try {
       toast({
@@ -232,17 +185,15 @@ function AppContent() {
       });
     }
   };
-
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('userSession');
     localStorage.removeItem('redirectToWeek');
     toast({
-      title: language === 'en' ? "Logged out" : "Выход выполнен",
-      description: language === 'en' ? "You have been successfully logged out" : "Вы успешно вышли из системы"
+      title: "Logged out",
+      description: "You have been successfully logged out"
     });
   };
-
   const handleSetFirstWeek = (username: string, date: string, weekId?: string) => {
     setUsers(prevUsers => prevUsers.map(u => u.username === username ? {
       ...u,
@@ -261,7 +212,6 @@ function AppContent() {
       description: `First week set for ${username}: ${date}`
     });
   };
-
   const handleUpdateUserManager = (username: string, managerId: string | undefined) => {
     setUsers(prevUsers => prevUsers.map(u => u.username === username ? {
       ...u,
@@ -274,7 +224,6 @@ function AppContent() {
       } : null);
     }
   };
-
   const handleUpdateUserDepartment = (username: string, departmentId: string | undefined) => {
     setUsers(prevUsers => prevUsers.map(u => u.username === username ? {
       ...u,
@@ -287,7 +236,6 @@ function AppContent() {
       } : null);
     }
   };
-
   const handleToggleUserHidden = (username: string, hidden: boolean) => {
     setUsers(prevUsers => prevUsers.map(u => u.username === username ? {
       ...u,
@@ -300,7 +248,6 @@ function AppContent() {
       } : null);
     }
   };
-
   const handleAddClient = (clientData: Omit<Client, "id">) => {
     const newId = `${clients.length + 1}`;
     const newClient: Client = {
@@ -309,14 +256,12 @@ function AppContent() {
     };
     setClients(prevClients => [...prevClients, newClient]);
   };
-
   const handleUpdateClient = (id: string, clientData: Partial<Client>) => {
     setClients(prevClients => prevClients.map(client => client.id === id ? {
       ...client,
       ...clientData
     } : client));
   };
-
   const handleDeleteClient = (id: string) => {
     const clientToDelete = clients.find(client => client.id === id);
     if (clientToDelete?.isDefault) {
@@ -347,7 +292,6 @@ function AppContent() {
     }));
     setClients(prevClients => prevClients.filter(client => client.id !== id));
   };
-
   const handleAddDepartment = (departmentData: any) => {
     const newId = `${departments.length + 1}`;
     const newDepartment = {
@@ -356,7 +300,6 @@ function AppContent() {
     };
     setDepartments(prevDepartments => [...prevDepartments, newDepartment]);
   };
-
   const handleDeleteDepartment = (id: string) => {
     const usersInDepartment = users.filter(u => u.departmentId === id);
     if (usersInDepartment.length > 0) {
@@ -373,79 +316,73 @@ function AppContent() {
       description: "Department has been removed"
     });
   };
-
   const getVisibleUsers = () => {
     return users.filter(u => !u.hidden);
   };
-
   const getVisibleClients = () => {
     return clients.filter(c => !c.hidden).map(c => c.name);
   };
-
   const isUserHead = user && users.some(u => u.user_head_id === user.id) || false;
-
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">{t.loading}</div>;
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
-
   return (
     <SettingsProvider userId={user?.id}>
       {user && <div className="fixed top-4 right-4 z-50 flex items-center gap-2 flex-wrap justify-end">
           <span className="text-sm text-gray-600">
-            {language === 'en' ? 'Logged in as:' : 'Вы вошли как:'} {user.username} ({user.role})
+            Logged in as: {user.username} ({user.role})
           </span>
           <NavButton to="/settings">
             <Settings className="h-4 w-4" />
-            {t.settings}
+            Settings
           </NavButton>
           {user.role === 'admin' && <>
               <NavButton to="/view-users">
                 <Users className="h-4 w-4" />
-                {t.viewUsers}
+                View Users
               </NavButton>
               <NavButton to="/custom-weeks">
                 <Calendar className="h-4 w-4" />
-                {t.customWeeks}
+                Custom Weeks
               </NavButton>
               <NavButton to="/user-manager">
                 <UserCog className="h-4 w-4" />
-                {t.userManager}
+                User-Manager
               </NavButton>
               <NavButton to="/first-weeks">
                 <CalendarDays className="h-4 w-4" />
-                {t.firstWeeks}
+                First Weeks
               </NavButton>
               <NavButton to="/week-percentage">
                 <Percent className="h-4 w-4" />
-                {t.weekPercentage}
+                Week Percentage
               </NavButton>
               <NavButton to="/departments">
                 <Building className="h-4 w-4" />
-                {t.departments}
+                Departments
               </NavButton>
               <NavButton to="/client-tree">
                 <TreeDeciduous className="h-4 w-4" />
-                {t.clientTree}
+                Client Tree
               </NavButton>
               <NavButton to="/media-types">
                 <Film className="h-4 w-4" />
-                {t.mediaTypes}
+                Media Types
               </NavButton>
             </>}
           {user.role === 'manager' && <NavButton to="/manager-view">
               <Eye className="h-4 w-4" />
-              {t.viewTeam}
+              View Team
             </NavButton>}
           {isUserHead && <NavButton to="/user-head-view">
               <UserCircle className="h-4 w-4" />
-              {t.userHeadView}
+              User Head View
             </NavButton>}
           <Button variant="outline" size="sm" onClick={handleLogout} className="flex items-center gap-2">
             <LogOut className="h-4 w-4" />
-            {t.logout}
+            Logout
           </Button>
         </div>}
-      
       <Routes>
         <Route path="/" element={user ? <div className="container mx-auto p-4 pt-16">
                 {user.role === 'admin' || user.firstWeek || user.firstCustomWeekId ? <>
@@ -453,11 +390,10 @@ function AppContent() {
                     <TimeSheet userRole={user.role} firstWeek={user.firstWeek || (user.role === 'admin' ? '2024-01-01' : '')} currentUser={user} users={users} clients={clients} />
                   </> : <div className="text-center p-8">
                     <h2 className="text-xl font-semibold mb-4">
-                      {t.welcome}
+                      Welcome! Please wait for an admin to set your first working week.
                     </h2>
                   </div>}
               </div> : <Navigate to="/login" replace />} />
-              
         <Route path="/login" element={!user ? <Login onLogin={handleLogin} users={users} /> : <Navigate to="/" replace />} />
         <Route path="/auth/adfs-callback" element={<AdfsCallback />} />
         <Route path="/view-users" element={user?.role === 'admin' ? <UserImpersonation clients={clients} /> : <Navigate to="/" replace />} />
@@ -486,7 +422,6 @@ function AppContent() {
     </SettingsProvider>
   );
 }
-
 function UserProgressBar({
   userId,
   customWeeks,
@@ -501,18 +436,15 @@ function UserProgressBar({
   const [weeks, setWeeks] = useState<any[]>([]);
   const [selectedWeek, setSelectedWeek] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     const fetchWeekStatuses = async () => {
       if (!userId || customWeeks.length === 0) {
         setLoading(false);
         return;
       }
-
       try {
         setLoading(true);
         let allAvailableWeeks = [...customWeeks];
-
         if (userRole !== 'admin' && firstWeek) {
           const firstWeekDate = parse(firstWeek, 'yyyy-MM-dd', new Date());
           allAvailableWeeks = allAvailableWeeks.filter(week => {
@@ -520,13 +452,10 @@ function UserProgressBar({
             return !isBefore(weekStartDate, firstWeekDate);
           });
         }
-
         const {
           data: weekStatuses
         } = await db.getWeekStatusesChronological(userId);
-
         let formattedWeeks = [];
-
         if (weekStatuses && weekStatuses.length > 0) {
           const existingStatusMap = new Map();
           weekStatuses.forEach(statusData => {
@@ -537,7 +466,6 @@ function UserProgressBar({
               });
             }
           });
-
           formattedWeeks = allAvailableWeeks.map(week => {
             const existingStatus = existingStatusMap.get(week.id);
             return existingStatus || {
@@ -545,7 +473,6 @@ function UserProgressBar({
               status: 'Unconfirmed' as 'accepted' | 'under revision' | 'under review' | 'Unconfirmed'
             };
           });
-
           formattedWeeks.sort((a, b) => {
             const weekA = allAvailableWeeks.find(w => w.name === a.week);
             const weekB = allAvailableWeeks.find(w => w.name === b.week);
@@ -557,7 +484,6 @@ function UserProgressBar({
             week: week.name,
             status: 'Unconfirmed' as 'accepted' | 'under revision' | 'under review' | 'Unconfirmed'
           }));
-
           formattedWeeks.sort((a, b) => {
             const weekA = allAvailableWeeks.find(w => w.name === a.week);
             const weekB = allAvailableWeeks.find(w => w.name === b.week);
@@ -565,7 +491,6 @@ function UserProgressBar({
             return new Date(weekA.period_from).getTime() - new Date(weekB.period_from).getTime();
           });
         }
-
         setWeeks(formattedWeeks);
         setSelectedWeek(formattedWeeks[0] || null);
       } catch (error) {
@@ -574,28 +499,22 @@ function UserProgressBar({
         setLoading(false);
       }
     };
-
     fetchWeekStatuses();
   }, [userId, customWeeks, firstWeek, userRole]);
-
   const handleSelectWeek = (weekData: any) => {
     setSelectedWeek(weekData);
   };
-
   if (loading) {
     return <div className="flex justify-center items-center h-12">Loading progress...</div>;
   }
-
   if (weeks.length === 0) {
     return null;
   }
-
   return <div className="w-full max-w-3xl mx-auto">
       <StatusTimeline weeks={weeks} selectedWeek={selectedWeek} onSelectWeek={handleSelectWeek} filterYear={null} />
       <WeekDetails weekData={selectedWeek} />
     </div>;
 }
-
 export function App() {
   return <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -607,5 +526,4 @@ export function App() {
       </TooltipProvider>
     </QueryClientProvider>;
 }
-
 export default App;
