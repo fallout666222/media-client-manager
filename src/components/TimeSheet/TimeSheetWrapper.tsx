@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { format } from 'date-fns';
 import { User, Client, TimeSheetStatus } from '@/types/timesheet';
@@ -57,6 +56,7 @@ export const TimeSheetWrapper: React.FC<TimeSheetWrapperProps> = ({
     handleSubmitForReview,
     handleApprove,
     handleReject,
+    handleReturnToUnconfirmed,
     handleSaveVisibleClients,
     handleSaveVisibleMediaTypes,
     getTotalHoursForWeek,
@@ -159,6 +159,7 @@ export const TimeSheetWrapper: React.FC<TimeSheetWrapperProps> = ({
         onSubmitForReview={handleSubmitForReview}
         onApprove={handleApprove}
         onReject={handleReject}
+        onReturnToUnconfirmed={handleReturnToUnconfirmed}
         readOnly={readOnly || (!isViewingOwnTimesheet && userRole !== 'manager' && userRole !== 'admin' && !adminOverride && !isUserHead)}
         firstWeek={viewedUser.firstWeek || firstWeek}
         weekId={currentCustomWeek?.id}

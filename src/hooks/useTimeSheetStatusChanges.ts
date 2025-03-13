@@ -50,7 +50,6 @@ export const useTimeSheetStatusChanges = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   
-  // Helper function to refresh week statuses
   const refreshWeekStatuses = async () => {
     try {
       const { data } = await getWeekStatuses(viewedUser.id);
@@ -78,7 +77,6 @@ export const useTimeSheetStatusChanges = ({
     }
   };
 
-  // Helper function to check if there are earlier weeks that need to be submitted first
   const hasEarlierUnsubmittedWeeks = () => {
     if (!customWeeks.length) return false;
     
@@ -89,7 +87,6 @@ export const useTimeSheetStatusChanges = ({
     
     if (!currentCustomWeek) return false;
     
-    // Sort weeks chronologically
     const sortedWeeks = [...customWeeks].sort((a, b) => {
       try {
         const dateA = parse(a.period_from, 'yyyy-MM-dd', new Date());
@@ -104,17 +101,14 @@ export const useTimeSheetStatusChanges = ({
     const currentIndex = sortedWeeks.findIndex(week => week.id === currentCustomWeek.id);
     if (currentIndex <= 0) return false; // First week or week not found
     
-    // Find user's first assigned week
     const userFirstWeek = customWeeks.find(week => week.id === viewedUser.firstCustomWeekId);
     const userFirstWeekIndex = userFirstWeek ? 
       sortedWeeks.findIndex(week => week.id === userFirstWeek.id) : 0;
     
-    // Check all weeks from user's first week up to current week
     for (let i = userFirstWeekIndex; i < currentIndex; i++) {
       const weekKey = sortedWeeks[i].period_from;
       const weekStatus = weekStatuses[weekKey];
       
-      // Consider a week unsubmitted if it's unconfirmed or needs revision
       if (weekKey && (weekStatus === 'unconfirmed' || weekStatus === 'needs-revision' || !weekStatus)) {
         console.log(`Found earlier unsubmitted week: ${sortedWeeks[i].name}, status: ${weekStatus || 'unconfirmed'}`);
         return true;
@@ -148,7 +142,6 @@ export const useTimeSheetStatusChanges = ({
       return;
     }
     
-    // Check if there are earlier weeks that need to be submitted first
     if (hasEarlierUnsubmittedWeeks() && !adminOverride) {
       toast({
         title: "Earlier Weeks Not Submitted",
@@ -158,7 +151,6 @@ export const useTimeSheetStatusChanges = ({
       return;
     }
     
-    // Check if there are enough hours logged
     const totalHours = getTotalHoursForWeek();
     const requiredHours = Math.round(weekHours * (weekPercentage / 100));
     
@@ -180,7 +172,6 @@ export const useTimeSheetStatusChanges = ({
       if (underReviewStatus && viewedUser.id) {
         await updateWeekStatus(viewedUser.id, currentCustomWeek.id, underReviewStatus.id);
         
-        // Update local state with the correct TimeSheetStatus value
         setWeekStatuses(prev => ({
           ...prev,
           [currentWeekKey]: 'under-review' as TimeSheetStatus
@@ -188,7 +179,6 @@ export const useTimeSheetStatusChanges = ({
         
         setSubmittedWeeks(prev => [...prev, currentWeekKey]);
         
-        // Fetch updated week statuses
         await refreshWeekStatuses();
         
         toast({
@@ -244,13 +234,11 @@ export const useTimeSheetStatusChanges = ({
       if (acceptedStatus && viewedUser.id) {
         await updateWeekStatus(viewedUser.id, currentCustomWeek.id, acceptedStatus.id);
         
-        // Update local state
         setWeekStatuses(prev => ({
           ...prev,
           [currentWeekKey]: 'accepted' as TimeSheetStatus
         }));
         
-        // Fetch updated week statuses
         await refreshWeekStatuses();
         
         toast({
@@ -294,7 +282,6 @@ export const useTimeSheetStatusChanges = ({
       if (needsRevisionStatus && viewedUser.id) {
         await updateWeekStatus(viewedUser.id, currentCustomWeek.id, needsRevisionStatus.id);
         
-        // Update local state with the correct TimeSheetStatus value
         setWeekStatuses(prev => ({
           ...prev,
           [currentWeekKey]: 'needs-revision' as TimeSheetStatus
@@ -302,7 +289,6 @@ export const useTimeSheetStatusChanges = ({
         
         setSubmittedWeeks(prev => prev.filter(week => week !== currentWeekKey));
         
-        // Fetch updated week statuses
         await refreshWeekStatuses();
         
         toast({
@@ -322,10 +308,70 @@ export const useTimeSheetStatusChanges = ({
     }
   };
 
+  const handleReturnToUnconfirmed = async () => {
+    const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
+    const currentCustomWeek = customWeeks.find(week => 
+      format(new Date(week.period_from), 'yyyy-MM-dd') === currentWeekKey
+    );
+    
+    if (!currentCustomWeek) {
+      toast({
+        title: "Error",
+        description: "Could not find current week data",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!adminOverride) {
+      toast({
+        title: "Access Denied",
+        description: "This action requires admin override mode",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      setIsSubmitting(true);
+      
+      const { data: statusNames } = await getWeekStatusNames();
+      const unconfirmedStatus = statusNames?.find(status => status.name === 'unconfirmed');
+      
+      if (unconfirmedStatus && viewedUser.id) {
+        await updateWeekStatus(viewedUser.id, currentCustomWeek.id, unconfirmedStatus.id);
+        
+        setWeekStatuses(prev => ({
+          ...prev,
+          [currentWeekKey]: 'unconfirmed' as TimeSheetStatus
+        }));
+        
+        setSubmittedWeeks(prev => prev.filter(week => week !== currentWeekKey));
+        
+        await refreshWeekStatuses();
+        
+        toast({
+          title: "Success",
+          description: "Week returned to unconfirmed status"
+        });
+      }
+    } catch (error) {
+      console.error('Error returning week to unconfirmed status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to return week to unconfirmed status",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return {
     handleSubmitForReview,
     handleApprove,
     handleReject,
+    handleReturnToUnconfirmed,
     isSubmitting
   };
 };
