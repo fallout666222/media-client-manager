@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -83,6 +82,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
   const findFirstUnderReviewWeek = async (userId: string, statusData?: any[]) => {
     try {
       const data = statusData || weekStatuses;
+      
       if (!data || data.length === 0) {
         const { data: freshData } = await getWeekStatuses(userId);
         if (!freshData || freshData.length === 0) {
@@ -355,7 +355,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       deletion_mark: teamMember.deletion_mark,
       hidden: teamMember.hidden,
       user_head_id: teamMember.user_head_id,
-      managerId: teamMember.user_head_id // Changed from manager_id to user_head_id as requested
+      managerId: teamMember.user_head_id
     };
     
     const initialWeekId = firstUnderReviewWeek ? 
