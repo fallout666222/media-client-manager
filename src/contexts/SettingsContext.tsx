@@ -95,8 +95,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode; userId?: st
       await db.updateUserSettings(userId, { dark_theme: newTheme === 'dark' });
       
       toast({
-        title: newTheme === 'en' ? "Theme updated" : "Тема обновлена",
-        description: newTheme === 'en' 
+        title: language === 'en' ? "Theme updated" : "Тема обновлена",
+        description: language === 'en' 
           ? `Theme set to ${newTheme}` 
           : `Тема установлена на ${newTheme === 'dark' ? 'темную' : 'светлую'}`
       });

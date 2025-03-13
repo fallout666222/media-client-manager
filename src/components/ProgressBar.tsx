@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Check, Info, AlertCircle, HelpCircle } from 'lucide-react';
@@ -120,11 +121,15 @@ const getStatusIcon = (status: string) => {
 const getStatusText = (status: string) => {
   return status.charAt(0).toUpperCase() + status.slice(1);
 };
-export const WeekDetails: React.FC<WeekDetailsProps> = ({
-  weekData
-}) => {
+
+export const WeekDetails: React.FC<WeekDetailsProps> = ({ weekData }) => {
   if (!weekData) {
-    return;
+    return null; // This fixes the void return type issue
   }
-  return;
+  
+  return (
+    <div className="mt-2">
+      {/* Optional: You could add week details here */}
+    </div>
+  );
 };

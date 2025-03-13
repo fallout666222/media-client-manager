@@ -74,7 +74,7 @@ export interface User {
   
   // New fields for settings
   dark_theme?: boolean;
-  language?: 'en' | 'ru';
+  language?: 'en' | 'ru' | string;
 }
 
 export interface UserFormData {
