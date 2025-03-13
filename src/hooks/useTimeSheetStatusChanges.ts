@@ -1,8 +1,7 @@
-
 import { useState } from 'react';
 import { TimeSheetStatus, User } from '@/types/timesheet';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { getWeekStatusNames, updateWeekStatus, getWeekStatuses } from '@/integrations/supabase/database';
 
 interface UseTimeSheetStatusChangesProps {
@@ -79,6 +78,52 @@ export const useTimeSheetStatusChanges = ({
     }
   };
 
+  // Helper function to check if there are earlier weeks that need to be submitted first
+  const hasEarlierUnsubmittedWeeks = () => {
+    if (!customWeeks.length) return false;
+    
+    const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
+    const currentCustomWeek = customWeeks.find(week => 
+      format(new Date(week.period_from), 'yyyy-MM-dd') === currentWeekKey
+    );
+    
+    if (!currentCustomWeek) return false;
+    
+    // Sort weeks chronologically
+    const sortedWeeks = [...customWeeks].sort((a, b) => {
+      try {
+        const dateA = parse(a.period_from, 'yyyy-MM-dd', new Date());
+        const dateB = parse(b.period_from, 'yyyy-MM-dd', new Date());
+        return dateA.getTime() - dateB.getTime();
+      } catch (error) {
+        console.error(`Error parsing dates during week sorting:`, error);
+        return 0;
+      }
+    });
+    
+    const currentIndex = sortedWeeks.findIndex(week => week.id === currentCustomWeek.id);
+    if (currentIndex <= 0) return false; // First week or week not found
+    
+    // Find user's first assigned week
+    const userFirstWeek = customWeeks.find(week => week.id === viewedUser.firstCustomWeekId);
+    const userFirstWeekIndex = userFirstWeek ? 
+      sortedWeeks.findIndex(week => week.id === userFirstWeek.id) : 0;
+    
+    // Check all weeks from user's first week up to current week
+    for (let i = userFirstWeekIndex; i < currentIndex; i++) {
+      const weekKey = sortedWeeks[i].period_from;
+      const weekStatus = weekStatuses[weekKey];
+      
+      // Consider a week unsubmitted if it's unconfirmed or needs revision
+      if (weekKey && (weekStatus === 'unconfirmed' || weekStatus === 'needs-revision' || !weekStatus)) {
+        console.log(`Found earlier unsubmitted week: ${sortedWeeks[i].name}, status: ${weekStatus || 'unconfirmed'}`);
+        return true;
+      }
+    }
+    
+    return false;
+  };
+
   const handleSubmitForReview = async () => {
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
     const currentCustomWeek = customWeeks.find(week => 
@@ -104,10 +149,10 @@ export const useTimeSheetStatusChanges = ({
     }
     
     // Check if there are earlier weeks that need to be submitted first
-    if (findFirstUnsubmittedWeek()) {
+    if (hasEarlierUnsubmittedWeeks() && !adminOverride) {
       toast({
-        title: "Earlier Weeks",
-        description: "Please submit earlier weeks first",
+        title: "Earlier Weeks Not Submitted",
+        description: "Please submit earlier weeks first before submitting this week",
         variant: "destructive"
       });
       return;

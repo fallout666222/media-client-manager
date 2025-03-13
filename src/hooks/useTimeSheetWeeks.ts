@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { format, parse, isBefore, isSameDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -79,19 +78,21 @@ export const useTimeSheetWeeks = ({
         });
         
         const userWeeks = sortedWeeks.filter(week => {
-          const weekDate = parse(week.period_from, 'yyyy-MM-dd', new Date());
-          return !isBefore(weekDate, userFirstWeekDate as Date);
+          try {
+            const weekDate = parse(week.period_from, 'yyyy-MM-dd', new Date());
+            return !isBefore(weekDate, userFirstWeekDate as Date);
+          } catch (error) {
+            console.error(`Error parsing date ${week.period_from}:`, error);
+            return false;
+          }
         });
         
         for (const week of userWeeks) {
           const weekKey = week.period_from;
           const weekStatus = weekStatuses[weekKey];
           
-          // Only consider weeks that are not already submitted or under review
-          if (!submittedWeeks.includes(weekKey) && 
-              weekStatus !== 'under-review' && 
-              weekStatus !== 'accepted') {
-            console.log(`Found first unsubmitted week: ${week.name} (${week.period_from}), status: ${weekStatus || 'unconfirmed'}`);
+          if (weekStatus === 'unconfirmed' || weekStatus === 'needs-revision' || !weekStatus) {
+            console.log(`Found first unsubmitted/needs revision week: ${week.name} (${week.period_from}), status: ${weekStatus || 'unconfirmed'}`);
             return {
               date: parse(week.period_from, 'yyyy-MM-dd', new Date()),
               weekData: week
@@ -142,7 +143,6 @@ export const useTimeSheetWeeks = ({
   const handleReturnToFirstUnsubmittedWeek = () => {
     const firstUnsubmitted = findFirstUnsubmittedWeek();
     if (firstUnsubmitted) {
-      // First, save the week data
       if (firstUnsubmitted.weekData) {
         console.log(`Setting current custom week to: ${firstUnsubmitted.weekData.name}`);
         if ('required_hours' in firstUnsubmitted.weekData) {
@@ -152,26 +152,24 @@ export const useTimeSheetWeeks = ({
         }
       }
       
-      // Then update the current date
       console.log(`Navigating to date: ${format(firstUnsubmitted.date, 'yyyy-MM-dd')}`);
       setCurrentDate(firstUnsubmitted.date);
       
-      // Save to localStorage if needed
       if (viewedUser.id && firstUnsubmitted.weekData) {
         localStorage.setItem(`selectedWeek_${viewedUser.id}`, firstUnsubmitted.weekData.id || '');
         console.log(`Saved week ${firstUnsubmitted.weekData.id} to localStorage for user ${viewedUser.id}`);
       }
       
       toast({
-        title: "Navigated to First Unsubmitted Week",
+        title: "Navigated to First Unconfirmed Week",
         description: `Showing week of ${format(firstUnsubmitted.date, 'MMM d, yyyy')}`,
       });
     } else {
       toast({
-        title: "No Unsubmitted Weeks",
+        title: "No Unconfirmed Weeks",
         description: adminOverride 
-          ? "There are no unsubmitted weeks in the database for this user" 
-          : "All your weeks have been submitted",
+          ? "There are no unconfirmed or needs-revision weeks in the database for this user" 
+          : "All your weeks have been submitted or are under review",
       });
     }
   };
@@ -224,14 +222,24 @@ export const useTimeSheetWeeks = ({
     if (!userFirstWeek) return false;
     
     const sortedWeeks = [...customWeeks].sort((a, b) => {
-      const dateA = parse(a.period_from, 'yyyy-MM-dd', new Date());
-      const dateB = parse(b.period_from, 'yyyy-MM-dd', new Date());
-      return dateA.getTime() - dateB.getTime();
+      try {
+        const dateA = parse(a.period_from, 'yyyy-MM-dd', new Date());
+        const dateB = parse(b.period_from, 'yyyy-MM-dd', new Date());
+        return dateA.getTime() - dateB.getTime();
+      } catch (error) {
+        console.error(`Error parsing dates during week sorting:`, error);
+        return 0;
+      }
     });
     
     const currentWeek = customWeeks.find(week => {
-      const weekDate = parse(week.period_from, 'yyyy-MM-dd', new Date());
-      return isSameDay(weekDate, currentDate);
+      try {
+        const weekDate = parse(week.period_from, 'yyyy-MM-dd', new Date());
+        return isSameDay(weekDate, currentDate);
+      } catch (error) {
+        console.error(`Error parsing date ${week.period_from}:`, error);
+        return false;
+      }
     });
     
     if (!currentWeek) return false;
@@ -244,7 +252,9 @@ export const useTimeSheetWeeks = ({
     
     for (let i = userFirstWeekIndex; i < currentIndex; i++) {
       const weekKey = sortedWeeks[i].period_from;
-      if (weekKey && !submittedWeeks.includes(weekKey)) {
+      const weekStatus = weekStatuses[weekKey];
+      
+      if (weekKey && (weekStatus === 'unconfirmed' || weekStatus === 'needs-revision' || !weekStatus)) {
         return true;
       }
     }

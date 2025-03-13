@@ -58,10 +58,10 @@ export const TimeSheetHeader = ({
             onClick={onReturnToFirstUnsubmittedWeek}
             className="flex items-center gap-2"
             disabled={!hasCustomWeeks}
-            title={!hasCustomWeeks ? "No custom weeks available" : "Return to first unsubmitted week"}
+            title={!hasCustomWeeks ? "No custom weeks available" : "Go to the first week that needs your attention"}
           >
             <RotateCcw className="h-4 w-4" />
-            Return to First Unsubmitted Week
+            Go to First Unconfirmed Week
           </Button>
         )}
         <Button
