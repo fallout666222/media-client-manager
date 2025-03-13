@@ -124,6 +124,8 @@ export const useTimeSheetWeeks = ({
       }
     }
     
+    // Only check default weeks if not in admin override mode
+    // and ensure null is returned if no unconfirmed week is found
     if (!adminOverride) {
       const userWeeks = getUserWeeks();
       for (const week of userWeeks) {
@@ -137,6 +139,8 @@ export const useTimeSheetWeeks = ({
       }
     }
     
+    // Return null explicitly when no unconfirmed week is found
+    console.log("No unconfirmed weeks found");
     return null;
   };
 
@@ -173,7 +177,7 @@ export const useTimeSheetWeeks = ({
     const firstUnsubmitted = findFirstUnsubmittedWeek();
     console.log("Result from findFirstUnsubmittedWeek:", firstUnsubmitted);
     
-    if (firstUnsubmitted) {
+    if (firstUnsubmitted && firstUnsubmitted.date && firstUnsubmitted.weekData) {
       if (firstUnsubmitted.weekData) {
         console.log(`Setting current custom week to: ${firstUnsubmitted.weekData.name}`);
         if ('required_hours' in firstUnsubmitted.weekData) {
@@ -202,6 +206,8 @@ export const useTimeSheetWeeks = ({
           ? "There are no unconfirmed or needs-revision weeks in the database for this user" 
           : "All your weeks have been submitted or are under review",
       });
+      // Don't navigate to a non-existent week or change the current custom week
+      console.log("No unconfirmed weeks found, staying on current week");
     }
   };
 
