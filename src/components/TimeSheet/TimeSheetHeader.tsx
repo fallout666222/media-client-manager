@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Settings } from "lucide-react";
 import { useSettings } from '@/contexts/SettingsContext';
 
 interface TimeSheetHeaderProps {
@@ -120,6 +120,15 @@ export const TimeSheetHeader = ({
             {t.goToFirstWeek}
           </Button>
         )}
+        <Button
+          variant={showSettings ? "default" : "outline"}
+          onClick={onToggleSettings}
+          className="flex items-center gap-2"
+          title={language === 'en' ? "Toggle settings panel" : "Переключить панель настроек"}
+        >
+          <Settings className="h-4 w-4" />
+          {t.settings}
+        </Button>
       </div>
     </div>
   );
