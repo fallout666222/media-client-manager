@@ -23,10 +23,8 @@ import * as db from "./integrations/supabase/database";
 import UserHeadView from "./pages/UserHeadView";
 import { UserCircle } from "lucide-react";
 import { AdfsCallback } from "./pages/AuthCallbacks";
-import { StatusTimeline, WeekDetails, WeekData } from "./components/ProgressBar";
-
+import { StatusTimeline, WeekDetails } from "./components/ProgressBar";
 const queryClient = new QueryClient();
-
 function NavButton({
   to,
   children
@@ -42,7 +40,6 @@ function NavButton({
       </Button>
     </Link>;
 }
-
 function AppContent() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -53,7 +50,6 @@ function AppContent() {
   const {
     toast
   } = useToast();
-
   useEffect(() => {
     const loadUserSession = () => {
       try {
@@ -74,7 +70,6 @@ function AppContent() {
     };
     loadUserSession();
   }, []);
-
   useEffect(() => {
     if (user) {
       fetchInitialData();
@@ -82,7 +77,6 @@ function AppContent() {
       setLoading(false);
     }
   }, [user]);
-
   const handleLogin = async (userData: any) => {
     try {
       console.log('Login received user data:', userData);
@@ -129,7 +123,6 @@ function AppContent() {
       setLoading(false);
     }
   };
-
   const fetchInitialData = async () => {
     try {
       setLoading(true);
@@ -168,7 +161,6 @@ function AppContent() {
       setLoading(false);
     }
   };
-
   const handleCreateUser = async (userData: any) => {
     try {
       toast({
@@ -185,7 +177,6 @@ function AppContent() {
       });
     }
   };
-
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('userSession');
@@ -195,7 +186,6 @@ function AppContent() {
       description: "You have been successfully logged out"
     });
   };
-
   const handleSetFirstWeek = (username: string, date: string, weekId?: string) => {
     setUsers(prevUsers => prevUsers.map(u => u.username === username ? {
       ...u,
@@ -214,7 +204,6 @@ function AppContent() {
       description: `First week set for ${username}: ${date}`
     });
   };
-
   const handleUpdateUserManager = (username: string, managerId: string | undefined) => {
     setUsers(prevUsers => prevUsers.map(u => u.username === username ? {
       ...u,
@@ -227,7 +216,6 @@ function AppContent() {
       } : null);
     }
   };
-
   const handleUpdateUserDepartment = (username: string, departmentId: string | undefined) => {
     setUsers(prevUsers => prevUsers.map(u => u.username === username ? {
       ...u,
@@ -240,7 +228,6 @@ function AppContent() {
       } : null);
     }
   };
-
   const handleToggleUserHidden = (username: string, hidden: boolean) => {
     setUsers(prevUsers => prevUsers.map(u => u.username === username ? {
       ...u,
@@ -253,7 +240,6 @@ function AppContent() {
       } : null);
     }
   };
-
   const handleAddClient = (clientData: Omit<Client, "id">) => {
     const newId = `${clients.length + 1}`;
     const newClient: Client = {
@@ -262,14 +248,12 @@ function AppContent() {
     };
     setClients(prevClients => [...prevClients, newClient]);
   };
-
   const handleUpdateClient = (id: string, clientData: Partial<Client>) => {
     setClients(prevClients => prevClients.map(client => client.id === id ? {
       ...client,
       ...clientData
     } : client));
   };
-
   const handleDeleteClient = (id: string) => {
     const clientToDelete = clients.find(client => client.id === id);
     if (clientToDelete?.isDefault) {
@@ -300,7 +284,6 @@ function AppContent() {
     }));
     setClients(prevClients => prevClients.filter(client => client.id !== id));
   };
-
   const handleAddDepartment = (departmentData: any) => {
     const newId = `${departments.length + 1}`;
     const newDepartment = {
@@ -309,7 +292,6 @@ function AppContent() {
     };
     setDepartments(prevDepartments => [...prevDepartments, newDepartment]);
   };
-
   const handleDeleteDepartment = (id: string) => {
     const usersInDepartment = users.filter(u => u.departmentId === id);
     if (usersInDepartment.length > 0) {
@@ -326,21 +308,16 @@ function AppContent() {
       description: "Department has been removed"
     });
   };
-
   const getVisibleUsers = () => {
     return users.filter(u => !u.hidden);
   };
-
   const getVisibleClients = () => {
     return clients.filter(c => !c.hidden).map(c => c.name);
   };
-
   const isUserHead = user && users.some(u => u.user_head_id === user.id) || false;
-
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
-
   return <>
       {user && <div className="fixed top-4 right-4 z-50 flex items-center gap-2 flex-wrap justify-end">
           <span className="text-sm text-gray-600">
@@ -432,7 +409,6 @@ function AppContent() {
       </Routes>
     </>;
 }
-
 function UserProgressBar({
   userId,
   customWeeks
@@ -440,11 +416,9 @@ function UserProgressBar({
   userId: string;
   customWeeks: any[];
 }) {
-  const [weeks, setWeeks] = useState<WeekData[]>([]);
-  const [selectedWeek, setSelectedWeek] = useState<WeekData | null>(null);
+  const [weeks, setWeeks] = useState<any[]>([]);
+  const [selectedWeek, setSelectedWeek] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [filterYear, setFilterYear] = useState<number | null>(null);
-
   useEffect(() => {
     const fetchWeekStatuses = async () => {
       if (!userId || customWeeks.length === 0) {
@@ -464,9 +438,7 @@ function UserProgressBar({
             if (statusData.week) {
               existingStatusMap.set(statusData.week.id, {
                 week: statusData.week.name,
-                status: (statusData.status?.name || 'unconfirmed') as 'accepted' | 'under revision' | 'under review' | 'Unconfirmed',
-                weekId: statusData.week.id,
-                periodFrom: statusData.week.period_from
+                status: (statusData.status?.name || 'unconfirmed') as 'accepted' | 'under revision' | 'under review' | 'Unconfirmed'
               });
             }
           });
@@ -474,9 +446,7 @@ function UserProgressBar({
             const existingStatus = existingStatusMap.get(week.id);
             return existingStatus || {
               week: week.name,
-              status: 'Unconfirmed' as 'accepted' | 'under revision' | 'under review' | 'Unconfirmed',
-              weekId: week.id,
-              periodFrom: week.period_from
+              status: 'Unconfirmed' as 'accepted' | 'under revision' | 'under review' | 'Unconfirmed'
             };
           });
           formattedWeeks.sort((a, b) => {
@@ -488,9 +458,7 @@ function UserProgressBar({
         } else {
           formattedWeeks = allAvailableWeeks.map(week => ({
             week: week.name,
-            status: 'Unconfirmed' as 'accepted' | 'under revision' | 'under review' | 'Unconfirmed',
-            weekId: week.id,
-            periodFrom: week.period_from
+            status: 'Unconfirmed' as 'accepted' | 'under revision' | 'under review' | 'Unconfirmed'
           }));
           formattedWeeks.sort((a, b) => {
             const weekA = allAvailableWeeks.find(w => w.name === a.week);
@@ -509,27 +477,9 @@ function UserProgressBar({
     };
     fetchWeekStatuses();
   }, [userId, customWeeks]);
-
-  const handleSelectWeek = (weekData: WeekData) => {
+  const handleSelectWeek = (weekData: any) => {
     setSelectedWeek(weekData);
-    
-    if (weekData.weekId) {
-      localStorage.setItem(`selectedWeek_${userId}`, weekData.weekId);
-      console.log(`ProgressBar: Selected week ${weekData.week} (ID: ${weekData.weekId})`);
-      
-      window.dispatchEvent(new CustomEvent('progressbar-week-selected', { 
-        detail: { weekId: weekData.weekId } 
-      }));
-    }
   };
-
-  const handleProgressBarWeekSelect = (weekId: string) => {
-    const weekToSelect = weeks.find(week => week.weekId === weekId);
-    if (weekToSelect) {
-      setSelectedWeek(weekToSelect);
-    }
-  };
-
   if (loading) {
     return <div className="flex justify-center items-center h-12">Loading progress...</div>;
   }
@@ -537,16 +487,10 @@ function UserProgressBar({
     return null;
   }
   return <div className="w-full max-w-3xl mx-auto">
-      <StatusTimeline 
-        weeks={weeks} 
-        selectedWeek={selectedWeek} 
-        onSelectWeek={handleSelectWeek} 
-        filterYear={filterYear}
-      />
-      <WeekDetails weekData={selectedWeek} />
+      
+      
     </div>;
 }
-
 export function App() {
   return <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -558,5 +502,4 @@ export function App() {
       </TooltipProvider>
     </QueryClientProvider>;
 }
-
 export default App;
