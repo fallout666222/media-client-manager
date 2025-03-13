@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { format, parse, isBefore, isSameDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -100,6 +101,7 @@ export const useTimeSheetWeeks = ({
           }
         });
         
+        // Debug logging to see what weeks and statuses we're checking
         console.log("Available weeks to check:", userWeeks.map(w => 
           `${w.name} (${w.period_from}) - Status: ${weekStatuses[w.period_from] || 'undefined'}`
         ));
@@ -110,6 +112,7 @@ export const useTimeSheetWeeks = ({
           
           console.log(`Checking week ${week.name} (${weekKey}): Status = ${weekStatus || 'undefined'}`);
           
+          // Check for both 'unconfirmed' and 'needs-revision' status
           if (weekStatus === 'unconfirmed' || weekStatus === 'needs-revision') {
             console.log(`Found first unsubmitted/needs revision week: ${week.name} (${week.period_from}), status: ${weekStatus}`);
             return {
@@ -134,7 +137,6 @@ export const useTimeSheetWeeks = ({
       }
     }
     
-    console.log("No unsubmitted weeks found");
     return null;
   };
 
@@ -163,6 +165,7 @@ export const useTimeSheetWeeks = ({
   const handleReturnToFirstUnsubmittedWeek = () => {
     console.log("Executing handleReturnToFirstUnsubmittedWeek");
     
+    // Debug what statuses we have in the weekStatuses object
     console.log("Available weekStatuses:", Object.entries(weekStatuses).map(([key, value]) => 
       `${key}: ${value}`
     ));
@@ -170,7 +173,7 @@ export const useTimeSheetWeeks = ({
     const firstUnsubmitted = findFirstUnsubmittedWeek();
     console.log("Result from findFirstUnsubmittedWeek:", firstUnsubmitted);
     
-    if (firstUnsubmitted && firstUnsubmitted.date && firstUnsubmitted.weekData) {
+    if (firstUnsubmitted) {
       if (firstUnsubmitted.weekData) {
         console.log(`Setting current custom week to: ${firstUnsubmitted.weekData.name}`);
         if ('required_hours' in firstUnsubmitted.weekData) {
@@ -193,7 +196,6 @@ export const useTimeSheetWeeks = ({
         description: `Showing week of ${format(firstUnsubmitted.date, 'MMM d, yyyy')}`,
       });
     } else {
-      console.log("No unsubmitted weeks found, not changing current date or week");
       toast({
         title: "No Unconfirmed Weeks",
         description: adminOverride 
