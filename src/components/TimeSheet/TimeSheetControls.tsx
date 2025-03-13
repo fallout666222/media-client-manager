@@ -56,12 +56,15 @@ export const TimeSheetControls: React.FC<TimeSheetControlsProps> = ({
   
   // Add debug logging
   useEffect(() => {
-    if (isUserHead && status === 'under-review') {
+    if (isUserHead) {
       console.log("TimeSheetControls Debug:");
       console.log("- WeekId:", weekId);
       console.log("- hasEarlierWeeksUnderReview:", hasEarlierWeeksUnderReview);
+      console.log("- Status:", status);
+      console.log("- isUserHead:", isUserHead);
+      console.log("- onNavigateToFirstUnderReview:", onNavigateToFirstUnderReview ? "defined" : "undefined");
     }
-  }, [isUserHead, status, weekId, hasEarlierWeeksUnderReview]);
+  }, [isUserHead, status, weekId, hasEarlierWeeksUnderReview, onNavigateToFirstUnderReview]);
 
   return (
     <div className="flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center">

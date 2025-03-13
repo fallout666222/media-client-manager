@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, CheckCircle, ChevronLeft, Send, RotateCcw } from 'lucide-react';
@@ -69,7 +68,7 @@ export const ApprovalActions: React.FC<ApprovalActionsProps> = ({
   };
 
   const renderUserHead = () => {
-    if (!isUserHead || !hasEarlierWeeksUnderReview || status !== 'under-review' || !onNavigateToFirstUnderReview) {
+    if (!isUserHead || !hasEarlierWeeksUnderReview || !onNavigateToFirstUnderReview) {
       return null;
     }
 
@@ -87,7 +86,6 @@ export const ApprovalActions: React.FC<ApprovalActionsProps> = ({
   };
 
   const renderUserControls = () => {
-    // Changed condition to allow isUserHead to also submit timesheets for review
     if (!isViewingOwnTimesheet && !adminOverride && !isUserHead) return null;
 
     if (status === 'unconfirmed' || status === 'needs-revision') {

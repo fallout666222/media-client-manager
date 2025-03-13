@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -226,7 +225,6 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
           findFirstUnderReviewWeek(selectedTeamMember);
         }
         
-        // Refresh the component to update the progress bar
         setForceRefresh(prev => prev + 1);
       }
     } catch (error) {
@@ -274,7 +272,6 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
           findFirstUnderReviewWeek(selectedTeamMember);
         }
         
-        // Refresh the component to update the progress bar
         setForceRefresh(prev => prev + 1);
       }
     } catch (error) {
@@ -307,7 +304,6 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
           findFirstUnderReviewWeek(selectedTeamMember);
         }
         
-        // Refresh the component to update the progress bar
         setForceRefresh(prev => prev + 1);
       }
     } catch (error) {
