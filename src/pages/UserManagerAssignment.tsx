@@ -1,29 +1,22 @@
+
 import React, { useState, useEffect } from 'react';
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { User, Department } from "@/types/timesheet";
-import { Link } from "react-router-dom";
-import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { getUsers, getDepartments, updateUser } from "@/integrations/supabase/database";
 import SearchBar from "@/components/SearchBar";
-import { TeamMemberSelector } from "@/components/TeamMemberSelector";
+import UserTable from "@/components/UserManager/UserTable";
+import PaginationControls from "@/components/UserManager/PaginationControls";
+import ItemsPerPageSelector from "@/components/UserManager/ItemsPerPageSelector";
+import {
+  fetchUsers,
+  fetchDepartments,
+  updateUserManager,
+  updateUserDepartment,
+  updateUserHead,
+  updateUserVisibility
+} from "@/services/userManagerService";
 
 interface UserManagerAssignmentProps {
   onUpdateUserManager: (username: string, managerId: string | undefined) => void;
@@ -52,13 +45,11 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
   const fetchData = async () => {
     setLoading(true);
     try {
-      const { data: usersData, error: usersError } = await getUsers();
-      if (usersError) throw usersError;
-      setUsers(usersData || []);
+      const usersData = await fetchUsers();
+      setUsers(usersData);
       
-      const { data: deptsData, error: deptsError } = await getDepartments();
-      if (deptsError) throw deptsError;
-      setDepartments(deptsData || []);
+      const deptsData = await fetchDepartments();
+      setDepartments(deptsData);
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
@@ -82,7 +73,7 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
     }
     
     try {
-      await updateUser(user.id, { manager_id: managerId });
+      await updateUserManager(user.id, managerId);
       
       onUpdateUserManager(user.login || user.username || '', managerId);
       
@@ -117,11 +108,9 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
     }
     
     try {
-      console.log('Updating user head, user_head_id value:', userHeadId);
+      await updateUserHead(user.id, userHeadId);
       
       const updatedValue = userHeadId === undefined || userHeadId === "none" ? null : userHeadId;
-      
-      await updateUser(user.id, { user_head_id: updatedValue });
       
       setUsers(prevUsers => 
         prevUsers.map(u => 
@@ -154,13 +143,11 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
     }
     
     try {
-      console.log('Updating department, department_id value:', departmentId);
+      await updateUserDepartment(user.id, departmentId);
+      
+      onUpdateUserDepartment(user.login || user.username || '', departmentId);
       
       const updatedValue = departmentId === undefined || departmentId === "none" ? null : departmentId;
-      
-      await updateUser(user.id, { department_id: updatedValue });
-      
-      onUpdateUserDepartment(user.login || user.username || '', updatedValue || undefined);
       
       const departmentName = updatedValue 
         ? departments.find(dept => dept.id === updatedValue)?.name || null
@@ -204,7 +191,7 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
     }
     
     try {
-      await updateUser(user.id, { hidden });
+      await updateUserVisibility(user.id, hidden);
       
       onToggleUserHidden(user.login || user.username || '', hidden);
       
@@ -294,117 +281,31 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
           className="w-full max-w-sm"
         />
         
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Items per page:</span>
-          <Select 
-            value={itemsPerPage.toString()} 
-            onValueChange={handleItemsPerPageChange}
-          >
-            <SelectTrigger className="w-20">
-              <SelectValue placeholder="10" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="5">5</SelectItem>
-              <SelectItem value="10">10</SelectItem>
-              <SelectItem value="20">20</SelectItem>
-              <SelectItem value="50">50</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <ItemsPerPageSelector 
+          itemsPerPage={itemsPerPage}
+          onItemsPerPageChange={handleItemsPerPageChange}
+        />
       </div>
       
-      <div className="rounded-md border">
-        <Table>
-          <TableCaption>Manage user and manager relationships</TableCaption>
-          <TableHeader>
-            <TableRow>
-              <TableHead>User</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Department</TableHead>
-              <TableHead>User Head</TableHead>
-              <TableHead className="text-center">Hide from User Head View</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedUsers.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.login || user.username}</TableCell>
-                <TableCell>{user.type || user.role}</TableCell>
-                <TableCell>
-                  <Select
-                    value={user.department_id || user.departmentId || "none"}
-                    onValueChange={(value) => {
-                      handleDepartmentChange(user, value === "none" ? undefined : value);
-                    }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select a department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No Department</SelectItem>
-                      {departments.map((department) => (
-                        <SelectItem key={department.id} value={department.id}>
-                          {department.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <TeamMemberSelector
-                    currentUser={adminUser}
-                    users={users.filter((head) => head.id !== user.id || user.user_head_id === user.id)}
-                    onUserSelect={(selectedUser) => {
-                      handleUserHeadChange(user, selectedUser.id === "none" ? undefined : selectedUser.id);
-                    }}
-                    selectedUser={findUserById(user.user_head_id) || { id: "none", username: "No User Head" }}
-                  />
-                </TableCell>
-                <TableCell className="text-center">
-                  <div className="flex items-center justify-center">
-                    <Checkbox 
-                      checked={user.hidden} 
-                      onCheckedChange={(checked) => 
-                        handleHiddenChange(user, checked === true)
-                      }
-                      id={`hide-${user.id}`}
-                    />
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <UserTable 
+        users={paginatedUsers}
+        allUsers={users}
+        departments={departments}
+        adminUser={adminUser}
+        findUserById={findUserById}
+        onDepartmentChange={handleDepartmentChange}
+        onUserHeadChange={handleUserHeadChange}
+        onHiddenChange={handleHiddenChange}
+      />
       
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4">
-          <div className="text-sm text-muted-foreground">
-            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredUsers.length)} of {filteredUsers.length} users
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm">
-              Page {currentPage} of {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+      <PaginationControls 
+        currentPage={currentPage}
+        totalPages={totalPages}
+        itemsPerPage={itemsPerPage}
+        totalItems={filteredUsers.length}
+        onPageChange={setCurrentPage}
+        onItemsPerPageChange={handleItemsPerPageChange}
+      />
     </div>
   );
 };
