@@ -38,26 +38,6 @@ export const useTimeSheetWeeks = ({
 }: UseTimeSheetWeeksProps) => {
   const { toast } = useToast();
 
-  const getUserWeeks = () => {
-    const DEFAULT_WEEKS = [
-      { id: "1", startDate: "2025-01-01", endDate: "2025-01-06", hours: 48 },
-      { id: "2", startDate: "2025-01-10", endDate: "2025-01-03", hours: 40 },
-      { id: "3", startDate: "2025-01-13", endDate: "2025-01-17", hours: 40 },
-      { id: "4", startDate: "2025-01-20", endDate: "2025-01-24", hours: 40 },
-      { id: "5", startDate: "2025-01-27", endDate: "2025-01-31", hours: 40 },
-    ];
-    
-    const firstWeekDate = parse(firstWeek, 'yyyy-MM-dd', new Date());
-    return DEFAULT_WEEKS.filter(week => {
-      const weekStartDate = parse(week.startDate, 'yyyy-MM-dd', new Date());
-      return !isBefore(weekStartDate, firstWeekDate);
-    }).sort((a, b) => {
-      const dateA = parse(a.startDate, 'yyyy-MM-dd', new Date());
-      const dateB = parse(b.startDate, 'yyyy-MM-dd', new Date());
-      return dateA.getTime() - dateB.getTime();
-    });
-  };
-
   const findFirstUnsubmittedWeek = () => {
     if (customWeeks.length > 0) {
       let userFirstWeekDate: Date | null = null;
@@ -136,19 +116,6 @@ export const useTimeSheetWeeks = ({
               weekData: week
             };
           }
-        }
-      }
-    }
-    
-    if (!adminOverride) {
-      const userWeeks = getUserWeeks();
-      for (const week of userWeeks) {
-        const weekKey = week.startDate;
-        if (!submittedWeeks.includes(weekKey)) {
-          return {
-            date: parse(weekKey, 'yyyy-MM-dd', new Date()),
-            weekData: week
-          };
         }
       }
     }
@@ -252,14 +219,7 @@ export const useTimeSheetWeeks = ({
       format(parse(week.period_from, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === weekKey
     );
     
-    if (selectedWeek) {
-      return selectedWeek.required_hours;
-    } else {
-      const defaultWeek = getUserWeeks().find(w => 
-        format(parse(w.startDate, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === weekKey
-      );
-      return defaultWeek?.hours || 40;
-    }
+    return selectedWeek ? selectedWeek.required_hours : 40; // Default to 40 if no custom week found
   };
 
   const hasUnsubmittedEarlierWeek = () => {
@@ -317,7 +277,6 @@ export const useTimeSheetWeeks = ({
   };
 
   return {
-    getUserWeeks,
     findFirstUnsubmittedWeek,
     findFirstUnderReviewWeek,
     handleReturnToFirstUnsubmittedWeek,

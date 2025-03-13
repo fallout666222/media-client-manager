@@ -7,7 +7,7 @@ import { useTimeSheetActions } from '@/hooks/useTimeSheetActions';
 import { useToast } from '@/hooks/use-toast';
 import { getCustomWeeks } from '@/integrations/supabase/database';
 
-// Add back the default media types constant
+// Define the default media types constant
 const DEFAULT_AVAILABLE_MEDIA_TYPES = ['TV', 'Radio', 'Print', 'Digital'];
 
 interface TimeSheetContextType {
@@ -171,7 +171,7 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
     handleSubmitForReview,
     handleApprove,
     handleReject,
-    handleReturnToUnconfirmed, // Make sure this is imported correctly from useTimeSheetActions
+    handleReturnToUnconfirmed,
     handleSaveVisibleClients,
     handleSaveVisibleMediaTypes,
     getTotalHoursForWeek,
@@ -400,7 +400,7 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
     handleSubmitForReview,
     handleApprove,
     handleReject,
-    handleReturnToUnconfirmed, // Make sure this exists in the returned object from useTimeSheetActions
+    handleReturnToUnconfirmed,
     handleSaveVisibleClients,
     handleSaveVisibleMediaTypes,
     getTotalHoursForWeek,
