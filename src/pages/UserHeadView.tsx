@@ -137,16 +137,24 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       if (firstUnderReviewWeek.week && selectedTeamMember) {
         localStorage.setItem(`selectedWeek_${selectedTeamMember}`, firstUnderReviewWeek.week_id);
         console.log(`Saved selected week to localStorage: selectedWeek_${selectedTeamMember} = ${firstUnderReviewWeek.week_id}`);
+        
+        setForceRefresh(prev => prev + 1);
+        
+        fetchWeekStatuses(selectedTeamMember);
+        
+        toast({
+          title: "Navigated to First Week Under Review",
+          description: `Week: ${firstUnderReviewWeek.week?.name}`,
+        });
+        
+        const timeSheetContainer = document.getElementById('timesheet-container');
+        if (timeSheetContainer) {
+          timeSheetContainer.classList.add('refresh-trigger');
+          setTimeout(() => {
+            timeSheetContainer.classList.remove('refresh-trigger');
+          }, 50);
+        }
       }
-      
-      setForceRefresh(prev => prev + 1);
-      
-      fetchWeekStatuses(selectedTeamMember);
-      
-      toast({
-        title: "Navigated to First Week Under Review",
-        description: `Week: ${firstUnderReviewWeek.week?.name}`,
-      });
     } else {
       toast({
         title: "No Weeks Under Review",
@@ -420,21 +428,23 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
           )}
         </div>
         
-        <TimeSheet
-          key={`timesheet-${selectedTeamMember}-${initialWeekId}-${forceRefresh}`}
-          userRole={teamMember.type as 'admin' | 'user' | 'manager'}
-          firstWeek={teamMember.first_week}
-          currentUser={currentUser}
-          users={users}
-          impersonatedUser={userForTimesheet}
-          clients={clients}
-          initialWeekId={initialWeekId}
-          isUserHead={true}
-          onTimeUpdate={(weekId, client, mediaType, hours) => 
-            handleTimeUpdate(teamMember.id, weekId, client, mediaType, hours)
-          }
-          checkEarlierWeeksUnderReview={(weekId) => checkForEarlierWeeksUnderReview(weekId)}
-        />
+        <div id="timesheet-container">
+          <TimeSheet
+            key={`timesheet-${selectedTeamMember}-${initialWeekId}-${forceRefresh}`}
+            userRole={teamMember.type as 'admin' | 'user' | 'manager'}
+            firstWeek={teamMember.first_week}
+            currentUser={currentUser}
+            users={users}
+            impersonatedUser={userForTimesheet}
+            clients={clients}
+            initialWeekId={initialWeekId}
+            isUserHead={true}
+            onTimeUpdate={(weekId, client, mediaType, hours) => 
+              handleTimeUpdate(teamMember.id, weekId, client, mediaType, hours)
+            }
+            checkEarlierWeeksUnderReview={(weekId) => checkForEarlierWeeksUnderReview(weekId)}
+          />
+        </div>
       </>
     );
   };

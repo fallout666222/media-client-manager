@@ -152,6 +152,12 @@ export const useTimeSheetWeeks = ({
   };
 
   const findFirstUnderReviewWeek = () => {
+    console.log("Executing findFirstUnderReviewWeek");
+    console.log("Available customWeeks:", customWeeks.length);
+    console.log("Available weekStatuses:", Object.entries(weekStatuses).map(([key, value]) => 
+      `${key}: ${value}`
+    ));
+    
     if (customWeeks.length > 0) {
       const sortedWeeks = [...customWeeks].sort((a, b) => {
         const dateA = parse(a.period_from, 'yyyy-MM-dd', new Date());
@@ -159,9 +165,12 @@ export const useTimeSheetWeeks = ({
         return dateA.getTime() - dateB.getTime();
       });
       
+      console.log("Sorted weeks:", sortedWeeks.map(w => `${w.name} (${w.period_from}): ${weekStatuses[w.period_from]}`));
+      
       for (const week of sortedWeeks) {
         const weekKey = week.period_from;
         if (weekStatuses[weekKey] === 'under-review') {
+          console.log(`Found first under-review week: ${week.name} (${weekKey})`);
           return {
             date: parse(weekKey, 'yyyy-MM-dd', new Date()),
             weekData: week
@@ -170,58 +179,19 @@ export const useTimeSheetWeeks = ({
       }
     }
     
+    console.log("No weeks under review found");
     return null;
   };
 
-  const handleReturnToFirstUnsubmittedWeek = () => {
-    console.log("Executing handleReturnToFirstUnsubmittedWeek");
-    
-    console.log("Available weekStatuses:", Object.entries(weekStatuses).map(([key, value]) => 
-      `${key}: ${value}`
-    ));
-    
-    const firstUnsubmitted = findFirstUnsubmittedWeek();
-    console.log("Result from findFirstUnsubmittedWeek:", firstUnsubmitted);
-    
-    if (firstUnsubmitted && firstUnsubmitted.date && firstUnsubmitted.weekData) {
-      if (firstUnsubmitted.weekData) {
-        console.log(`Setting current custom week to: ${firstUnsubmitted.weekData.name}`);
-        if ('required_hours' in firstUnsubmitted.weekData) {
-          setCurrentCustomWeek(firstUnsubmitted.weekData);
-        } else {
-          setCurrentCustomWeek(null);
-        }
-      }
-      
-      console.log(`Navigating to date: ${format(firstUnsubmitted.date, 'yyyy-MM-dd')}`);
-      setCurrentDate(firstUnsubmitted.date);
-      
-      if (viewedUser.id && firstUnsubmitted.weekData) {
-        localStorage.setItem(`selectedWeek_${viewedUser.id}`, firstUnsubmitted.weekData.id || '');
-        console.log(`Saved week ${firstUnsubmitted.weekData.id} to localStorage for user ${viewedUser.id}`);
-      }
-      
-      toast({
-        title: "Navigated to First Unconfirmed Week",
-        description: `Showing week of ${format(firstUnsubmitted.date, 'MMM d, yyyy')}`,
-      });
-    } else {
-      toast({
-        title: "No Unconfirmed Weeks",
-        description: adminOverride 
-          ? "There are no unconfirmed or needs-revision weeks in the database for this user" 
-          : "All your weeks have been submitted or are under review",
-      });
-      console.log("No unconfirmed weeks found, staying on current week");
-    }
-  };
-
   const handleNavigateToFirstUnderReviewWeek = () => {
+    console.log("Executing handleNavigateToFirstUnderReviewWeek");
+    
     const firstUnderReview = findFirstUnderReviewWeek();
-    if (firstUnderReview) {
-      setCurrentDate(firstUnderReview.date);
-      
+    console.log("Result from findFirstUnderReviewWeek:", firstUnderReview);
+    
+    if (firstUnderReview && firstUnderReview.date && firstUnderReview.weekData) {
       if (firstUnderReview.weekData) {
+        console.log(`Setting current custom week to: ${firstUnderReview.weekData.name}`);
         if ('required_hours' in firstUnderReview.weekData) {
           setCurrentCustomWeek(firstUnderReview.weekData);
         } else {
@@ -229,15 +199,27 @@ export const useTimeSheetWeeks = ({
         }
       }
       
+      console.log(`Navigating to date: ${format(firstUnderReview.date, 'yyyy-MM-dd')}`);
+      setCurrentDate(firstUnderReview.date);
+      
+      if (viewedUser.id && firstUnderReview.weekData) {
+        localStorage.setItem(`selectedWeek_${viewedUser.id}`, firstUnderReview.weekData.id || '');
+        console.log(`Saved week ${firstUnderReview.weekData.id} to localStorage for user ${viewedUser.id}`);
+      }
+      
       toast({
         title: "Navigated to First Week Under Review",
         description: `Showing week of ${format(firstUnderReview.date, 'MMM d, yyyy')}`,
       });
+      
+      return true;
     } else {
       toast({
         title: "No Weeks Under Review",
         description: "There are no weeks currently under review",
       });
+      console.log("No weeks under review found, staying on current week");
+      return false;
     }
   };
 

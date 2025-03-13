@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, CheckCircle, ChevronLeft, Send, RotateCcw } from 'lucide-react';
@@ -68,9 +69,12 @@ export const ApprovalActions: React.FC<ApprovalActionsProps> = ({
   };
 
   const renderUserHead = () => {
+    // Only show the button if there are earlier weeks under review AND we have the navigation function
     if (!isUserHead || !hasEarlierWeeksUnderReview || !onNavigateToFirstUnderReview) {
       return null;
     }
+
+    console.log("Rendering user head button - hasEarlierWeeksUnderReview:", hasEarlierWeeksUnderReview);
 
     return (
       <Button
