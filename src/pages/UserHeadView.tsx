@@ -1,21 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Send, AlertCircle, Search, ChevronsUpDown, Check } from "lucide-react";
+import { ArrowLeft, Send, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command";
-import { cn } from "@/lib/utils";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import TimeSheet from "./TimeSheet";
 import { User, TimeSheetStatus } from '@/types/timesheet';
 import { 
@@ -28,6 +22,7 @@ import {
   getWeekHours
 } from '@/integrations/supabase/database';
 import { useQuery } from '@tanstack/react-query';
+import SearchBar from '@/components/SearchBar';
 import { format, parse, isBefore } from 'date-fns';
 
 interface UserHeadViewProps {
@@ -42,7 +37,6 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
   const [weekStatuses, setWeekStatuses] = useState<any[]>([]);
   const [firstUnderReviewWeek, setFirstUnderReviewWeek] = useState<any>(null);
   const [forceRefresh, setForceRefresh] = useState<number>(0);
-  const [open, setOpen] = useState(false);
   const { toast } = useToast();
 
   const { data: users = [], isLoading, error } = useQuery({
@@ -172,6 +166,9 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
 
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
+    setSelectedTeamMember(null);
+    setFirstUnconfirmedWeek(null);
+    setWeekStatuses([]);
   };
 
   useEffect(() => {
@@ -485,57 +482,25 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
           <div className="mb-8">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
               <h2 className="text-lg font-medium">Select Team Member</h2>
+              <SearchBar 
+                value={searchTerm} 
+                onChange={handleSearchChange} 
+                placeholder="Search team members..." 
+                className="max-w-xs"
+              />
             </div>
-            
-            <Popover open={open} onOpenChange={setOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={open}
-                  className="w-full justify-between md:w-[250px]"
-                >
-                  {selectedTeamMember ? 
-                    users.find(u => u.id === selectedTeamMember)?.login || "Select team member" : 
-                    "Select team member"}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-full p-0 md:w-[250px]">
-                <Command>
-                  <div className="flex items-center border-b px-3">
-                    <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-                    <CommandInput 
-                      placeholder="Search team member..." 
-                      className="border-0 focus:ring-0"
-                      value={searchTerm}
-                      onValueChange={handleSearchChange}
-                    />
-                  </div>
-                  <CommandEmpty>No team member found.</CommandEmpty>
-                  <CommandGroup>
-                    {filteredTeamMembers.map((member) => (
-                      <CommandItem
-                        key={member.id}
-                        value={member.login || ""}
-                        onSelect={() => {
-                          handleTeamMemberSelect(member.id);
-                          setOpen(false);
-                        }}
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            selectedTeamMember === member.id ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                        {member.login} ({member.type || member.role})
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </Command>
-              </PopoverContent>
-            </Popover>
+            <Select onValueChange={handleTeamMemberSelect}>
+              <SelectTrigger className="w-[250px]">
+                <SelectValue placeholder="Select team member" />
+              </SelectTrigger>
+              <SelectContent>
+                {filteredTeamMembers.map((member) => (
+                  <SelectItem key={member.id} value={member.id}>
+                    {member.login}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>

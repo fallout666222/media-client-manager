@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { Check, ChevronsUpDown, Search } from "lucide-react";
+import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +22,6 @@ interface TeamMemberSelectorProps {
   users: User[];
   onUserSelect: (user: User) => void;
   selectedUser: User;
-  placeholder?: string;
 }
 
 export function TeamMemberSelector({
@@ -30,7 +29,6 @@ export function TeamMemberSelector({
   users,
   onUserSelect,
   selectedUser,
-  placeholder = "Select a team member",
 }: TeamMemberSelectorProps) {
   const [open, setOpen] = useState(false);
 
@@ -73,10 +71,7 @@ export function TeamMemberSelector({
       </PopoverTrigger>
       <PopoverContent className="w-full p-0 md:w-[250px]">
         <Command>
-          <div className="flex items-center border-b px-3">
-            <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-            <CommandInput placeholder="Search team member..." className="border-0 focus:ring-0" />
-          </div>
+          <CommandInput placeholder="Search team member..." />
           <CommandEmpty>No team member found.</CommandEmpty>
           <CommandGroup>
             {teamMembers.map((user) => (
