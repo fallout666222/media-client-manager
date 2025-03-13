@@ -57,6 +57,28 @@ export const WeekPicker = ({
     return Array.from(years).sort();
   }, [availableWeeks]);
 
+  // Save filterYear to localStorage whenever it changes
+  useEffect(() => {
+    if (viewedUserId && filterYear !== null) {
+      localStorage.setItem(`selectedYearFilter_${viewedUserId}`, filterYear.toString());
+      console.log(`Saved year filter ${filterYear} to localStorage for user ${viewedUserId}`);
+    } else if (viewedUserId && filterYear === null) {
+      localStorage.removeItem(`selectedYearFilter_${viewedUserId}`);
+    }
+  }, [filterYear, viewedUserId]);
+
+  // Load filterYear from localStorage on initial load
+  useEffect(() => {
+    if (viewedUserId) {
+      const savedYearFilter = localStorage.getItem(`selectedYearFilter_${viewedUserId}`);
+      if (savedYearFilter) {
+        const yearValue = parseInt(savedYearFilter);
+        console.log(`Loading year filter ${yearValue} from localStorage for user ${viewedUserId}`);
+        setFilterYear(yearValue);
+      }
+    }
+  }, [viewedUserId, setFilterYear]);
+
   useEffect(() => {
     const fetchWeeks = async () => {
       try {
@@ -163,7 +185,7 @@ export const WeekPicker = ({
       
       onWeekHoursChange(matchingWeek.hours);
     }
-  }, [currentDate, filteredWeeks]);
+  }, [currentDate, filteredWeeks, viewedUserId, onWeekHoursChange]);
 
   const currentWeek = getCurrentWeek();
   const effectiveWeekId = currentWeekId || currentWeek?.id || filteredWeeks[0]?.id;
@@ -187,7 +209,7 @@ export const WeekPicker = ({
       
       setCurrentWeekId(currentWeek.id);
     }
-  }, [currentWeek?.id]);
+  }, [currentWeek?.id, currentWeek, currentDate, onWeekChange, onWeekHoursChange, viewedUserId]);
 
   useEffect(() => {
     if (effectiveWeekId && viewedUserId) {
