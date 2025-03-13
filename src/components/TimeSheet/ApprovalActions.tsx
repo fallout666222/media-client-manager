@@ -42,7 +42,6 @@ export const ApprovalActions: React.FC<ApprovalActionsProps> = ({
     toast({
       title: 'Admin Override Active',
       description: 'You are making changes with admin override. Use caution.',
-      // Change from 'warning' to 'destructive' as 'warning' is not a valid variant
       variant: 'destructive',
     });
   };
@@ -90,7 +89,6 @@ export const ApprovalActions: React.FC<ApprovalActionsProps> = ({
   const renderUserControls = () => {
     if (!isViewingOwnTimesheet && !adminOverride) return null;
 
-    // Fix the comparison by using 'needs-revision' instead of 'under-revision'
     if (status === 'unconfirmed' || status === 'needs-revision') {
       return (
         <Button
@@ -108,10 +106,11 @@ export const ApprovalActions: React.FC<ApprovalActionsProps> = ({
   };
 
   const renderManagerControls = () => {
+    // Modified to include isUserHead as a condition to show approval buttons
     if (
       status !== 'under-review' ||
-      (!isManager && !adminOverride) ||
-      (isViewingOwnTimesheet && !adminOverride)
+      ((!isManager && !adminOverride && !isUserHead) || 
+      (isViewingOwnTimesheet && !adminOverride))
     ) {
       return null;
     }
@@ -143,7 +142,6 @@ export const ApprovalActions: React.FC<ApprovalActionsProps> = ({
   };
 
   const renderAdminOverrideControls = () => {
-    // Only show this control for accepted weeks in admin override mode
     if (!adminOverride || status !== 'accepted' || !onReturnToUnconfirmed) {
       return null;
     }

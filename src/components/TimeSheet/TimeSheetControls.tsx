@@ -14,7 +14,7 @@ interface TimeSheetControlsProps {
   onSubmitForReview: () => void;
   onApprove: () => void;
   onReject: () => void;
-  onReturnToUnconfirmed: () => void; // Added this prop
+  onReturnToUnconfirmed: () => void;
   readOnly?: boolean;
   firstWeek?: string;
   weekId?: string;
@@ -29,7 +29,7 @@ interface TimeSheetControlsProps {
   setFilterYear: (year: number | null) => void;
 }
 
-export const TimeSheetControls = ({
+export const TimeSheetControls: React.FC<TimeSheetControlsProps> = ({
   currentDate,
   onWeekChange,
   onWeekHoursChange,

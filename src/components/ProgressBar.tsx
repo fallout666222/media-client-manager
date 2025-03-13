@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Check, Info, AlertCircle, HelpCircle } from 'lucide-react';
@@ -124,7 +125,21 @@ export const WeekDetails: React.FC<WeekDetailsProps> = ({
   weekData
 }) => {
   if (!weekData) {
-    return;
+    return <Card className="w-full bg-muted/30">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-muted-foreground">Select a week to view details</CardTitle>
+        </CardHeader>
+      </Card>;
   }
-  return;
+  return <Card className="w-full">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2">
+          {getStatusIcon(weekData.status)}
+          <span>{weekData.week}</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p><strong>Status:</strong> {getStatusText(weekData.status)}</p>
+      </CardContent>
+    </Card>;
 };
