@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { format, parse, isBefore } from 'date-fns';
 import { User, Client, TimeSheetStatus } from '@/types/timesheet';
@@ -79,22 +78,16 @@ export const TimeSheetWrapper: React.FC<TimeSheetWrapperProps> = ({
     setFilterYear
   } = useTimeSheet();
 
-  // Convert customWeeks and weekStatuses to WeekData format for ProgressBar
-  // Filter out weeks that are before the user's first week
   const progressBarWeeks: WeekData[] = customWeeks
     .filter(week => {
-      // If adminOverride is true, show all weeks
       if (adminOverride || userRole === 'admin') return true;
       
-      // Get the user's first week date
       const userFirstWeek = viewedUser.firstWeek || firstWeek;
-      if (!userFirstWeek) return true; // If no first week is set, show all weeks
+      if (!userFirstWeek) return true;
       
-      // Parse the dates to compare
       const weekStartDate = parse(week.period_from, 'yyyy-MM-dd', new Date());
       const firstWeekDate = parse(userFirstWeek, 'yyyy-MM-dd', new Date());
       
-      // Only include weeks that are on or after the user's first week
       return !isBefore(weekStartDate, firstWeekDate);
     })
     .map(week => {
@@ -109,7 +102,6 @@ export const TimeSheetWrapper: React.FC<TimeSheetWrapperProps> = ({
       };
     });
 
-  // Current selected week for progress bar - now using the currentCustomWeek directly
   const selectedProgressWeek = currentCustomWeek ? {
     week: currentCustomWeek.name,
     status: mapTimeSheetStatusToWeekStatus(getCurrentWeekStatus(currentCustomWeek.period_from)),
@@ -117,25 +109,24 @@ export const TimeSheetWrapper: React.FC<TimeSheetWrapperProps> = ({
     periodFrom: currentCustomWeek.period_from
   } : null;
 
-  // Debug logging to track the currentCustomWeek and selectedProgressWeek
   useEffect(() => {
     if (currentCustomWeek) {
-      console.log('TimeSheetWrapper - Current custom week updated:', 
-        currentCustomWeek.name, 
-        'ID:', currentCustomWeek.id, 
-        'Period:', currentCustomWeek.period_from);
+      // Temporarily disabled console logs
+      // console.log('TimeSheetWrapper - Current custom week updated:', 
+      //   currentCustomWeek.name, 
+      //   'ID:', currentCustomWeek.id, 
+      //   'Period:', currentCustomWeek.period_from);
       
-      if (selectedProgressWeek) {
-        console.log('TimeSheetWrapper - Selected progress week updated:', 
-          selectedProgressWeek.week, 
-          'ID:', selectedProgressWeek.weekId);
-      }
+      // if (selectedProgressWeek) {
+      //   console.log('TimeSheetWrapper - Selected progress week updated:', 
+      //     selectedProgressWeek.week, 
+      //     'ID:', selectedProgressWeek.weekId);
+      // }
     }
   }, [currentCustomWeek, selectedProgressWeek]);
 
-  // Handle week selection in the progress bar
   const handleProgressWeekSelect = (week: WeekData) => {
-    console.log('Progress bar week selected:', week.week, 'WeekId:', week.weekId);
+    // console.log('Progress bar week selected:', week.week, 'WeekId:', week.weekId);
     if (week.weekId) {
       handleProgressBarWeekSelect(week.weekId);
     }
@@ -165,7 +156,6 @@ export const TimeSheetWrapper: React.FC<TimeSheetWrapperProps> = ({
         showSettings={showSettings}
       />
 
-      {/* Weekly Progress Bar Section */}
       <div className="mb-6">
         <h3 className="text-lg font-medium mb-2">Weekly Progress</h3>
         <StatusTimeline 

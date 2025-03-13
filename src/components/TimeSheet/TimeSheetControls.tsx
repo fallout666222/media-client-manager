@@ -54,15 +54,15 @@ export const TimeSheetControls: React.FC<TimeSheetControlsProps> = ({
   setFilterYear
 }: TimeSheetControlsProps) => {
   
-  // Enhanced debug logging
+  // Enhanced debug logging - temporarily disabled
   useEffect(() => {
     if (isUserHead) {
-      console.log("TimeSheetControls Debug:");
-      console.log("- WeekId:", weekId);
-      console.log("- hasEarlierWeeksUnderReview:", hasEarlierWeeksUnderReview);
-      console.log("- Status:", status);
-      console.log("- isUserHead:", isUserHead);
-      console.log("- onNavigateToFirstUnderReview:", onNavigateToFirstUnderReview ? "defined" : "undefined");
+      // console.log("TimeSheetControls Debug:");
+      // console.log("- WeekId:", weekId);
+      // console.log("- hasEarlierWeeksUnderReview:", hasEarlierWeeksUnderReview);
+      // console.log("- Status:", status);
+      // console.log("- isUserHead:", isUserHead);
+      // console.log("- onNavigateToFirstUnderReview:", onNavigateToFirstUnderReview ? "defined" : "undefined");
     }
   }, [isUserHead, status, weekId, hasEarlierWeeksUnderReview, onNavigateToFirstUnderReview]);
 

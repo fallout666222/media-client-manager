@@ -61,7 +61,7 @@ export const useTimeSheetData = ({
             setSelectedMediaTypes(typeNames);
           }
         } catch (error) {
-          console.error('Error fetching user visibles:', error);
+          // console.error('Error fetching user visibles:', error);
         }
       }
     };
@@ -74,11 +74,11 @@ export const useTimeSheetData = ({
     const loadWeekStatuses = async () => {
       if (viewedUser.id && customWeeks.length > 0) {
         try {
-          console.log(`Loading week statuses for user ${viewedUser.id}`);
+          // console.log(`Loading week statuses for user ${viewedUser.id}`);
           const { data } = await getWeekStatuses(viewedUser.id);
           
           if (data && data.length > 0) {
-            console.log(`Found ${data.length} week status entries`);
+            // console.log(`Found ${data.length} week status entries`);
             const statuses: Record<string, TimeSheetStatus> = {};
             const submitted: string[] = [];
             
@@ -87,7 +87,7 @@ export const useTimeSheetData = ({
                 const weekKey = statusEntry.week.period_from;
                 const statusName = statusEntry.status.name as TimeSheetStatus;
                 statuses[weekKey] = statusName;
-                console.log(`Week ${statusEntry.week.name} (${weekKey}): Status = ${statusName}`);
+                // console.log(`Week ${statusEntry.week.name} (${weekKey}): Status = ${statusName}`);
                 
                 if (statusName === 'under-review' || statusName === 'accepted') {
                   submitted.push(weekKey);
@@ -95,14 +95,14 @@ export const useTimeSheetData = ({
               }
             });
             
-            console.log("All week statuses:", statuses);
+            // console.log("All week statuses:", statuses);
             setWeekStatuses(statuses);
             setSubmittedWeeks(submitted);
           } else {
-            console.log("No week status data found");
+            // console.log("No week status data found");
           }
         } catch (error) {
-          console.error('Error loading week statuses:', error);
+          // console.error('Error loading week statuses:', error);
         }
       }
     };
@@ -165,7 +165,7 @@ export const useTimeSheetData = ({
           setWeekPercentage(100);
         }
       } catch (error) {
-        console.error('Error fetching week percentage:', error);
+        // console.error('Error fetching week percentage:', error);
         setWeekPercentage(100);
       }
     };
@@ -198,11 +198,11 @@ export const useTimeSheetData = ({
           }
           
           if (weekId) {
-            console.log(`Loading time entries for user ${viewedUser.id}, week ${weekId}`);
+            // console.log(`Loading time entries for user ${viewedUser.id}, week ${weekId}`);
             const { data: hourEntries } = await getWeekHours(viewedUser.id, weekId);
             
             if (hourEntries && hourEntries.length > 0) {
-              console.log(`Found ${hourEntries.length} time entries`);
+              // console.log(`Found ${hourEntries.length} time entries`);
               const entries: Record<string, TimeSheetData> = {};
               entries[currentWeekKey] = {};
               
@@ -221,14 +221,14 @@ export const useTimeSheetData = ({
               
               setTimeEntries(entries);
             } else {
-              console.log('No time entries found for this week');
+              // console.log('No time entries found for this week');
               setTimeEntries({
                 [currentWeekKey]: {}
               });
             }
           }
         } catch (error) {
-          console.error('Error loading timesheet data:', error);
+          // console.error('Error loading timesheet data:', error);
         }
       }
     };
@@ -258,7 +258,7 @@ export const useTimeSheetData = ({
   };
 
   const getCurrentWeekStatus = (weekKey: string): TimeSheetStatus => {
-    console.log(`Getting status for week ${weekKey}: ${weekStatuses[weekKey] || 'unconfirmed'}`);
+    // console.log(`Getting status for week ${weekKey}: ${weekStatuses[weekKey] || 'unconfirmed'}`);
     return weekStatuses[weekKey] || 'unconfirmed';
   };
 
