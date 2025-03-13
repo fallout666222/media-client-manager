@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { format, parse, isSameDay } from 'date-fns';
 import { TimeSheetStatus, User, Client } from '@/types/timesheet';
@@ -5,6 +6,9 @@ import { useTimeSheetData } from '@/hooks/useTimeSheetData';
 import { useTimeSheetActions } from '@/hooks/useTimeSheetActions';
 import { useToast } from '@/hooks/use-toast';
 import { getCustomWeeks } from '@/integrations/supabase/database';
+
+// Add the missing constant
+const DEFAULT_AVAILABLE_MEDIA_TYPES = ['TV', 'Radio', 'Print', 'Digital'];
 
 interface TimeSheetContextType {
   showSettings: boolean;
@@ -167,6 +171,7 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
     handleSubmitForReview,
     handleApprove,
     handleReject,
+    handleReturnToUnconfirmed,
     handleSaveVisibleClients,
     handleSaveVisibleMediaTypes,
     getTotalHoursForWeek,
