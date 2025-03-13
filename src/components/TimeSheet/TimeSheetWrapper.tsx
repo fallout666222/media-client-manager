@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { format, parse, isBefore } from 'date-fns';
 import { User, Client, TimeSheetStatus } from '@/types/timesheet';
 import { TimeSheetHeader } from '@/components/TimeSheet/TimeSheetHeader';
@@ -117,8 +117,19 @@ export const TimeSheetWrapper: React.FC<TimeSheetWrapperProps> = ({
     periodFrom: currentCustomWeek.period_from
   } : null;
 
+  // Debug logging to track the currentCustomWeek and selectedProgressWeek
+  useEffect(() => {
+    if (currentCustomWeek) {
+      console.log('TimeSheetWrapper - Current custom week updated:', 
+        currentCustomWeek.name, 
+        'ID:', currentCustomWeek.id, 
+        'Period:', currentCustomWeek.period_from);
+    }
+  }, [currentCustomWeek]);
+
   // Handle week selection in the progress bar
   const handleProgressWeekSelect = (week: WeekData) => {
+    console.log('Progress bar week selected:', week.week, 'WeekId:', week.weekId);
     if (week.weekId) {
       handleProgressBarWeekSelect(week.weekId);
     }

@@ -53,10 +53,26 @@ export const StatusCell: React.FC<StatusCellProps> = ({
     if (isLast) return 'rounded-r-md';
     return '';
   };
+  
+  // Enhance the selected state styling
+  const selectedStyles = isSelected ? 
+    "ring-2 ring-offset-2 ring-black dark:ring-white relative z-10 scale-110 transform shadow-lg" : 
+    "";
+    
   return <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <button onClick={() => onSelect(weekData)} className={cn("h-12 transition-all duration-200 shadow-sm", statusColor, getBorderRadius(), isSelected && "ring-2 ring-offset-2 ring-black dark:ring-white relative z-10", className)} aria-label={`${weekData.week}: ${weekData.status}`} />
+          <button 
+            onClick={() => onSelect(weekData)} 
+            className={cn(
+              "h-12 transition-all duration-200 shadow-sm", 
+              statusColor, 
+              getBorderRadius(), 
+              selectedStyles,
+              className
+            )} 
+            aria-label={`${weekData.week}: ${weekData.status}`} 
+          />
         </TooltipTrigger>
         <TooltipContent>
           <p>{weekData.week}</p>
@@ -93,9 +109,27 @@ export const StatusTimeline: React.FC<StatusTimelineProps> = ({
     }
     return true;
   }) : weeks;
+  
+  // Add debug logging for the selectedWeek
+  useEffect(() => {
+    if (selectedWeek) {
+      console.log('StatusTimeline - Selected week:', selectedWeek.week, 'WeekId:', selectedWeek.weekId);
+    }
+  }, [selectedWeek]);
+  
   return <div className="w-full overflow-x-auto py-4">
       <div className="flex items-center w-full min-w-min px-4">
-        {filteredWeeks.map((weekData, index) => <StatusCell key={weekData.week} weekData={weekData} onSelect={onSelectWeek} isSelected={selectedWeek?.week === weekData.week} isFirst={index === 0} isLast={index === filteredWeeks.length - 1} className="flex-1" />)}
+        {filteredWeeks.map((weekData, index) => (
+          <StatusCell 
+            key={weekData.weekId || weekData.week} 
+            weekData={weekData} 
+            onSelect={onSelectWeek} 
+            isSelected={selectedWeek?.weekId === weekData.weekId} 
+            isFirst={index === 0} 
+            isLast={index === filteredWeeks.length - 1} 
+            className="flex-1" 
+          />
+        ))}
       </div>
     </div>;
 };

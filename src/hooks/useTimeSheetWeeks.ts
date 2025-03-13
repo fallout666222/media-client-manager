@@ -58,8 +58,6 @@ export const useTimeSheetWeeks = ({
   };
 
   const findFirstUnsubmittedWeek = () => {
-    // First check if all weeks in weekStatuses are either 'accepted' or 'under-review'
-    // If so, there are no unsubmitted weeks
     let hasUnsubmittedWeek = false;
     
     if (Object.keys(weekStatuses).length > 0) {
@@ -69,7 +67,6 @@ export const useTimeSheetWeeks = ({
       
       if (!hasUnsubmittedWeek) {
         console.log("All custom weeks are either accepted or under review");
-        // Return null explicitly as all weeks are submitted or under review
         return null;
       }
     }
@@ -116,7 +113,6 @@ export const useTimeSheetWeeks = ({
           }
         });
         
-        // Debug logging to see what weeks and statuses we're checking
         console.log("Available weeks to check:", userWeeks.map(w => 
           `${w.name} (${w.period_from}) - Status: ${weekStatuses[w.period_from] || 'undefined'}`
         ));
@@ -127,7 +123,6 @@ export const useTimeSheetWeeks = ({
           
           console.log(`Checking week ${week.name} (${weekKey}): Status = ${weekStatus || 'undefined'}`);
           
-          // Check for both 'unconfirmed' and 'needs-revision' status
           if (weekStatus === 'unconfirmed' || weekStatus === 'needs-revision') {
             console.log(`Found first unsubmitted/needs revision week: ${week.name} (${week.period_from}), status: ${weekStatus}`);
             return {
@@ -139,8 +134,6 @@ export const useTimeSheetWeeks = ({
       }
     }
     
-    // Only check default weeks if not in admin override mode
-    // and IF there are no custom weeks defined (changed this condition)
     if (!adminOverride && customWeeks.length === 0) {
       const userWeeks = getUserWeeks();
       for (const week of userWeeks) {
@@ -154,7 +147,6 @@ export const useTimeSheetWeeks = ({
       }
     }
     
-    // Return null explicitly when no unconfirmed week is found
     console.log("No unconfirmed weeks found");
     return null;
   };
@@ -184,7 +176,6 @@ export const useTimeSheetWeeks = ({
   const handleReturnToFirstUnsubmittedWeek = () => {
     console.log("Executing handleReturnToFirstUnsubmittedWeek");
     
-    // Debug what statuses we have in the weekStatuses object
     console.log("Available weekStatuses:", Object.entries(weekStatuses).map(([key, value]) => 
       `${key}: ${value}`
     ));
@@ -221,7 +212,6 @@ export const useTimeSheetWeeks = ({
           ? "There are no unconfirmed or needs-revision weeks in the database for this user" 
           : "All your weeks have been submitted or are under review",
       });
-      // Don't navigate to a non-existent week or change the current custom week
       console.log("No unconfirmed weeks found, staying on current week");
     }
   };

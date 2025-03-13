@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Select,
@@ -185,12 +184,12 @@ export const WeekPicker = ({
     
     if (viewedUserId) {
       const savedWeekId = localStorage.getItem(`selectedWeek_${viewedUserId}`);
-      console.log(`Checking saved week for user ${viewedUserId}:`, savedWeekId);
+      console.log(`WeekPicker - Checking saved week for user ${viewedUserId}:`, savedWeekId);
       
       if (savedWeekId) {
         const savedWeek = filteredWeeks.find(week => week.id === savedWeekId);
         if (savedWeek) {
-          console.log(`Found saved week in localStorage: ${savedWeek.name}`);
+          console.log(`WeekPicker - Found saved week in localStorage: ${savedWeek.name}`);
           return savedWeek;
         }
       }
@@ -202,6 +201,7 @@ export const WeekPicker = ({
       try {
         const weekStartDate = parse(week.startDate, "yyyy-MM-dd", new Date());
         if (isSameDay(weekStartDate, currentDate)) {
+          console.log(`WeekPicker - Found matching week for current date: ${week.name}`);
           return week;
         }
       } catch (error) {
@@ -209,6 +209,7 @@ export const WeekPicker = ({
       }
     }
     
+    console.log(`WeekPicker - No matching week found, returning first week: ${filteredWeeks[0]?.name}`);
     return filteredWeeks[0];
   };
 
@@ -226,15 +227,17 @@ export const WeekPicker = ({
     });
     
     if (matchingWeek) {
-      console.log(`WeekPicker: Current date changed, updating selected week to ${matchingWeek.name} (${matchingWeek.id})`);
+      console.log(`WeekPicker - Current date changed, updating selected week to ${matchingWeek.name} (${matchingWeek.id})`);
       setCurrentWeekId(matchingWeek.id);
       
       if (viewedUserId) {
         localStorage.setItem(`selectedWeek_${viewedUserId}`, matchingWeek.id);
-        console.log(`WeekPicker: Saved week ${matchingWeek.id} to localStorage for user ${viewedUserId}`);
+        console.log(`WeekPicker - Saved week ${matchingWeek.id} to localStorage for user ${viewedUserId}`);
       }
       
       onWeekHoursChange(matchingWeek.hours);
+    } else {
+      console.log(`WeekPicker - No matching week found for current date: ${format(currentDate, 'yyyy-MM-dd')}`);
     }
   }, [currentDate, filteredWeeks, viewedUserId, onWeekHoursChange]);
 
