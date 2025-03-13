@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -354,7 +355,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       deletion_mark: teamMember.deletion_mark,
       hidden: teamMember.hidden,
       user_head_id: teamMember.user_head_id,
-      managerId: teamMember.manager_id
+      managerId: teamMember.user_head_id // Changed from manager_id to user_head_id as requested
     };
     
     const initialWeekId = firstUnderReviewWeek ? 
