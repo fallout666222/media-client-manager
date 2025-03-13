@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -416,17 +415,6 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
                 </Button>
               </div>
             </div>
-          )}
-          
-          {firstUnderReviewWeek && (
-            <Button 
-              variant="outline" 
-              className="bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100"
-              onClick={navigateToFirstUnderReviewWeek}
-            >
-              <AlertCircle className="h-4 w-4 mr-2" />
-              Go to First Week Under Review
-            </Button>
           )}
         </div>
         
