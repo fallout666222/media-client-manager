@@ -124,11 +124,7 @@ export const WeekDetails: React.FC<WeekDetailsProps> = ({
   weekData
 }) => {
   if (!weekData) {
-    return <Card className="w-full bg-muted/30">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-muted-foreground">Select a week to view details</CardTitle>
-        </CardHeader>
-      </Card>;
+    return;
   }
   return;
 };
