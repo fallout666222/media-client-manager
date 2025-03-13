@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { format } from 'date-fns';
+import { format, parse, isBefore } from 'date-fns';
 import { User, Client, TimeSheetStatus } from '@/types/timesheet';
 import { TimeSheetHeader } from '@/components/TimeSheet/TimeSheetHeader';
 import { TimeSheetControls } from '@/components/TimeSheet/TimeSheetControls';
@@ -79,17 +80,34 @@ export const TimeSheetWrapper: React.FC<TimeSheetWrapperProps> = ({
   } = useTimeSheet();
 
   // Convert customWeeks and weekStatuses to WeekData format for ProgressBar
-  const progressBarWeeks: WeekData[] = customWeeks.map(week => {
-    const timeSheetStatus = getCurrentWeekStatus(week.period_from);
-    const weekStatus = mapTimeSheetStatusToWeekStatus(timeSheetStatus);
-    
-    return {
-      week: week.name,
-      status: weekStatus,
-      weekId: week.id,
-      periodFrom: week.period_from
-    };
-  });
+  // Filter out weeks that are before the user's first week
+  const progressBarWeeks: WeekData[] = customWeeks
+    .filter(week => {
+      // If adminOverride is true, show all weeks
+      if (adminOverride || userRole === 'admin') return true;
+      
+      // Get the user's first week date
+      const userFirstWeek = viewedUser.firstWeek || firstWeek;
+      if (!userFirstWeek) return true; // If no first week is set, show all weeks
+      
+      // Parse the dates to compare
+      const weekStartDate = parse(week.period_from, 'yyyy-MM-dd', new Date());
+      const firstWeekDate = parse(userFirstWeek, 'yyyy-MM-dd', new Date());
+      
+      // Only include weeks that are on or after the user's first week
+      return !isBefore(weekStartDate, firstWeekDate);
+    })
+    .map(week => {
+      const timeSheetStatus = getCurrentWeekStatus(week.period_from);
+      const weekStatus = mapTimeSheetStatusToWeekStatus(timeSheetStatus);
+      
+      return {
+        week: week.name,
+        status: weekStatus,
+        weekId: week.id,
+        periodFrom: week.period_from
+      };
+    });
 
   // Current selected week for progress bar
   const selectedProgressWeek = currentCustomWeek ? {
