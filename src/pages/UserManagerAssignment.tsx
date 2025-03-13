@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   Table,
@@ -19,10 +20,23 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { User, Department } from "@/types/timesheet";
 import { Link } from "react-router-dom";
-import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getUsers, getDepartments, updateUser } from "@/integrations/supabase/database";
 import SearchBar from "@/components/SearchBar";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 interface UserManagerAssignmentProps {
   onUpdateUserManager: (username: string, managerId: string | undefined) => void;
@@ -43,6 +57,9 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  
+  // For popover states
+  const [openUserHeadPopovers, setOpenUserHeadPopovers] = useState<{[key: string]: boolean}>({});
 
   useEffect(() => {
     fetchData();
@@ -127,6 +144,8 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
           u.id === user.id ? { ...u, user_head_id: updatedValue } : u
         )
       );
+      
+      setOpenUserHeadPopovers(prev => ({...prev, [user.id]: false}));
       
       toast({
         title: "User Head Updated",
@@ -254,6 +273,13 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
     setCurrentPage(1);
   };
 
+  const toggleUserHeadPopover = (userId: string) => {
+    setOpenUserHeadPopovers(prev => ({
+      ...prev,
+      [userId]: !prev[userId]
+    }));
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto p-4 pt-16 text-center">
@@ -339,26 +365,64 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
                   </Select>
                 </TableCell>
                 <TableCell>
-                  <Select
-                    value={user.user_head_id || "none"}
-                    onValueChange={(value) => {
-                      handleUserHeadChange(user, value === "none" ? undefined : value);
-                    }}
+                  <Popover 
+                    open={openUserHeadPopovers[user.id]} 
+                    onOpenChange={() => toggleUserHeadPopover(user.id)}
                   >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select a user head" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No User Head</SelectItem>
-                      {users
-                        .filter((head) => head.id !== user.id || user.user_head_id === user.id)
-                        .map((head) => (
-                          <SelectItem key={head.id} value={head.id}>
-                            {head.login || head.username} ({head.type || head.role})
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openUserHeadPopovers[user.id]}
+                        className="w-full justify-between"
+                      >
+                        {user.user_head_id ? 
+                          users.find(u => u.id === user.user_head_id)?.login || "Select a user head" : 
+                          "No User Head"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                      <Command>
+                        <div className="flex items-center border-b px-3">
+                          <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                          <CommandInput placeholder="Search user head..." className="border-0 focus:ring-0" />
+                        </div>
+                        <CommandEmpty>No user head found.</CommandEmpty>
+                        <CommandGroup>
+                          <CommandItem
+                            value="none"
+                            onSelect={() => handleUserHeadChange(user, undefined)}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                !user.user_head_id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            No User Head
+                          </CommandItem>
+                          {users
+                            .filter((head) => head.id !== user.id || user.user_head_id === user.id)
+                            .map((head) => (
+                              <CommandItem
+                                key={head.id}
+                                value={head.login || head.username || ""}
+                                onSelect={() => handleUserHeadChange(user, head.id)}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    user.user_head_id === head.id ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {head.login || head.username} ({head.type || head.role})
+                              </CommandItem>
+                            ))}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </TableCell>
                 <TableCell className="text-center">
                   <div className="flex items-center justify-center">

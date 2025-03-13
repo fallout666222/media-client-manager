@@ -77,7 +77,7 @@ export const useTimeSheetStatusChanges = ({
     }
   };
 
-  const hasUnsubmittedEarlierWeek = () => {
+  const hasEarlierUnsubmittedWeeks = () => {
     if (!customWeeks.length) return false;
     
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
@@ -142,7 +142,7 @@ export const useTimeSheetStatusChanges = ({
       return;
     }
     
-    if (hasUnsubmittedEarlierWeek() && !adminOverride) {
+    if (hasEarlierUnsubmittedWeeks() && !adminOverride) {
       toast({
         title: "Earlier Weeks Not Submitted",
         description: "Please submit earlier weeks first before submitting this week",
@@ -218,7 +218,7 @@ export const useTimeSheetStatusChanges = ({
       if (hasEarlierWeeks) {
         toast({
           title: "Error",
-          description: "Please approve earlier weeks under review first",
+          description: "Please approve earlier weeks first",
           variant: "destructive"
         });
         return;

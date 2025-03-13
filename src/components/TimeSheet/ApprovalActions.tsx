@@ -53,23 +53,6 @@ export const ApprovalActions: React.FC<ApprovalActionsProps> = ({
 
   const handleApprove = () => {
     if (adminOverride) showAdminWarning();
-    
-    // If there are earlier weeks under review and this is a user head action,
-    // warn and navigate to the first week under review
-    if (isUserHead && hasEarlierWeeksUnderReview && !adminOverride) {
-      toast({
-        title: "Earlier Weeks Need Approval",
-        description: "Please approve earlier weeks under review first.",
-        variant: "destructive"
-      });
-      
-      if (onNavigateToFirstUnderReview) {
-        onNavigateToFirstUnderReview();
-      }
-      
-      return;
-    }
-    
     onApprove();
   };
 
