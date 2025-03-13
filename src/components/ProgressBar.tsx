@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Check, Info, AlertCircle, HelpCircle } from 'lucide-react';
@@ -82,16 +83,30 @@ export const StatusTimeline: React.FC<StatusTimelineProps> = ({
   // Filter weeks by year if filterYear is provided
   const filteredWeeks = filterYear ? weeks.filter(week => {
     if (week.periodFrom) {
-      const weekDate = parse(week.periodFrom, 'yyyy-MM-dd', new Date());
-      return getYear(weekDate) === filterYear;
+      try {
+        const weekDate = parse(week.periodFrom, 'yyyy-MM-dd', new Date());
+        return getYear(weekDate) === filterYear;
+      } catch (error) {
+        console.error('Error filtering week by year in timeline:', week.periodFrom, error);
+        return false;
+      }
     }
     return true;
   }) : weeks;
+  
   return <div className="w-full overflow-x-auto py-4">
       <div className="flex items-center w-full min-w-min px-4">
-        {filteredWeeks.map((weekData, index) => <React.Fragment key={weekData.week}>
-            <StatusCell weekData={weekData} onSelect={onSelectWeek} isSelected={selectedWeek?.week === weekData.week} isFirst={index === 0} isLast={index === filteredWeeks.length - 1} className="flex-1" />
-          </React.Fragment>)}
+        {filteredWeeks.map((weekData, index) => (
+            <StatusCell 
+              key={weekData.week}
+              weekData={weekData} 
+              onSelect={onSelectWeek} 
+              isSelected={selectedWeek?.week === weekData.week} 
+              isFirst={index === 0} 
+              isLast={index === filteredWeeks.length - 1} 
+              className="flex-1" 
+            />
+          ))}
       </div>
     </div>;
 };
