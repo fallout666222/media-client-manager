@@ -62,8 +62,13 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode; userId?: st
           applyTheme(userTheme);
           
           // Set language
-          const userLanguage = (data.language as Language) || 'en';
-          setLanguageState(userLanguage);
+          if (data.language === 'en' || data.language === 'ru') {
+            const userLanguage = data.language as Language;
+            setLanguageState(userLanguage);
+          } else {
+            // Default to English if invalid language value
+            setLanguageState('en');
+          }
         }
       } catch (error) {
         console.error('Error loading user settings:', error);

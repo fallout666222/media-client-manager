@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { RotateCcw, Settings2 } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 
 interface TimeSheetHeaderProps {
   userRole: string;
@@ -64,13 +64,6 @@ export const TimeSheetHeader = ({
             Go to First Unconfirmed/Revision Week
           </Button>
         )}
-        <Button
-          variant={showSettings ? "active" : "outline"}
-          onClick={onToggleSettings}
-        >
-          <Settings2 className="h-4 w-4 mr-2" />
-          Settings
-        </Button>
       </div>
     </div>
   );
