@@ -24,6 +24,7 @@ interface WeekPickerProps {
   status?: TimeSheetStatus;
   filterYear: number | null;
   setFilterYear: (year: number | null) => void;
+  onProgressBarWeekSelect?: (weekId: string) => void;
 }
 
 export const WeekPicker = ({ 
@@ -36,7 +37,8 @@ export const WeekPicker = ({
   viewedUserId,
   status,
   filterYear,
-  setFilterYear
+  setFilterYear,
+  onProgressBarWeekSelect
 }: WeekPickerProps) => {
   const [availableWeeks, setAvailableWeeks] = useState<CustomWeek[]>([]);
   const [loading, setLoading] = useState(true);
@@ -162,8 +164,13 @@ export const WeekPicker = ({
       }
       
       onWeekHoursChange(matchingWeek.hours);
+
+      // Update progress bar selection when current date changes
+      if (onProgressBarWeekSelect) {
+        onProgressBarWeekSelect(matchingWeek.id);
+      }
     }
-  }, [currentDate, filteredWeeks]);
+  }, [currentDate, filteredWeeks, onProgressBarWeekSelect]);
 
   const currentWeek = getCurrentWeek();
   const effectiveWeekId = currentWeekId || currentWeek?.id || filteredWeeks[0]?.id;
@@ -186,6 +193,11 @@ export const WeekPicker = ({
       }
       
       setCurrentWeekId(currentWeek.id);
+
+      // Update progress bar selection when current week changes
+      if (onProgressBarWeekSelect) {
+        onProgressBarWeekSelect(currentWeek.id);
+      }
     }
   }, [currentWeek?.id]);
 
@@ -210,6 +222,11 @@ export const WeekPicker = ({
       
       onWeekHoursChange(selectedWeek.hours);
       setCurrentWeekId(weekId);
+
+      // Update progress bar selection when selecting custom week
+      if (onProgressBarWeekSelect) {
+        onProgressBarWeekSelect(weekId);
+      }
     }
   };
 
@@ -238,6 +255,11 @@ export const WeekPicker = ({
     
     onWeekHoursChange(newWeek.hours);
     setCurrentWeekId(newWeek.id);
+
+    // Update progress bar selection when navigating with arrows
+    if (onProgressBarWeekSelect) {
+      onProgressBarWeekSelect(newWeek.id);
+    }
   };
 
   const formatWeekLabel = (week: CustomWeek) => {
