@@ -23,6 +23,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getUsers, getDepartments, updateUser } from "@/integrations/supabase/database";
 import SearchBar from "@/components/SearchBar";
+import { TeamMemberSelector } from "@/components/TeamMemberSelector";
 
 interface UserManagerAssignmentProps {
   onUpdateUserManager: (username: string, managerId: string | undefined) => void;
@@ -254,6 +255,17 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
     setCurrentPage(1);
   };
 
+  const findUserById = (id: string | undefined): User | undefined => {
+    if (!id) return undefined;
+    return users.find(u => u.id === id);
+  };
+
+  const adminUser: User = {
+    id: "admin",
+    username: "Admin",
+    role: "admin"
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto p-4 pt-16 text-center">
@@ -339,26 +351,14 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
                   </Select>
                 </TableCell>
                 <TableCell>
-                  <Select
-                    value={user.user_head_id || "none"}
-                    onValueChange={(value) => {
-                      handleUserHeadChange(user, value === "none" ? undefined : value);
+                  <TeamMemberSelector
+                    currentUser={adminUser}
+                    users={users.filter((head) => head.id !== user.id || user.user_head_id === user.id)}
+                    onUserSelect={(selectedUser) => {
+                      handleUserHeadChange(user, selectedUser.id === "none" ? undefined : selectedUser.id);
                     }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select a user head" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No User Head</SelectItem>
-                      {users
-                        .filter((head) => head.id !== user.id || user.user_head_id === user.id)
-                        .map((head) => (
-                          <SelectItem key={head.id} value={head.id}>
-                            {head.login || head.username} ({head.type || head.role})
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                    selectedUser={findUserById(user.user_head_id) || { id: "none", username: "No User Head" }}
+                  />
                 </TableCell>
                 <TableCell className="text-center">
                   <div className="flex items-center justify-center">
