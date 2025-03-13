@@ -27,6 +27,9 @@ const UserRow: React.FC<UserRowProps> = ({
   onUserHeadChange,
   onHiddenChange
 }) => {
+  // Ensure we have a valid user head or use a fallback
+  const userHead = findUserById(user.user_head_id) || { id: "none", username: "No User Head" };
+  
   return (
     <TableRow key={user.id}>
       <TableCell className="font-medium">{user.login || user.username}</TableCell>
@@ -58,7 +61,7 @@ const UserRow: React.FC<UserRowProps> = ({
           onUserSelect={(selectedUser) => {
             onUserHeadChange(user, selectedUser.id === "none" ? undefined : selectedUser.id);
           }}
-          selectedUser={findUserById(user.user_head_id) || { id: "none", username: "No User Head" }}
+          selectedUser={userHead}
         />
       </TableCell>
       <TableCell className="text-center">

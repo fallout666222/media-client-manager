@@ -41,17 +41,20 @@ export function TeamMemberSelector({
   const getTeamMembers = () => {
     let teamMembers = [];
     
+    // Ensure users is an array before filtering
+    const usersArray = Array.isArray(users) ? users : [];
+    
     if (currentUser.role === "admin") {
       // Admin can see all users
-      teamMembers = users;
+      teamMembers = usersArray;
     } else if (currentUser.role === "manager") {
       // Manager can see themselves and their team members (users who have this manager set as their manager)
-      teamMembers = users.filter(
+      teamMembers = usersArray.filter(
         (user) => user.managerId === currentUser.id || user.id === currentUser.id
       );
     } else {
       // Regular users can see themselves and users who have them set as User Head
-      teamMembers = users.filter(
+      teamMembers = usersArray.filter(
         (user) => user.id === currentUser.id || user.user_head_id === currentUser.id
       );
     }
@@ -69,8 +72,8 @@ export function TeamMemberSelector({
   // Filter the team members based on search value
   const filteredTeamMembers = searchValue 
     ? teamMembers.filter(user => 
-        (user.username || "").toLowerCase().includes(searchValue.toLowerCase()) ||
-        (user.login || "").toLowerCase().includes(searchValue.toLowerCase())
+        ((user.username || "") + "").toLowerCase().includes(searchValue.toLowerCase()) ||
+        ((user.login || "") + "").toLowerCase().includes(searchValue.toLowerCase())
       )
     : teamMembers;
   
@@ -87,7 +90,7 @@ export function TeamMemberSelector({
           className="w-full justify-between"
           disabled={isDisabled}
         >
-          {selectedUser.username || selectedUser.login || placeholder}
+          {selectedUser?.username || selectedUser?.login || placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -112,7 +115,7 @@ export function TeamMemberSelector({
                 <Check
                   className={cn(
                     "mr-2 h-4 w-4",
-                    selectedUser.id === user.id ? "opacity-100" : "opacity-0"
+                    selectedUser?.id === user.id ? "opacity-100" : "opacity-0"
                   )}
                 />
                 {user.username || user.login} {user.id === currentUser.id ? "(myself)" : ""}
