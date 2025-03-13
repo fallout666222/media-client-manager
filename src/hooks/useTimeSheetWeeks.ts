@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { format, parse, isBefore, isSameDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -59,6 +58,22 @@ export const useTimeSheetWeeks = ({
   };
 
   const findFirstUnsubmittedWeek = () => {
+    // First check if all weeks in weekStatuses are either 'accepted' or 'under-review'
+    // If so, there are no unsubmitted weeks
+    let hasUnsubmittedWeek = false;
+    
+    if (Object.keys(weekStatuses).length > 0) {
+      hasUnsubmittedWeek = Object.values(weekStatuses).some(
+        status => status === 'unconfirmed' || status === 'needs-revision'
+      );
+      
+      if (!hasUnsubmittedWeek) {
+        console.log("All custom weeks are either accepted or under review");
+        // Return null explicitly as all weeks are submitted or under review
+        return null;
+      }
+    }
+    
     if (customWeeks.length > 0) {
       let userFirstWeekDate: Date | null = null;
       
@@ -125,8 +140,8 @@ export const useTimeSheetWeeks = ({
     }
     
     // Only check default weeks if not in admin override mode
-    // and ensure null is returned if no unconfirmed week is found
-    if (!adminOverride) {
+    // and IF there are no custom weeks defined (changed this condition)
+    if (!adminOverride && customWeeks.length === 0) {
       const userWeeks = getUserWeeks();
       for (const week of userWeeks) {
         const weekKey = week.startDate;
