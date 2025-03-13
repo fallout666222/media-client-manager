@@ -28,7 +28,6 @@ import { parse, isBefore } from 'date-fns';
 
 // Initialize QueryClient
 const queryClient = new QueryClient();
-
 function NavButton({
   to,
   children
@@ -44,7 +43,6 @@ function NavButton({
       </Button>
     </Link>;
 }
-
 function AppContent() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,7 +53,6 @@ function AppContent() {
   const {
     toast
   } = useToast();
-
   useEffect(() => {
     const loadUserSession = () => {
       try {
@@ -76,7 +73,6 @@ function AppContent() {
     };
     loadUserSession();
   }, []);
-
   useEffect(() => {
     if (user) {
       fetchInitialData();
@@ -84,7 +80,6 @@ function AppContent() {
       setLoading(false);
     }
   }, [user]);
-
   const handleLogin = async (userData: any) => {
     try {
       console.log('Login received user data:', userData);
@@ -131,7 +126,6 @@ function AppContent() {
       setLoading(false);
     }
   };
-
   const fetchInitialData = async () => {
     try {
       setLoading(true);
@@ -170,7 +164,6 @@ function AppContent() {
       setLoading(false);
     }
   };
-
   const handleCreateUser = async (userData: any) => {
     try {
       toast({
@@ -187,7 +180,6 @@ function AppContent() {
       });
     }
   };
-
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('userSession');
@@ -197,7 +189,6 @@ function AppContent() {
       description: "You have been successfully logged out"
     });
   };
-
   const handleSetFirstWeek = (username: string, date: string, weekId?: string) => {
     setUsers(prevUsers => prevUsers.map(u => u.username === username ? {
       ...u,
@@ -216,7 +207,6 @@ function AppContent() {
       description: `First week set for ${username}: ${date}`
     });
   };
-
   const handleUpdateUserManager = (username: string, managerId: string | undefined) => {
     setUsers(prevUsers => prevUsers.map(u => u.username === username ? {
       ...u,
@@ -229,7 +219,6 @@ function AppContent() {
       } : null);
     }
   };
-
   const handleUpdateUserDepartment = (username: string, departmentId: string | undefined) => {
     setUsers(prevUsers => prevUsers.map(u => u.username === username ? {
       ...u,
@@ -242,7 +231,6 @@ function AppContent() {
       } : null);
     }
   };
-
   const handleToggleUserHidden = (username: string, hidden: boolean) => {
     setUsers(prevUsers => prevUsers.map(u => u.username === username ? {
       ...u,
@@ -255,7 +243,6 @@ function AppContent() {
       } : null);
     }
   };
-
   const handleAddClient = (clientData: Omit<Client, "id">) => {
     const newId = `${clients.length + 1}`;
     const newClient: Client = {
@@ -264,14 +251,12 @@ function AppContent() {
     };
     setClients(prevClients => [...prevClients, newClient]);
   };
-
   const handleUpdateClient = (id: string, clientData: Partial<Client>) => {
     setClients(prevClients => prevClients.map(client => client.id === id ? {
       ...client,
       ...clientData
     } : client));
   };
-
   const handleDeleteClient = (id: string) => {
     const clientToDelete = clients.find(client => client.id === id);
     if (clientToDelete?.isDefault) {
@@ -302,7 +287,6 @@ function AppContent() {
     }));
     setClients(prevClients => prevClients.filter(client => client.id !== id));
   };
-
   const handleAddDepartment = (departmentData: any) => {
     const newId = `${departments.length + 1}`;
     const newDepartment = {
@@ -311,7 +295,6 @@ function AppContent() {
     };
     setDepartments(prevDepartments => [...prevDepartments, newDepartment]);
   };
-
   const handleDeleteDepartment = (id: string) => {
     const usersInDepartment = users.filter(u => u.departmentId === id);
     if (usersInDepartment.length > 0) {
@@ -328,21 +311,16 @@ function AppContent() {
       description: "Department has been removed"
     });
   };
-
   const getVisibleUsers = () => {
     return users.filter(u => !u.hidden);
   };
-
   const getVisibleClients = () => {
     return clients.filter(c => !c.hidden).map(c => c.name);
   };
-
   const isUserHead = user && users.some(u => u.user_head_id === user.id) || false;
-
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
-
   return <>
       {user && <div className="fixed top-4 right-4 z-50 flex items-center gap-2 flex-wrap justify-end">
           <span className="text-sm text-gray-600">
@@ -398,9 +376,7 @@ function AppContent() {
       <Routes>
         <Route path="/" element={user ? <div className="container mx-auto p-4 pt-16">
                 {user.role === 'admin' || user.firstWeek || user.firstCustomWeekId ? <>
-                    {customWeeks.length > 0 && <div className="mb-8">
-                        <UserProgressBar userId={user.id} customWeeks={customWeeks} firstWeek={user.firstWeek || ''} userRole={user.role} />
-                      </div>}
+                    {customWeeks.length > 0}
                     <TimeSheet userRole={user.role} firstWeek={user.firstWeek || (user.role === 'admin' ? '2024-01-01' : '')} currentUser={user} users={users} clients={clients} />
                   </> : <div className="text-center p-8">
                     <h2 className="text-xl font-semibold mb-4">
@@ -434,7 +410,6 @@ function AppContent() {
       </Routes>
     </>;
 }
-
 function UserProgressBar({
   userId,
   customWeeks,
@@ -449,34 +424,28 @@ function UserProgressBar({
   const [weeks, setWeeks] = useState<any[]>([]);
   const [selectedWeek, setSelectedWeek] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     const fetchWeekStatuses = async () => {
       if (!userId || customWeeks.length === 0) {
         setLoading(false);
         return;
       }
-      
       try {
         setLoading(true);
-        
         let allAvailableWeeks = [...customWeeks];
-        
         if (userRole !== 'admin' && firstWeek) {
           const firstWeekDate = parse(firstWeek, 'yyyy-MM-dd', new Date());
-          
           allAvailableWeeks = allAvailableWeeks.filter(week => {
             const weekStartDate = parse(week.period_from, 'yyyy-MM-dd', new Date());
             return !isBefore(weekStartDate, firstWeekDate);
           });
         }
-        
-        const { data: weekStatuses } = await db.getWeekStatusesChronological(userId);
+        const {
+          data: weekStatuses
+        } = await db.getWeekStatusesChronological(userId);
         let formattedWeeks = [];
-        
         if (weekStatuses && weekStatuses.length > 0) {
           const existingStatusMap = new Map();
-          
           weekStatuses.forEach(statusData => {
             if (statusData.week) {
               existingStatusMap.set(statusData.week.id, {
@@ -485,7 +454,6 @@ function UserProgressBar({
               });
             }
           });
-          
           formattedWeeks = allAvailableWeeks.map(week => {
             const existingStatus = existingStatusMap.get(week.id);
             return existingStatus || {
@@ -493,7 +461,6 @@ function UserProgressBar({
               status: 'Unconfirmed' as 'accepted' | 'under revision' | 'under review' | 'Unconfirmed'
             };
           });
-          
           formattedWeeks.sort((a, b) => {
             const weekA = allAvailableWeeks.find(w => w.name === a.week);
             const weekB = allAvailableWeeks.find(w => w.name === b.week);
@@ -505,7 +472,6 @@ function UserProgressBar({
             week: week.name,
             status: 'Unconfirmed' as 'accepted' | 'under revision' | 'under review' | 'Unconfirmed'
           }));
-          
           formattedWeeks.sort((a, b) => {
             const weekA = allAvailableWeeks.find(w => w.name === a.week);
             const weekB = allAvailableWeeks.find(w => w.name === b.week);
@@ -513,7 +479,6 @@ function UserProgressBar({
             return new Date(weekA.period_from).getTime() - new Date(weekB.period_from).getTime();
           });
         }
-        
         setWeeks(formattedWeeks);
         setSelectedWeek(formattedWeeks[0] || null);
       } catch (error) {
@@ -522,33 +487,22 @@ function UserProgressBar({
         setLoading(false);
       }
     };
-    
     fetchWeekStatuses();
   }, [userId, customWeeks, firstWeek, userRole]);
-
   const handleSelectWeek = (weekData: any) => {
     setSelectedWeek(weekData);
   };
-
   if (loading) {
     return <div className="flex justify-center items-center h-12">Loading progress...</div>;
   }
-
   if (weeks.length === 0) {
     return null;
   }
-
   return <div className="w-full max-w-3xl mx-auto">
-      <StatusTimeline 
-        weeks={weeks}
-        selectedWeek={selectedWeek}
-        onSelectWeek={handleSelectWeek}
-        filterYear={null}
-      />
+      <StatusTimeline weeks={weeks} selectedWeek={selectedWeek} onSelectWeek={handleSelectWeek} filterYear={null} />
       <WeekDetails weekData={selectedWeek} />
     </div>;
 }
-
 export function App() {
   return <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -560,5 +514,4 @@ export function App() {
       </TooltipProvider>
     </QueryClientProvider>;
 }
-
 export default App;

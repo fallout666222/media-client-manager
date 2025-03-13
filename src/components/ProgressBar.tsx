@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Check, Info, AlertCircle, HelpCircle } from 'lucide-react';
@@ -93,20 +92,9 @@ export const StatusTimeline: React.FC<StatusTimelineProps> = ({
     }
     return true;
   }) : weeks;
-  
   return <div className="w-full overflow-x-auto py-4">
       <div className="flex items-center w-full min-w-min px-4">
-        {filteredWeeks.map((weekData, index) => (
-            <StatusCell 
-              key={weekData.week}
-              weekData={weekData} 
-              onSelect={onSelectWeek} 
-              isSelected={selectedWeek?.week === weekData.week} 
-              isFirst={index === 0} 
-              isLast={index === filteredWeeks.length - 1} 
-              className="flex-1" 
-            />
-          ))}
+        {filteredWeeks.map((weekData, index) => <StatusCell key={weekData.week} weekData={weekData} onSelect={onSelectWeek} isSelected={selectedWeek?.week === weekData.week} isFirst={index === 0} isLast={index === filteredWeeks.length - 1} className="flex-1" />)}
       </div>
     </div>;
 };
@@ -142,18 +130,5 @@ export const WeekDetails: React.FC<WeekDetailsProps> = ({
         </CardHeader>
       </Card>;
   }
-
-  return (
-    <Card className="w-full">
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2">
-          {getStatusIcon(weekData.status)}
-          {weekData.week}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p>Status: {getStatusText(weekData.status)}</p>
-      </CardContent>
-    </Card>
-  );
+  return;
 };
