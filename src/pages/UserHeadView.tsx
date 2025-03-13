@@ -1,9 +1,15 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Send, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import TimeSheet from "./TimeSheet";
 import { User, TimeSheetStatus } from '@/types/timesheet';
 import { 
@@ -16,8 +22,8 @@ import {
   getWeekHours
 } from '@/integrations/supabase/database';
 import { useQuery } from '@tanstack/react-query';
+import SearchBar from '@/components/SearchBar';
 import { format, parse, isBefore } from 'date-fns';
-import { TeamMemberSelector } from '@/components/TeamMemberSelector';
 
 interface UserHeadViewProps {
   currentUser: User;
@@ -26,6 +32,7 @@ interface UserHeadViewProps {
 
 const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => {
   const [selectedTeamMember, setSelectedTeamMember] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const [firstUnconfirmedWeek, setFirstUnconfirmedWeek] = useState<any>(null);
   const [weekStatuses, setWeekStatuses] = useState<any[]>([]);
   const [firstUnderReviewWeek, setFirstUnderReviewWeek] = useState<any>(null);
@@ -45,23 +52,20 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
     user.user_head_id === currentUser.id && !user.hidden
   );
 
-  const handleTeamMemberSelect = async (user: User) => {
-    // Set selected team member first
-    setSelectedTeamMember(user.id);
-    
-    try {
-      // Fetch data sequentially to ensure correct order of operations
-      await fetchFirstUnconfirmedWeek(user.id);
-      const statusData = await fetchWeekStatuses(user.id);
-      await findFirstUnderReviewWeek(user.id, statusData);
-    } catch (error) {
-      console.error('Error processing team member selection:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load team member data",
-        variant: "destructive"
-      });
-    }
+  const filteredTeamMembers = teamMembers.filter(user => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      (user.login || '').toLowerCase().includes(searchLower) ||
+      (user.name || '').toLowerCase().includes(searchLower) ||
+      (user.type || '').toLowerCase().includes(searchLower)
+    );
+  });
+
+  const handleTeamMemberSelect = (userId: string) => {
+    setSelectedTeamMember(userId);
+    fetchFirstUnconfirmedWeek(userId);
+    fetchWeekStatuses(userId);
+    findFirstUnderReviewWeek(userId);
   };
 
   const fetchFirstUnconfirmedWeek = async (userId: string) => {
@@ -75,11 +79,8 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
           description: `${week.name} needs attention`,
         });
       }
-      
-      return week;
     } catch (error) {
       console.error('Error fetching first unconfirmed week:', error);
-      return null;
     }
   };
 
@@ -88,36 +89,28 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       const { data } = await getWeekStatuses(userId);
       if (data) {
         setWeekStatuses(data);
-        return data;
+        findFirstUnderReviewWeek(userId, data);
       }
-      return [];
     } catch (error) {
       console.error('Error fetching week statuses:', error);
-      return [];
     }
   };
 
   const findFirstUnderReviewWeek = async (userId: string, statusData?: any[]) => {
     try {
-      // Make sure we have valid array data to work with
-      let dataToUse = Array.isArray(statusData) ? statusData : weekStatuses;
-      
-      // If we don't have valid data yet, try to fetch it
-      if (!Array.isArray(dataToUse) || dataToUse.length === 0) {
-        console.log('No status data available, fetching fresh data');
+      const data = statusData || weekStatuses;
+      if (!data || data.length === 0) {
         const { data: freshData } = await getWeekStatuses(userId);
-        
-        if (!Array.isArray(freshData) || freshData.length === 0) {
-          console.log('No week statuses found for user:', userId);
+        if (!freshData || freshData.length === 0) {
           setFirstUnderReviewWeek(null);
           return;
         }
         
-        dataToUse = freshData;
+        findFirstUnderReviewWeek(userId, freshData);
+        return;
       }
       
-      // Now we can safely sort the data
-      const sortedWeeks = [...dataToUse].sort((a, b) => {
+      const sortedWeeks = [...data].sort((a, b) => {
         if (!a.week || !b.week) return 0;
         
         const dateA = new Date(a.week.period_from);
@@ -170,6 +163,23 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       });
     }
   };
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setSelectedTeamMember(null);
+    setFirstUnconfirmedWeek(null);
+    setWeekStatuses([]);
+  };
+
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load team members",
+        variant: "destructive"
+      });
+    }
+  }, [error, toast]);
 
   const checkForEarlierWeeksUnderReview = (weekId: string) => {
     if (!weekStatuses.length) return false;
@@ -247,7 +257,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
         });
         
         await fetchWeekStatuses(userId);
-        await findFirstUnderReviewWeek(userId);
+        findFirstUnderReviewWeek(userId);
         navigateToFirstUnderReviewWeek();
         return;
       }
@@ -263,11 +273,11 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
           description: "Timesheet has been approved",
         });
         
-        const newStatusData = await fetchWeekStatuses(userId);
+        fetchWeekStatuses(userId);
         
         if (selectedTeamMember) {
-          await fetchFirstUnconfirmedWeek(selectedTeamMember);
-          await findFirstUnderReviewWeek(selectedTeamMember, newStatusData);
+          fetchFirstUnconfirmedWeek(selectedTeamMember);
+          findFirstUnderReviewWeek(selectedTeamMember);
         }
         
         setForceRefresh(prev => prev + 1);
@@ -295,11 +305,11 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
           description: "Timesheet has been rejected and needs revision",
         });
         
-        const newStatusData = await fetchWeekStatuses(userId);
+        fetchWeekStatuses(userId);
         
         if (selectedTeamMember) {
-          await fetchFirstUnconfirmedWeek(selectedTeamMember);
-          await findFirstUnderReviewWeek(selectedTeamMember, newStatusData);
+          fetchFirstUnconfirmedWeek(selectedTeamMember);
+          findFirstUnderReviewWeek(selectedTeamMember);
         }
         
         setForceRefresh(prev => prev + 1);
@@ -377,8 +387,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       first_custom_week_id: teamMember.first_custom_week_id,
       deletion_mark: teamMember.deletion_mark,
       hidden: teamMember.hidden,
-      user_head_id: teamMember.user_head_id,
-      managerId: teamMember.user_head_id
+      user_head_id: teamMember.user_head_id
     };
     
     const initialWeekId = firstUnderReviewWeek ? 
@@ -460,10 +469,12 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
         </Link>
       </div>
 
-      {teamMembers.length === 0 ? (
+      {filteredTeamMembers.length === 0 ? (
         <div className="p-4 border rounded-lg bg-gray-50">
           <p className="text-center text-gray-500">
-            You don't have any team members assigned to you as User Head
+            {teamMembers.length === 0 ? 
+              "You don't have any team members assigned to you as User Head" : 
+              "No team members match your search criteria"}
           </p>
         </div>
       ) : (
@@ -471,14 +482,25 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
           <div className="mb-8">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
               <h2 className="text-lg font-medium">Select Team Member</h2>
+              <SearchBar 
+                value={searchTerm} 
+                onChange={handleSearchChange} 
+                placeholder="Search team members..." 
+                className="max-w-xs"
+              />
             </div>
-            <TeamMemberSelector
-              currentUser={currentUser}
-              users={teamMembers}
-              onUserSelect={handleTeamMemberSelect}
-              selectedUser={users.find(u => u.id === selectedTeamMember) || currentUser}
-              placeholder="Select team member"
-            />
+            <Select onValueChange={handleTeamMemberSelect}>
+              <SelectTrigger className="w-[250px]">
+                <SelectValue placeholder="Select team member" />
+              </SelectTrigger>
+              <SelectContent>
+                {filteredTeamMembers.map((member) => (
+                  <SelectItem key={member.id} value={member.id}>
+                    {member.login}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
