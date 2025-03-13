@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { format, parse, isSameDay } from 'date-fns';
 import { TimeSheetStatus, User, Client } from '@/types/timesheet';
@@ -111,7 +110,17 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
   const [customWeeks, setCustomWeeks] = useState<any[]>([]);
   const [viewedUser, setViewedUser] = useState<User>(impersonatedUser || currentUser);
   const viewedUserId = viewedUser.id;
-  const [filterYear, setFilterYear] = useState<number | null>(null);
+  
+  const [filterYear, setFilterYear] = useState<number | null>(() => {
+    if (viewedUserId) {
+      const savedYearFilter = localStorage.getItem(`selectedYearFilter_${viewedUserId}`);
+      if (savedYearFilter) {
+        console.log(`Initializing year filter ${savedYearFilter} from localStorage for user ${viewedUserId}`);
+        return parseInt(savedYearFilter);
+      }
+    }
+    return null;
+  });
   
   const [currentDate, setCurrentDate] = useState<Date>(() => {
     if (initialWeekId) return new Date();
