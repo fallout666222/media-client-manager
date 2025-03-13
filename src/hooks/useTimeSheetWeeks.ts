@@ -101,9 +101,16 @@ export const useTimeSheetWeeks = ({
           }
         });
         
+        // Debug logging to see what weeks and statuses we're checking
+        console.log("Available weeks to check:", userWeeks.map(w => 
+          `${w.name} (${w.period_from}) - Status: ${weekStatuses[w.period_from] || 'undefined'}`
+        ));
+        
         for (const week of userWeeks) {
           const weekKey = week.period_from;
           const weekStatus = weekStatuses[weekKey];
+          
+          console.log(`Checking week ${week.name} (${weekKey}): Status = ${weekStatus || 'undefined'}`);
           
           // Check for both 'unconfirmed' and 'needs-revision' status
           if (weekStatus === 'unconfirmed' || weekStatus === 'needs-revision') {
@@ -156,7 +163,16 @@ export const useTimeSheetWeeks = ({
   };
 
   const handleReturnToFirstUnsubmittedWeek = () => {
+    console.log("Executing handleReturnToFirstUnsubmittedWeek");
+    
+    // Debug what statuses we have in the weekStatuses object
+    console.log("Available weekStatuses:", Object.entries(weekStatuses).map(([key, value]) => 
+      `${key}: ${value}`
+    ));
+    
     const firstUnsubmitted = findFirstUnsubmittedWeek();
+    console.log("Result from findFirstUnsubmittedWeek:", firstUnsubmitted);
+    
     if (firstUnsubmitted) {
       if (firstUnsubmitted.weekData) {
         console.log(`Setting current custom week to: ${firstUnsubmitted.weekData.name}`);
