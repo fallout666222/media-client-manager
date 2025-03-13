@@ -105,16 +105,32 @@ export const useTimeSheetWeeks = ({
         console.log("Available weeks to check:", userWeeks.map(w => 
           `${w.name} (${w.period_from}) - Status: ${weekStatuses[w.period_from] || 'undefined'}`
         ));
-        
+
+        // First look for needs-revision weeks as they should be prioritized
         for (const week of userWeeks) {
           const weekKey = week.period_from;
           const weekStatus = weekStatuses[weekKey];
           
-          console.log(`Checking week ${week.name} (${weekKey}): Status = ${weekStatus || 'undefined'}`);
+          console.log(`First pass - checking week ${week.name} (${weekKey}): Status = ${weekStatus || 'undefined'}`);
           
-          // Check for both 'unconfirmed' and 'needs-revision' status
-          if (weekStatus === 'unconfirmed' || weekStatus === 'needs-revision') {
-            console.log(`Found first unsubmitted/needs revision week: ${week.name} (${week.period_from}), status: ${weekStatus}`);
+          if (weekStatus === 'needs-revision') {
+            console.log(`Found first needs-revision week: ${week.name} (${week.period_from}), status: ${weekStatus}`);
+            return {
+              date: parse(week.period_from, 'yyyy-MM-dd', new Date()),
+              weekData: week
+            };
+          }
+        }
+        
+        // Then look for unconfirmed weeks
+        for (const week of userWeeks) {
+          const weekKey = week.period_from;
+          const weekStatus = weekStatuses[weekKey];
+          
+          console.log(`Second pass - checking week ${week.name} (${weekKey}): Status = ${weekStatus || 'undefined'}`);
+          
+          if (weekStatus === 'unconfirmed') {
+            console.log(`Found first unconfirmed week: ${week.name} (${week.period_from}), status: ${weekStatus}`);
             return {
               date: parse(week.period_from, 'yyyy-MM-dd', new Date()),
               weekData: week
@@ -192,7 +208,7 @@ export const useTimeSheetWeeks = ({
       }
       
       toast({
-        title: "Navigated to First Unconfirmed Week",
+        title: "Navigated to First Unconfirmed/Needs Revision Week",
         description: `Showing week of ${format(firstUnsubmitted.date, 'MMM d, yyyy')}`,
       });
     } else {
