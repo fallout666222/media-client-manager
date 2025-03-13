@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -193,6 +194,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
     const currentWeekDate = new Date(currentWeek.week.period_from);
     console.log("Current week date:", format(currentWeekDate, 'yyyy-MM-dd'));
     
+    // Only consider weeks with 'under-review' status, ignore 'needs-revision' status
     const earlierWeeksUnderReview = weekStatuses.filter(status => {
       if (!status.week || !status.status) return false;
       
