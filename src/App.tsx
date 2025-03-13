@@ -25,6 +25,8 @@ import { UserCircle } from "lucide-react";
 import { AdfsCallback } from "./pages/AuthCallbacks";
 import { StatusTimeline, WeekDetails, WeekData } from "./components/ProgressBar";
 
+const queryClient = new QueryClient();
+
 function NavButton({
   to,
   children
