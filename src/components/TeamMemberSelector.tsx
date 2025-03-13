@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +22,7 @@ interface TeamMemberSelectorProps {
   users: User[];
   onUserSelect: (user: User) => void;
   selectedUser: User;
+  placeholder?: string;
 }
 
 export function TeamMemberSelector({
@@ -29,8 +30,10 @@ export function TeamMemberSelector({
   users,
   onUserSelect,
   selectedUser,
+  placeholder = "Select team member"
 }: TeamMemberSelectorProps) {
   const [open, setOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Filter team members based on user role and user head status
   const getTeamMembers = () => {
@@ -50,10 +53,25 @@ export function TeamMemberSelector({
     }
   };
 
+  // Get initial team members
   const teamMembers = getTeamMembers();
+  
+  // Filter team members by search term
+  const filteredTeamMembers = searchTerm 
+    ? teamMembers.filter(member => 
+        (member.username?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+        (member.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+        (member.login?.toLowerCase() || "").includes(searchTerm.toLowerCase())
+      )
+    : teamMembers;
   
   // Disable the dropdown if there's only one team member (themselves)
   const isDisabled = teamMembers.length === 1;
+
+  // Handle search input change
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -65,16 +83,23 @@ export function TeamMemberSelector({
           className="w-full justify-between md:w-[250px]"
           disabled={isDisabled}
         >
-          {selectedUser.username}
+          {selectedUser?.username || placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0 md:w-[250px]">
         <Command>
-          <CommandInput placeholder="Search team member..." />
+          <div className="flex items-center px-3 border-b">
+            <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+            <CommandInput 
+              placeholder="Search team member..." 
+              className="h-9 w-full border-0 outline-none focus:ring-0 px-0"
+              onValueChange={handleSearchChange}
+            />
+          </div>
           <CommandEmpty>No team member found.</CommandEmpty>
           <CommandGroup>
-            {teamMembers.map((user) => (
+            {filteredTeamMembers.map((user) => (
               <CommandItem
                 key={user.id}
                 value={user.username}
@@ -86,7 +111,7 @@ export function TeamMemberSelector({
                 <Check
                   className={cn(
                     "mr-2 h-4 w-4",
-                    selectedUser.id === user.id ? "opacity-100" : "opacity-0"
+                    selectedUser?.id === user.id ? "opacity-100" : "opacity-0"
                   )}
                 />
                 {user.username} {user.id === currentUser.id ? "(myself)" : ""}

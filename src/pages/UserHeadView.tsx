@@ -3,13 +3,6 @@ import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Send, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import TimeSheet from "./TimeSheet";
 import { User, TimeSheetStatus } from '@/types/timesheet';
 import { 
@@ -22,8 +15,8 @@ import {
   getWeekHours
 } from '@/integrations/supabase/database';
 import { useQuery } from '@tanstack/react-query';
-import SearchBar from '@/components/SearchBar';
 import { format, parse, isBefore } from 'date-fns';
+import { TeamMemberSelector } from '@/components/TeamMemberSelector';
 
 interface UserHeadViewProps {
   currentUser: User;
@@ -32,7 +25,6 @@ interface UserHeadViewProps {
 
 const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => {
   const [selectedTeamMember, setSelectedTeamMember] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
   const [firstUnconfirmedWeek, setFirstUnconfirmedWeek] = useState<any>(null);
   const [weekStatuses, setWeekStatuses] = useState<any[]>([]);
   const [firstUnderReviewWeek, setFirstUnderReviewWeek] = useState<any>(null);
@@ -52,20 +44,11 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
     user.user_head_id === currentUser.id && !user.hidden
   );
 
-  const filteredTeamMembers = teamMembers.filter(user => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      (user.login || '').toLowerCase().includes(searchLower) ||
-      (user.name || '').toLowerCase().includes(searchLower) ||
-      (user.type || '').toLowerCase().includes(searchLower)
-    );
-  });
-
-  const handleTeamMemberSelect = (userId: string) => {
-    setSelectedTeamMember(userId);
-    fetchFirstUnconfirmedWeek(userId);
-    fetchWeekStatuses(userId);
-    findFirstUnderReviewWeek(userId);
+  const handleTeamMemberSelect = (user: User) => {
+    setSelectedTeamMember(user.id);
+    fetchFirstUnconfirmedWeek(user.id);
+    fetchWeekStatuses(user.id);
+    findFirstUnderReviewWeek(user.id);
   };
 
   const fetchFirstUnconfirmedWeek = async (userId: string) => {
@@ -163,23 +146,6 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       });
     }
   };
-
-  const handleSearchChange = (value: string) => {
-    setSearchTerm(value);
-    setSelectedTeamMember(null);
-    setFirstUnconfirmedWeek(null);
-    setWeekStatuses([]);
-  };
-
-  useEffect(() => {
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load team members",
-        variant: "destructive"
-      });
-    }
-  }, [error, toast]);
 
   const checkForEarlierWeeksUnderReview = (weekId: string) => {
     if (!weekStatuses.length) return false;
@@ -387,7 +353,8 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       first_custom_week_id: teamMember.first_custom_week_id,
       deletion_mark: teamMember.deletion_mark,
       hidden: teamMember.hidden,
-      user_head_id: teamMember.user_head_id
+      user_head_id: teamMember.user_head_id,
+      managerId: teamMember.managerId
     };
     
     const initialWeekId = firstUnderReviewWeek ? 
@@ -469,12 +436,10 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
         </Link>
       </div>
 
-      {filteredTeamMembers.length === 0 ? (
+      {teamMembers.length === 0 ? (
         <div className="p-4 border rounded-lg bg-gray-50">
           <p className="text-center text-gray-500">
-            {teamMembers.length === 0 ? 
-              "You don't have any team members assigned to you as User Head" : 
-              "No team members match your search criteria"}
+            You don't have any team members assigned to you as User Head
           </p>
         </div>
       ) : (
@@ -482,25 +447,14 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
           <div className="mb-8">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
               <h2 className="text-lg font-medium">Select Team Member</h2>
-              <SearchBar 
-                value={searchTerm} 
-                onChange={handleSearchChange} 
-                placeholder="Search team members..." 
-                className="max-w-xs"
-              />
             </div>
-            <Select onValueChange={handleTeamMemberSelect}>
-              <SelectTrigger className="w-[250px]">
-                <SelectValue placeholder="Select team member" />
-              </SelectTrigger>
-              <SelectContent>
-                {filteredTeamMembers.map((member) => (
-                  <SelectItem key={member.id} value={member.id}>
-                    {member.login}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <TeamMemberSelector
+              currentUser={currentUser}
+              users={teamMembers}
+              onUserSelect={handleTeamMemberSelect}
+              selectedUser={users.find(u => u.id === selectedTeamMember) || currentUser}
+              placeholder="Select team member"
+            />
           </div>
 
           <div>
