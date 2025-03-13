@@ -354,7 +354,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       deletion_mark: teamMember.deletion_mark,
       hidden: teamMember.hidden,
       user_head_id: teamMember.user_head_id,
-      managerId: teamMember.managerId
+      managerId: teamMember.manager_id
     };
     
     const initialWeekId = firstUnderReviewWeek ? 
