@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -44,11 +45,23 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
     user.user_head_id === currentUser.id && !user.hidden
   );
 
-  const handleTeamMemberSelect = (user: User) => {
+  const handleTeamMemberSelect = async (user: User) => {
+    // Set selected team member first
     setSelectedTeamMember(user.id);
-    fetchFirstUnconfirmedWeek(user.id);
-    fetchWeekStatuses(user.id);
-    findFirstUnderReviewWeek(user.id);
+    
+    try {
+      // Fetch data sequentially to ensure correct order of operations
+      await fetchFirstUnconfirmedWeek(user.id);
+      const statusData = await fetchWeekStatuses(user.id);
+      await findFirstUnderReviewWeek(user.id, statusData);
+    } catch (error) {
+      console.error('Error processing team member selection:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load team member data",
+        variant: "destructive"
+      });
+    }
   };
 
   const fetchFirstUnconfirmedWeek = async (userId: string) => {
@@ -62,8 +75,11 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
           description: `${week.name} needs attention`,
         });
       }
+      
+      return week;
     } catch (error) {
       console.error('Error fetching first unconfirmed week:', error);
+      return null;
     }
   };
 
@@ -72,29 +88,36 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       const { data } = await getWeekStatuses(userId);
       if (data) {
         setWeekStatuses(data);
-        findFirstUnderReviewWeek(userId, data);
+        return data;
       }
+      return [];
     } catch (error) {
       console.error('Error fetching week statuses:', error);
+      return [];
     }
   };
 
   const findFirstUnderReviewWeek = async (userId: string, statusData?: any[]) => {
     try {
-      const data = statusData || weekStatuses;
+      // Make sure we have valid array data to work with
+      let dataToUse = Array.isArray(statusData) ? statusData : weekStatuses;
       
-      if (!data || data.length === 0) {
+      // If we don't have valid data yet, try to fetch it
+      if (!Array.isArray(dataToUse) || dataToUse.length === 0) {
+        console.log('No status data available, fetching fresh data');
         const { data: freshData } = await getWeekStatuses(userId);
-        if (!freshData || freshData.length === 0) {
+        
+        if (!Array.isArray(freshData) || freshData.length === 0) {
+          console.log('No week statuses found for user:', userId);
           setFirstUnderReviewWeek(null);
           return;
         }
         
-        findFirstUnderReviewWeek(userId, freshData);
-        return;
+        dataToUse = freshData;
       }
       
-      const sortedWeeks = [...data].sort((a, b) => {
+      // Now we can safely sort the data
+      const sortedWeeks = [...dataToUse].sort((a, b) => {
         if (!a.week || !b.week) return 0;
         
         const dateA = new Date(a.week.period_from);
@@ -224,7 +247,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
         });
         
         await fetchWeekStatuses(userId);
-        findFirstUnderReviewWeek(userId);
+        await findFirstUnderReviewWeek(userId);
         navigateToFirstUnderReviewWeek();
         return;
       }
@@ -240,11 +263,11 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
           description: "Timesheet has been approved",
         });
         
-        fetchWeekStatuses(userId);
+        const newStatusData = await fetchWeekStatuses(userId);
         
         if (selectedTeamMember) {
-          fetchFirstUnconfirmedWeek(selectedTeamMember);
-          findFirstUnderReviewWeek(selectedTeamMember);
+          await fetchFirstUnconfirmedWeek(selectedTeamMember);
+          await findFirstUnderReviewWeek(selectedTeamMember, newStatusData);
         }
         
         setForceRefresh(prev => prev + 1);
@@ -272,11 +295,11 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
           description: "Timesheet has been rejected and needs revision",
         });
         
-        fetchWeekStatuses(userId);
+        const newStatusData = await fetchWeekStatuses(userId);
         
         if (selectedTeamMember) {
-          fetchFirstUnconfirmedWeek(selectedTeamMember);
-          findFirstUnderReviewWeek(selectedTeamMember);
+          await fetchFirstUnconfirmedWeek(selectedTeamMember);
+          await findFirstUnderReviewWeek(selectedTeamMember, newStatusData);
         }
         
         setForceRefresh(prev => prev + 1);
