@@ -43,7 +43,10 @@ export const TimeSheetHeader = ({
       of: "of",
       weekPercentage: "Week Percentage",
       goToFirstWeek: "Go to First Unconfirmed/Revision Week",
-      unknown: "Unknown"
+      unknown: "Unknown",
+      weeklyProgress: "Weekly Progress",
+      filterByYear: "Filter by year",
+      settings: "Settings"
     },
     ru: {
       timesheet: "Табель",
@@ -53,18 +56,41 @@ export const TimeSheetHeader = ({
       of: "из",
       weekPercentage: "Процент недели",
       goToFirstWeek: "Перейти к первой неподтвержденной неделе",
-      unknown: "Неизвестно"
+      unknown: "Неизвестно",
+      weeklyProgress: "Прогресс по неделям",
+      filterByYear: "Фильтровать по году",
+      settings: "Настройки"
     }
   };
   
   const t = translations[language];
+  
+  // Map status to translated version
+  const getTranslatedStatus = (status: string) => {
+    const statusMap = {
+      en: {
+        'unconfirmed': 'unconfirmed',
+        'under-review': 'under review',
+        'needs-revision': 'needs revision',
+        'accepted': 'accepted'
+      },
+      ru: {
+        'unconfirmed': 'не подтверждено',
+        'under-review': 'на проверке',
+        'needs-revision': 'требует доработки',
+        'accepted': 'принято'
+      }
+    };
+    
+    return statusMap[language][status as keyof typeof statusMap['en']] || status.replace('-', ' ');
+  };
   
   return (
     <div className="flex items-center justify-between">
       <div>
         <h1 className="text-2xl font-bold">{t.timesheet}</h1>
         <p className="text-sm text-muted-foreground">
-          {t.status}: <span className="font-medium capitalize">{status.replace('-', ' ')}</span>
+          {t.status}: <span className="font-medium capitalize">{getTranslatedStatus(status)}</span>
         </p>
         <p className="text-sm text-muted-foreground">
           {t.loggedInAs}: <span className="font-medium capitalize">{userRole || t.unknown}</span>

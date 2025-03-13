@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -25,6 +24,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import SearchBar from '@/components/SearchBar';
 import { format, parse, isBefore } from 'date-fns';
+import { useSettings } from '@/contexts/SettingsContext';
 
 interface UserHeadViewProps {
   currentUser: User;
@@ -39,6 +39,68 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
   const [firstUnderReviewWeek, setFirstUnderReviewWeek] = useState<any>(null);
   const [forceRefresh, setForceRefresh] = useState<number>(0);
   const { toast } = useToast();
+  const { language } = useSettings();
+
+  const translations = {
+    en: {
+      userHeadView: "Team Timesheets (User Head View)",
+      loggedInAs: "Logged in as",
+      back: "Back to Dashboard",
+      selectTeamMember: "Select Team Member",
+      searchTeamMembers: "Search team members...",
+      noTeamMembers: "You don't have any team members assigned to you as User Head",
+      noMatchingTeamMembers: "No team members match your search criteria",
+      selectToView: "Select a team member to view their timesheet",
+      timesheetFor: "Timesheet for",
+      userNotFound: "User not found",
+      noFirstWeek: "This user does not have a first week set",
+      firstWeekNeeding: "First Week Needing Attention",
+      week: "Week",
+      submitForReview: "Submit for Review",
+      weekSettings: "Week Settings",
+      cannotApprove: "Cannot Approve",
+      earlierWeeksFirst: "Earlier weeks must be approved first. Navigating to the first week under review.",
+      timesheetApproved: "Timesheet Approved",
+      timesheetApprovedDesc: "Timesheet has been approved",
+      timesheetRejected: "Timesheet Rejected",
+      timesheetRejectedDesc: "Timesheet has been rejected and needs revision",
+      timesheetSubmitted: "Timesheet Submitted",
+      timesheetSubmittedDesc: "Timesheet has been submitted for review",
+      error: "Error",
+      errorFetchingTeamMembers: "Failed to load team members",
+      loadingTeamMembers: "Loading team members...",
+    },
+    ru: {
+      userHeadView: "Табели команды (Просмотр руководителя)",
+      loggedInAs: "Вы вошли как",
+      back: "Вернуться на дашборд",
+      selectTeamMember: "Выберите члена команды",
+      searchTeamMembers: "Поиск членов команды...",
+      noTeamMembers: "У вас нет сотрудников, назначенных вам как руководителю",
+      noMatchingTeamMembers: "Нет членов команды, соответствующих критериям поиска",
+      selectToView: "Выберите члена команды для просмотра его табеля",
+      timesheetFor: "Табель для",
+      userNotFound: "Пользователь не найден",
+      noFirstWeek: "У этого пользователя не установлена первая неделя",
+      firstWeekNeeding: "Первая неделя, требующая внимания",
+      week: "Неделя",
+      submitForReview: "Отправить на проверку",
+      weekSettings: "Настройки недели",
+      cannotApprove: "Невозможно утвердить",
+      earlierWeeksFirst: "Сначала должны быть утверждены более ранние недели. Переход к первой неделе на проверке.",
+      timesheetApproved: "Табель утвержден",
+      timesheetApprovedDesc: "Табель был утвержден",
+      timesheetRejected: "Табель отклонен",
+      timesheetRejectedDesc: "Табель был отклонен и требует доработки",
+      timesheetSubmitted: "Табель отправлен",
+      timesheetSubmittedDesc: "Табель был отправлен на проверку",
+      error: "Ошибка",
+      errorFetchingTeamMembers: "Не удалось загрузить членов команды",
+      loadingTeamMembers: "Загрузка членов команды...",
+    }
+  };
+
+  const t = translations[language];
 
   const { data: users = [], isLoading, error } = useQuery({
     queryKey: ['users'],
@@ -76,7 +138,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       
       if (week) {
         toast({
-          title: "First Unconfirmed Week Found",
+          title: t.firstWeekNeeding,
           description: `${week.name} needs attention`,
         });
       }
@@ -144,8 +206,8 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
         fetchWeekStatuses(selectedTeamMember);
         
         toast({
-          title: "Navigated to First Week Under Review",
-          description: `Week: ${firstUnderReviewWeek.week?.name}`,
+          title: language === 'en' ? "Navigated to First Week Under Review" : "Переход к первой неделе на проверке",
+          description: language === 'en' ? `Week: ${firstUnderReviewWeek.week?.name}` : `Неделя: ${firstUnderReviewWeek.week?.name}`,
         });
         
         const timeSheetContainer = document.getElementById('timesheet-container');
@@ -158,8 +220,8 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       }
     } else {
       toast({
-        title: "No Weeks Under Review",
-        description: "There are no weeks currently under review.",
+        title: language === 'en' ? "No Weeks Under Review" : "Нет недель на проверке",
+        description: language === 'en' ? "There are no weeks currently under review." : "В настоящее время нет недель на проверке.",
         variant: "destructive"
       });
     }
@@ -175,12 +237,12 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
   useEffect(() => {
     if (error) {
       toast({
-        title: "Error",
-        description: "Failed to load team members",
+        title: t.error,
+        description: t.errorFetchingTeamMembers,
         variant: "destructive"
       });
     }
-  }, [error, toast]);
+  }, [error, toast, t]);
 
   const checkForEarlierWeeksUnderReview = (weekId: string) => {
     if (!weekStatuses.length) return false;
@@ -224,8 +286,8 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
         await updateWeekStatus(userId, weekId, underReviewStatus.id);
         
         toast({
-          title: "Timesheet Submitted",
-          description: "Timesheet has been submitted for review",
+          title: t.timesheetSubmitted,
+          description: t.timesheetSubmittedDesc,
         });
         
         fetchWeekStatuses(userId);
@@ -240,8 +302,8 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
     } catch (error) {
       // console.error('Error submitting timesheet:', error);
       toast({
-        title: "Error",
-        description: "Failed to submit timesheet",
+        title: t.error,
+        description: language === 'en' ? "Failed to submit timesheet" : "Не удалось отправить табель",
         variant: "destructive"
       });
     }
@@ -253,8 +315,8 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       
       if (hasEarlierWeeks) {
         toast({
-          title: "Cannot Approve",
-          description: "Earlier weeks must be approved first. Navigating to the first week under review.",
+          title: t.cannotApprove,
+          description: t.earlierWeeksFirst,
           variant: "destructive"
         });
         
@@ -271,8 +333,8 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
         await updateWeekStatus(userId, weekId, acceptedStatus.id);
         
         toast({
-          title: "Timesheet Approved",
-          description: "Timesheet has been approved",
+          title: t.timesheetApproved,
+          description: t.timesheetApprovedDesc,
         });
         
         fetchWeekStatuses(userId);
@@ -287,8 +349,8 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
     } catch (error) {
       // console.error('Error approving timesheet:', error);
       toast({
-        title: "Error",
-        description: "Failed to approve timesheet",
+        title: t.error,
+        description: language === 'en' ? "Failed to approve timesheet" : "Не удалось утвердить табель",
         variant: "destructive"
       });
     }
@@ -303,8 +365,8 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
         await updateWeekStatus(userId, weekId, needsRevisionStatus.id);
         
         toast({
-          title: "Timesheet Rejected",
-          description: "Timesheet has been rejected and needs revision",
+          title: t.timesheetRejected,
+          description: t.timesheetRejectedDesc,
         });
         
         fetchWeekStatuses(userId);
@@ -319,8 +381,8 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
     } catch (error) {
       // console.error('Error rejecting timesheet:', error);
       toast({
-        title: "Error",
-        description: "Failed to reject timesheet",
+        title: t.error,
+        description: language === 'en' ? "Failed to reject timesheet" : "Не удалось отклонить табель",
         variant: "destructive"
       });
     }
@@ -332,14 +394,14 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       await updateHours(userId, weekId, client, mediaType, hours);
       
       toast({
-        title: "Hours Updated",
-        description: "Time entry has been updated successfully",
+        title: language === 'en' ? "Hours Updated" : "Часы обновлены",
+        description: language === 'en' ? "Time entry has been updated successfully" : "Запись времени ��спешно обновлена",
       });
     } catch (error) {
       // console.error('Error updating hours:', error);
       toast({
-        title: "Error",
-        description: "Failed to update time entry",
+        title: t.error,
+        description: language === 'en' ? "Failed to update time entry" : "Не удалось обновить запись времени",
         variant: "destructive"
       });
     }
@@ -355,7 +417,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       return (
         <div className="p-4 border rounded-lg bg-gray-50">
           <p className="text-center text-gray-500">
-            User not found
+            {t.userNotFound}
           </p>
         </div>
       );
@@ -365,7 +427,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       return (
         <div className="p-4 border rounded-lg bg-gray-50">
           <p className="text-center text-gray-500">
-            This user does not have a first week set
+            {t.noFirstWeek}
           </p>
         </div>
       );
@@ -404,15 +466,15 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
         <div className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           {firstUnconfirmedWeek && (
             <div className="p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded">
-              <h3 className="font-medium">First Week Needing Attention</h3>
-              <p>Week: {firstUnconfirmedWeek.name} ({format(new Date(firstUnconfirmedWeek.period_from), 'MMM d')} - {format(new Date(firstUnconfirmedWeek.period_to), 'MMM d, yyyy')})</p>
+              <h3 className="font-medium">{t.firstWeekNeeding}</h3>
+              <p>{t.week}: {firstUnconfirmedWeek.name} ({format(new Date(firstUnconfirmedWeek.period_from), 'MMM d')} - {format(new Date(firstUnconfirmedWeek.period_to), 'MMM d, yyyy')})</p>
               <div className="mt-2 flex gap-2">
                 <Button 
                   size="sm" 
                   onClick={() => handleSubmitForReview(teamMember.id, firstUnconfirmedWeek.id)}
                 >
                   <Send className="h-4 w-4 mr-2" />
-                  Submit for Review
+                  {t.submitForReview}
                 </Button>
               </div>
             </div>
@@ -443,7 +505,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
   if (isLoading) {
     return (
       <div className="container mx-auto p-4 pt-16 text-center">
-        <p>Loading team members...</p>
+        <p>{t.loadingTeamMembers}</p>
       </div>
     );
   }
@@ -451,11 +513,11 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
   return (
     <div className="container mx-auto p-4 pt-16">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Team Timesheets (User Head View)</h1>
+        <h1 className="text-2xl font-bold">{t.userHeadView}</h1>
         <Link to="/">
           <Button variant="outline" size="sm" className="flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
-            Back to Dashboard
+            {t.back}
           </Button>
         </Link>
       </div>
@@ -464,25 +526,25 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
         <div className="p-4 border rounded-lg bg-gray-50">
           <p className="text-center text-gray-500">
             {teamMembers.length === 0 ? 
-              "You don't have any team members assigned to you as User Head" : 
-              "No team members match your search criteria"}
+              t.noTeamMembers : 
+              t.noMatchingTeamMembers}
           </p>
         </div>
       ) : (
         <>
           <div className="mb-8">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-              <h2 className="text-lg font-medium">Select Team Member</h2>
+              <h2 className="text-lg font-medium">{t.selectTeamMember}</h2>
               <SearchBar 
                 value={searchTerm} 
                 onChange={handleSearchChange} 
-                placeholder="Search team members..." 
+                placeholder={t.searchTeamMembers} 
                 className="max-w-xs"
               />
             </div>
             <Select onValueChange={handleTeamMemberSelect}>
               <SelectTrigger className="w-[250px]">
-                <SelectValue placeholder="Select team member" />
+                <SelectValue placeholder={t.selectTeamMember} />
               </SelectTrigger>
               <SelectContent>
                 {filteredTeamMembers.map((member) => (
@@ -498,12 +560,12 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
             {selectedTeamMember ? (
               <>
                 <h2 className="text-lg font-medium mb-4">
-                  Timesheet for {users.find(u => u.id === selectedTeamMember)?.login}
+                  {t.timesheetFor} {users.find(u => u.id === selectedTeamMember)?.login}
                 </h2>
                 {renderTeamMemberTimesheet()}
               </>
             ) : (
-              <p>Select a team member to view their timesheet.</p>
+              <p>{t.selectToView}</p>
             )}
           </div>
         </>

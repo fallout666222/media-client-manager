@@ -5,6 +5,7 @@ import { Check, Info, AlertCircle, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { parse, format, isWithinInterval, getYear } from 'date-fns';
+import { useSettings } from '@/contexts/SettingsContext';
 
 // ------------------- Type Definitions -------------------
 
@@ -47,6 +48,7 @@ export const StatusCell: React.FC<StatusCellProps> = ({
   isLast = false,
   className
 }) => {
+  const { language } = useSettings();
   const statusColor = getStatusColor(weekData.status);
   const getBorderRadius = () => {
     if (isFirst) return 'rounded-l-md';
@@ -56,11 +58,11 @@ export const StatusCell: React.FC<StatusCellProps> = ({
   return <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <button onClick={() => onSelect(weekData)} className={cn("h-12 transition-all duration-200 shadow-sm", statusColor, getBorderRadius(), isSelected && "ring-2 ring-offset-2 ring-black dark:ring-white relative z-10", className)} aria-label={`${weekData.week}: ${weekData.status}`} />
+          <button onClick={() => onSelect(weekData)} className={cn("h-12 transition-all duration-200 shadow-sm", statusColor, getBorderRadius(), isSelected && "ring-2 ring-offset-2 ring-black dark:ring-white relative z-10", className)} aria-label={`${weekData.week}: ${getStatusText(weekData.status, language)}`} />
         </TooltipTrigger>
         <TooltipContent>
           <p>{weekData.week}</p>
-          <p className="font-medium">{getStatusText(weekData.status)}</p>
+          <p className="font-medium">{getStatusText(weekData.status, language)}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>;
@@ -80,6 +82,8 @@ export const StatusTimeline: React.FC<StatusTimelineProps> = ({
   onSelectWeek,
   filterYear = null
 }) => {
+  const { language } = useSettings();
+  
   // Filter weeks by year if filterYear is provided
   const filteredWeeks = filterYear ? weeks.filter(week => {
     if (week.periodFrom) {
@@ -87,7 +91,7 @@ export const StatusTimeline: React.FC<StatusTimelineProps> = ({
         const weekDate = parse(week.periodFrom, 'yyyy-MM-dd', new Date());
         return getYear(weekDate) === filterYear;
       } catch (error) {
-        console.error('Error filtering week by year in timeline:', week.periodFrom, error);
+        // console.error('Error filtering week by year in timeline:', week.periodFrom, error);
         return false;
       }
     }
@@ -118,8 +122,27 @@ const getStatusIcon = (status: string) => {
       return <HelpCircle className="h-5 w-5 text-status-unconfirmed" />;
   }
 };
-const getStatusText = (status: string) => {
-  return status.charAt(0).toUpperCase() + status.slice(1);
+
+const getStatusText = (status: string, language = 'en') => {
+  const translations = {
+    en: {
+      'accepted': 'Accepted',
+      'under revision': 'Under Revision',
+      'under review': 'Under Review',
+      'unconfirmed': 'Unconfirmed',
+      'needs-revision': 'Needs Revision'
+    },
+    ru: {
+      'accepted': 'Принято',
+      'under revision': 'На доработке',
+      'under review': 'На проверке',
+      'unconfirmed': 'Не подтверждено',
+      'needs-revision': 'Требует доработки'
+    }
+  };
+  
+  const statusKey = status.toLowerCase();
+  return translations[language][statusKey] || status.charAt(0).toUpperCase() + status.slice(1);
 };
 
 export const WeekDetails: React.FC<WeekDetailsProps> = ({ weekData }) => {
