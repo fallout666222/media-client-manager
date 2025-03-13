@@ -1,8 +1,7 @@
-
 import { useState } from 'react';
 import { TimeSheetStatus, User } from '@/types/timesheet';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { getWeekStatusNames, updateWeekStatus, getWeekStatuses } from '@/integrations/supabase/database';
 
 interface UseTimeSheetStatusChangesProps {
@@ -51,7 +50,6 @@ export const useTimeSheetStatusChanges = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   
-  // Helper function to refresh week statuses
   const refreshWeekStatuses = async () => {
     try {
       const { data } = await getWeekStatuses(viewedUser.id);
@@ -79,6 +77,47 @@ export const useTimeSheetStatusChanges = ({
     }
   };
 
+  const hasEarlierUnsubmittedWeeks = () => {
+    if (!customWeeks.length) return false;
+    
+    const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
+    const currentCustomWeek = customWeeks.find(week => 
+      format(new Date(week.period_from), 'yyyy-MM-dd') === currentWeekKey
+    );
+    
+    if (!currentCustomWeek) return false;
+    
+    const sortedWeeks = [...customWeeks].sort((a, b) => {
+      try {
+        const dateA = parse(a.period_from, 'yyyy-MM-dd', new Date());
+        const dateB = parse(b.period_from, 'yyyy-MM-dd', new Date());
+        return dateA.getTime() - dateB.getTime();
+      } catch (error) {
+        console.error(`Error parsing dates during week sorting:`, error);
+        return 0;
+      }
+    });
+    
+    const currentIndex = sortedWeeks.findIndex(week => week.id === currentCustomWeek.id);
+    if (currentIndex <= 0) return false; // First week or week not found
+    
+    const userFirstWeek = customWeeks.find(week => week.id === viewedUser.firstCustomWeekId);
+    const userFirstWeekIndex = userFirstWeek ? 
+      sortedWeeks.findIndex(week => week.id === userFirstWeek.id) : 0;
+    
+    for (let i = userFirstWeekIndex; i < currentIndex; i++) {
+      const weekKey = sortedWeeks[i].period_from;
+      const weekStatus = weekStatuses[weekKey];
+      
+      if (weekKey && (weekStatus === 'unconfirmed' || weekStatus === 'needs-revision' || !weekStatus)) {
+        console.log(`Found earlier unsubmitted week: ${sortedWeeks[i].name}, status: ${weekStatus || 'unconfirmed'}`);
+        return true;
+      }
+    }
+    
+    return false;
+  };
+
   const handleSubmitForReview = async () => {
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
     const currentCustomWeek = customWeeks.find(week => 
@@ -103,17 +142,15 @@ export const useTimeSheetStatusChanges = ({
       return;
     }
     
-    // Check if there are earlier weeks that need to be submitted first
-    if (findFirstUnsubmittedWeek()) {
+    if (hasEarlierUnsubmittedWeeks() && !adminOverride) {
       toast({
-        title: "Earlier Weeks",
-        description: "Please submit earlier weeks first",
+        title: "Earlier Weeks Not Submitted",
+        description: "Please submit earlier weeks first before submitting this week",
         variant: "destructive"
       });
       return;
     }
     
-    // Check if there are enough hours logged
     const totalHours = getTotalHoursForWeek();
     const requiredHours = Math.round(weekHours * (weekPercentage / 100));
     
@@ -135,7 +172,6 @@ export const useTimeSheetStatusChanges = ({
       if (underReviewStatus && viewedUser.id) {
         await updateWeekStatus(viewedUser.id, currentCustomWeek.id, underReviewStatus.id);
         
-        // Update local state with the correct TimeSheetStatus value
         setWeekStatuses(prev => ({
           ...prev,
           [currentWeekKey]: 'under-review' as TimeSheetStatus
@@ -143,7 +179,6 @@ export const useTimeSheetStatusChanges = ({
         
         setSubmittedWeeks(prev => [...prev, currentWeekKey]);
         
-        // Fetch updated week statuses
         await refreshWeekStatuses();
         
         toast({
@@ -199,13 +234,11 @@ export const useTimeSheetStatusChanges = ({
       if (acceptedStatus && viewedUser.id) {
         await updateWeekStatus(viewedUser.id, currentCustomWeek.id, acceptedStatus.id);
         
-        // Update local state
         setWeekStatuses(prev => ({
           ...prev,
           [currentWeekKey]: 'accepted' as TimeSheetStatus
         }));
         
-        // Fetch updated week statuses
         await refreshWeekStatuses();
         
         toast({
@@ -249,7 +282,6 @@ export const useTimeSheetStatusChanges = ({
       if (needsRevisionStatus && viewedUser.id) {
         await updateWeekStatus(viewedUser.id, currentCustomWeek.id, needsRevisionStatus.id);
         
-        // Update local state with the correct TimeSheetStatus value
         setWeekStatuses(prev => ({
           ...prev,
           [currentWeekKey]: 'needs-revision' as TimeSheetStatus
@@ -257,7 +289,6 @@ export const useTimeSheetStatusChanges = ({
         
         setSubmittedWeeks(prev => prev.filter(week => week !== currentWeekKey));
         
-        // Fetch updated week statuses
         await refreshWeekStatuses();
         
         toast({
@@ -277,10 +308,70 @@ export const useTimeSheetStatusChanges = ({
     }
   };
 
+  const handleReturnToUnconfirmed = async () => {
+    const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
+    const currentCustomWeek = customWeeks.find(week => 
+      format(new Date(week.period_from), 'yyyy-MM-dd') === currentWeekKey
+    );
+    
+    if (!currentCustomWeek) {
+      toast({
+        title: "Error",
+        description: "Could not find current week data",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!adminOverride) {
+      toast({
+        title: "Access Denied",
+        description: "This action requires admin override mode",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      setIsSubmitting(true);
+      
+      const { data: statusNames } = await getWeekStatusNames();
+      const unconfirmedStatus = statusNames?.find(status => status.name === 'unconfirmed');
+      
+      if (unconfirmedStatus && viewedUser.id) {
+        await updateWeekStatus(viewedUser.id, currentCustomWeek.id, unconfirmedStatus.id);
+        
+        setWeekStatuses(prev => ({
+          ...prev,
+          [currentWeekKey]: 'unconfirmed' as TimeSheetStatus
+        }));
+        
+        setSubmittedWeeks(prev => prev.filter(week => week !== currentWeekKey));
+        
+        await refreshWeekStatuses();
+        
+        toast({
+          title: "Success",
+          description: "Week returned to unconfirmed status"
+        });
+      }
+    } catch (error) {
+      console.error('Error returning week to unconfirmed status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to return week to unconfirmed status",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return {
     handleSubmitForReview,
     handleApprove,
     handleReject,
+    handleReturnToUnconfirmed,
     isSubmitting
   };
 };

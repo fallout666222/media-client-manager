@@ -74,25 +74,32 @@ export const useTimeSheetData = ({
     const loadWeekStatuses = async () => {
       if (viewedUser.id && customWeeks.length > 0) {
         try {
+          console.log(`Loading week statuses for user ${viewedUser.id}`);
           const { data } = await getWeekStatuses(viewedUser.id);
           
           if (data && data.length > 0) {
+            console.log(`Found ${data.length} week status entries`);
             const statuses: Record<string, TimeSheetStatus> = {};
             const submitted: string[] = [];
             
             data.forEach(statusEntry => {
               if (statusEntry.week && statusEntry.status) {
                 const weekKey = statusEntry.week.period_from;
-                statuses[weekKey] = statusEntry.status.name as TimeSheetStatus;
+                const statusName = statusEntry.status.name as TimeSheetStatus;
+                statuses[weekKey] = statusName;
+                console.log(`Week ${statusEntry.week.name} (${weekKey}): Status = ${statusName}`);
                 
-                if (statusEntry.status.name === 'under-review' || statusEntry.status.name === 'accepted') {
+                if (statusName === 'under-review' || statusName === 'accepted') {
                   submitted.push(weekKey);
                 }
               }
             });
             
+            console.log("All week statuses:", statuses);
             setWeekStatuses(statuses);
             setSubmittedWeeks(submitted);
+          } else {
+            console.log("No week status data found");
           }
         } catch (error) {
           console.error('Error loading week statuses:', error);
@@ -251,6 +258,7 @@ export const useTimeSheetData = ({
   };
 
   const getCurrentWeekStatus = (weekKey: string): TimeSheetStatus => {
+    console.log(`Getting status for week ${weekKey}: ${weekStatuses[weekKey] || 'unconfirmed'}`);
     return weekStatuses[weekKey] || 'unconfirmed';
   };
 
