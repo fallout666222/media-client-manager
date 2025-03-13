@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, CheckCircle, ChevronLeft, Send, RotateCcw } from 'lucide-react';
+import { AlertCircle, CheckCircle, ChevronLeft, Send } from 'lucide-react';
 import { TimeSheetStatus } from '@/types/timesheet';
 import { useToast } from '@/hooks/use-toast';
 
@@ -12,7 +12,6 @@ interface ApprovalActionsProps {
   onSubmitForReview: () => void;
   onApprove: () => void;
   onReject: () => void;
-  onReturnToUnconfirmed?: () => void;
   disabled?: boolean;
   weekId?: string;
   adminOverride?: boolean;
@@ -28,7 +27,6 @@ export const ApprovalActions: React.FC<ApprovalActionsProps> = ({
   onSubmitForReview,
   onApprove,
   onReject,
-  onReturnToUnconfirmed,
   disabled = false,
   weekId,
   adminOverride = false,
@@ -60,13 +58,6 @@ export const ApprovalActions: React.FC<ApprovalActionsProps> = ({
   const handleReject = () => {
     if (adminOverride) showAdminWarning();
     onReject();
-  };
-
-  const handleReturnToUnconfirmed = () => {
-    if (adminOverride && onReturnToUnconfirmed) {
-      showAdminWarning();
-      onReturnToUnconfirmed();
-    }
   };
 
   const renderUserHead = () => {
@@ -142,32 +133,11 @@ export const ApprovalActions: React.FC<ApprovalActionsProps> = ({
     );
   };
 
-  const renderAdminOverrideControls = () => {
-    // Only show this control for accepted weeks in admin override mode
-    if (!adminOverride || status !== 'accepted' || !onReturnToUnconfirmed) {
-      return null;
-    }
-
-    return (
-      <Button
-        onClick={handleReturnToUnconfirmed}
-        variant="outline"
-        size="sm"
-        className="flex items-center gap-1"
-        disabled={disabled}
-      >
-        <RotateCcw className="h-4 w-4" />
-        Return to Unconfirmed
-      </Button>
-    );
-  };
-
   return (
     <div className="flex items-center gap-2">
       {renderUserHead()}
       {renderUserControls()}
       {renderManagerControls()}
-      {renderAdminOverrideControls()}
     </div>
   );
 };

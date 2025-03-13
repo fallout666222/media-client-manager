@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { TimeSheetStatus, User } from '@/types/timesheet';
 import { useTimeSheetWeeks } from './useTimeSheetWeeks';
@@ -52,6 +53,7 @@ export const useTimeSheetActions = ({
 }: UseTimeSheetActionsProps) => {
   const [currentCustomWeek, setCurrentCustomWeek] = useState<any>(null);
 
+  // Use the new breakdown hooks
   const timeSheetWeeks = useTimeSheetWeeks({
     currentUser,
     viewedUser,
@@ -103,6 +105,7 @@ export const useTimeSheetActions = ({
     getTotalHoursForWeek: timeEntryOperations.getTotalHoursForWeek,
     findFirstUnsubmittedWeek: () => {
       const result = timeSheetWeeks.findFirstUnsubmittedWeek();
+      // Ensure this function returns a string as expected
       return result ? typeof result === 'string' ? result : null : null;
     },
     checkEarlierWeeksUnderReview
@@ -113,19 +116,27 @@ export const useTimeSheetActions = ({
   });
 
   return {
+    // Week-related functions from useTimeSheetWeeks
     handleReturnToFirstUnsubmittedWeek: timeSheetWeeks.handleReturnToFirstUnsubmittedWeek,
     handleNavigateToFirstUnderReviewWeek: timeSheetWeeks.handleNavigateToFirstUnderReviewWeek,
     hasUnsubmittedEarlierWeek: timeSheetWeeks.hasUnsubmittedEarlierWeek,
     isCurrentWeekSubmitted: timeSheetWeeks.isCurrentWeekSubmitted,
     findWeekHours: timeSheetWeeks.findWeekHours,
+    
+    // Time entry operations from useTimeEntryOperations
     getTotalHoursForWeek: timeEntryOperations.getTotalHoursForWeek,
     handleTimeUpdate: timeEntryOperations.handleTimeUpdate,
+    
+    // Status change functions from useTimeSheetStatusChanges
     handleSubmitForReview: timeSheetStatusChanges.handleSubmitForReview,
     handleApprove: timeSheetStatusChanges.handleApprove,
     handleReject: timeSheetStatusChanges.handleReject,
-    handleReturnToUnconfirmed: timeSheetStatusChanges.handleReturnToUnconfirmed,
+    
+    // Preferences from useTimeSheetPreferences
     handleSaveVisibleClients: timeSheetPreferences.handleSaveVisibleClients,
     handleSaveVisibleMediaTypes: timeSheetPreferences.handleSaveVisibleMediaTypes,
+    
+    // Current custom week state management
     setCurrentCustomWeek,
     currentCustomWeek
   };

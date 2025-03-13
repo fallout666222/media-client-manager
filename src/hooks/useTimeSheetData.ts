@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parse, format, isSameDay, isBefore } from 'date-fns';
@@ -73,32 +74,25 @@ export const useTimeSheetData = ({
     const loadWeekStatuses = async () => {
       if (viewedUser.id && customWeeks.length > 0) {
         try {
-          console.log(`Loading week statuses for user ${viewedUser.id}`);
           const { data } = await getWeekStatuses(viewedUser.id);
           
           if (data && data.length > 0) {
-            console.log(`Found ${data.length} week status entries`);
             const statuses: Record<string, TimeSheetStatus> = {};
             const submitted: string[] = [];
             
             data.forEach(statusEntry => {
               if (statusEntry.week && statusEntry.status) {
                 const weekKey = statusEntry.week.period_from;
-                const statusName = statusEntry.status.name as TimeSheetStatus;
-                statuses[weekKey] = statusName;
-                console.log(`Week ${statusEntry.week.name} (${weekKey}): Status = ${statusName}`);
+                statuses[weekKey] = statusEntry.status.name as TimeSheetStatus;
                 
-                if (statusName === 'under-review' || statusName === 'accepted') {
+                if (statusEntry.status.name === 'under-review' || statusEntry.status.name === 'accepted') {
                   submitted.push(weekKey);
                 }
               }
             });
             
-            console.log("All week statuses:", statuses);
             setWeekStatuses(statuses);
             setSubmittedWeeks(submitted);
-          } else {
-            console.log("No week status data found");
           }
         } catch (error) {
           console.error('Error loading week statuses:', error);
@@ -107,7 +101,7 @@ export const useTimeSheetData = ({
     };
     
     loadWeekStatuses();
-  }, [viewedUser.id, customWeeks, currentDate]);
+  }, [viewedUser.id, customWeeks, currentDate]); // Added currentDate to refresh when dates change
 
   // Load week percentage
   useEffect(() => {
@@ -186,42 +180,45 @@ export const useTimeSheetData = ({
           
           if (customWeek) {
             weekId = customWeek.id;
-            
-            if (weekId) {
-              console.log(`Loading time entries for user ${viewedUser.id}, week ${weekId}`);
-              const { data: hourEntries } = await getWeekHours(viewedUser.id, weekId);
-              
-              if (hourEntries && hourEntries.length > 0) {
-                console.log(`Found ${hourEntries.length} time entries`);
-                const entries: Record<string, TimeSheetData> = {};
-                entries[currentWeekKey] = {};
-                
-                hourEntries.forEach(entry => {
-                  if (entry.client && entry.media_type) {
-                    if (!entries[currentWeekKey][entry.client.name]) {
-                      entries[currentWeekKey][entry.client.name] = {};
-                    }
-                    
-                    entries[currentWeekKey][entry.client.name][entry.media_type.name] = {
-                      hours: entry.hours,
-                      status: getCurrentWeekStatus(currentWeekKey)
-                    };
-                  }
-                });
-                
-                setTimeEntries(entries);
-              } else {
-                console.log('No time entries found for this week');
-                setTimeEntries({
-                  [currentWeekKey]: {}
-                });
-              }
-            }
           } else {
-            console.log('No custom week found for the current date');
-            setTimeEntries({
-              [currentWeekKey]: {}
-            });
+            const userWeeks = getUserWeeks(firstWeek);
+            const defaultWeek = userWeeks.find(w => 
+              format(parse(w.startDate, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === currentWeekKey
+            );
+            if (defaultWeek) {
+              weekId = defaultWeek.id;
+            }
+          }
+          
+          if (weekId) {
+            console.log(`Loading time entries for user ${viewedUser.id}, week ${weekId}`);
+            const { data: hourEntries } = await getWeekHours(viewedUser.id, weekId);
+            
+            if (hourEntries && hourEntries.length > 0) {
+              console.log(`Found ${hourEntries.length} time entries`);
+              const entries: Record<string, TimeSheetData> = {};
+              entries[currentWeekKey] = {};
+              
+              hourEntries.forEach(entry => {
+                if (entry.client && entry.media_type) {
+                  if (!entries[currentWeekKey][entry.client.name]) {
+                    entries[currentWeekKey][entry.client.name] = {};
+                  }
+                  
+                  entries[currentWeekKey][entry.client.name][entry.media_type.name] = {
+                    hours: entry.hours,
+                    status: getCurrentWeekStatus(currentWeekKey)
+                  };
+                }
+              });
+              
+              setTimeEntries(entries);
+            } else {
+              console.log('No time entries found for this week');
+              setTimeEntries({
+                [currentWeekKey]: {}
+              });
+            }
           }
         } catch (error) {
           console.error('Error loading timesheet data:', error);
@@ -232,8 +229,28 @@ export const useTimeSheetData = ({
     loadUserData();
   }, [viewedUser, currentDate, customWeeks]);
 
+  // Helper functions
+  const getUserWeeks = (firstWeekDate: string) => {
+    const DEFAULT_WEEKS = [
+      { id: "1", startDate: "2025-01-01", endDate: "2025-01-06", hours: 48 },
+      { id: "2", startDate: "2025-01-10", endDate: "2025-01-03", hours: 40 },
+      { id: "3", startDate: "2025-01-13", endDate: "2025-01-17", hours: 40 },
+      { id: "4", startDate: "2025-01-20", endDate: "2025-01-24", hours: 40 },
+      { id: "5", startDate: "2025-01-27", endDate: "2025-01-31", hours: 40 },
+    ];
+    
+    const parsedFirstWeek = parse(firstWeekDate, 'yyyy-MM-dd', new Date());
+    return DEFAULT_WEEKS.filter(week => {
+      const weekStartDate = parse(week.startDate, 'yyyy-MM-dd', new Date());
+      return !isBefore(weekStartDate, parsedFirstWeek);
+    }).sort((a, b) => {
+      const dateA = parse(a.startDate, 'yyyy-MM-dd', new Date());
+      const dateB = parse(b.startDate, 'yyyy-MM-dd', new Date());
+      return dateA.getTime() - dateB.getTime();
+    });
+  };
+
   const getCurrentWeekStatus = (weekKey: string): TimeSheetStatus => {
-    console.log(`Getting status for week ${weekKey}: ${weekStatuses[weekKey] || 'unconfirmed'}`);
     return weekStatuses[weekKey] || 'unconfirmed';
   };
 

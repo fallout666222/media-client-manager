@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { format, parse, isSameDay } from 'date-fns';
 import { TimeSheetStatus, User, Client } from '@/types/timesheet';
@@ -7,9 +6,7 @@ import { useTimeSheetActions } from '@/hooks/useTimeSheetActions';
 import { useToast } from '@/hooks/use-toast';
 import { getCustomWeeks } from '@/integrations/supabase/database';
 
-// Define the default media types constant
-const DEFAULT_AVAILABLE_MEDIA_TYPES = ['TV', 'Radio', 'Print', 'Digital'];
-
+// Define the context type
 interface TimeSheetContextType {
   showSettings: boolean;
   setShowSettings: React.Dispatch<React.SetStateAction<boolean>>;
@@ -37,7 +34,6 @@ interface TimeSheetContextType {
   handleSubmitForReview: () => void;
   handleApprove: () => void;
   handleReject: () => void;
-  handleReturnToUnconfirmed: () => void;
   handleSaveVisibleClients: (clients: string[]) => void;
   handleSaveVisibleMediaTypes: (types: string[]) => void;
   getTotalHoursForWeek: () => number;
@@ -63,8 +59,10 @@ interface TimeSheetContextType {
   setFilterYear: React.Dispatch<React.SetStateAction<number | null>>;
 }
 
+// Create context with a default undefined value
 const TimeSheetContext = createContext<TimeSheetContextType | undefined>(undefined);
 
+// Custom hook to use the TimeSheet context
 export const useTimeSheet = () => {
   const context = useContext(TimeSheetContext);
   if (context === undefined) {
@@ -72,6 +70,8 @@ export const useTimeSheet = () => {
   }
   return context;
 };
+
+const DEFAULT_AVAILABLE_MEDIA_TYPES = ['TV', 'Radio', 'Print', 'Digital'];
 
 interface TimeSheetProviderProps {
   userRole: 'admin' | 'user' | 'manager';
@@ -140,6 +140,7 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
   const availableClients = clients.filter(client => !client.hidden).map(client => client.name);
   const { toast } = useToast();
 
+  // Use our custom hooks
   const {
     timeEntries,
     setTimeEntries,
@@ -171,7 +172,6 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
     handleSubmitForReview,
     handleApprove,
     handleReject,
-    handleReturnToUnconfirmed,
     handleSaveVisibleClients,
     handleSaveVisibleMediaTypes,
     getTotalHoursForWeek,
@@ -257,6 +257,7 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
   }, [currentUser.firstCustomWeekId, propCustomWeeks, initialWeekId, viewedUserId]);
 
   useEffect(() => {
+    // Update viewedUser when impersonatedUser changes
     if (impersonatedUser) {
       setViewedUser(impersonatedUser);
     } else {
@@ -264,6 +265,7 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
     }
   }, [impersonatedUser, currentUser]);
 
+  // Function to handle week selection from progress bar
   const handleProgressBarWeekSelect = (weekId: string) => {
     if (!customWeeks.length) return;
     
@@ -273,6 +275,7 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
       setCurrentCustomWeek(selectedWeek);
       setWeekHours(selectedWeek.required_hours);
       
+      // Save selected week to localStorage
       if (viewedUserId) {
         localStorage.setItem(`selectedWeek_${viewedUserId}`, selectedWeek.id);
       }
@@ -287,6 +290,7 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
     setWeekHours(hours);
   };
 
+  // Get all clients and media types that have entries with hours > 0
   const clientsWithEntries = Object.entries(timeEntries[format(currentDate, 'yyyy-MM-dd')] || {})
     .filter(([_, mediaEntries]) => 
       Object.values(mediaEntries).some(entry => entry.hours && entry.hours > 0)
@@ -357,6 +361,7 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
 
   const timeUpdateHandler = async (client: string, mediaType: string, hours: number) => {
     if (onTimeUpdate && isUserHead) {
+      // Find the current weekId
       const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
       let weekId = null;
       
@@ -373,6 +378,7 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
     }
   };
 
+  // Create the context value object with all the data and functions
   const contextValue: TimeSheetContextType = {
     showSettings,
     setShowSettings,
@@ -400,7 +406,6 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
     handleSubmitForReview,
     handleApprove,
     handleReject,
-    handleReturnToUnconfirmed,
     handleSaveVisibleClients,
     handleSaveVisibleMediaTypes,
     getTotalHoursForWeek,

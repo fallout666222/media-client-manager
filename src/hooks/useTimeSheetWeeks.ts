@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { format, parse, isBefore, isSameDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -37,6 +38,26 @@ export const useTimeSheetWeeks = ({
 }: UseTimeSheetWeeksProps) => {
   const { toast } = useToast();
 
+  const getUserWeeks = () => {
+    const DEFAULT_WEEKS = [
+      { id: "1", startDate: "2025-01-01", endDate: "2025-01-06", hours: 48 },
+      { id: "2", startDate: "2025-01-10", endDate: "2025-01-03", hours: 40 },
+      { id: "3", startDate: "2025-01-13", endDate: "2025-01-17", hours: 40 },
+      { id: "4", startDate: "2025-01-20", endDate: "2025-01-24", hours: 40 },
+      { id: "5", startDate: "2025-01-27", endDate: "2025-01-31", hours: 40 },
+    ];
+    
+    const firstWeekDate = parse(firstWeek, 'yyyy-MM-dd', new Date());
+    return DEFAULT_WEEKS.filter(week => {
+      const weekStartDate = parse(week.startDate, 'yyyy-MM-dd', new Date());
+      return !isBefore(weekStartDate, firstWeekDate);
+    }).sort((a, b) => {
+      const dateA = parse(a.startDate, 'yyyy-MM-dd', new Date());
+      const dateB = parse(b.startDate, 'yyyy-MM-dd', new Date());
+      return dateA.getTime() - dateB.getTime();
+    });
+  };
+
   const findFirstUnsubmittedWeek = () => {
     if (customWeeks.length > 0) {
       let userFirstWeekDate: Date | null = null;
@@ -44,69 +65,50 @@ export const useTimeSheetWeeks = ({
       if (viewedUser.firstCustomWeekId) {
         const userFirstCustomWeek = customWeeks.find(week => week.id === viewedUser.firstCustomWeekId);
         if (userFirstCustomWeek) {
-          try {
-            userFirstWeekDate = parse(userFirstCustomWeek.period_from, 'yyyy-MM-dd', new Date());
-          } catch (error) {
-            console.error(`Error parsing date ${userFirstCustomWeek.period_from}:`, error);
-          }
+          userFirstWeekDate = parse(userFirstCustomWeek.period_from, 'yyyy-MM-dd', new Date());
         }
       } else if (viewedUser.firstWeek) {
-        try {
-          userFirstWeekDate = parse(viewedUser.firstWeek, 'yyyy-MM-dd', new Date());
-        } catch (error) {
-          console.error(`Error parsing date ${viewedUser.firstWeek}:`, error);
-        }
+        userFirstWeekDate = parse(viewedUser.firstWeek, 'yyyy-MM-dd', new Date());
       }
       
       if (userFirstWeekDate) {
-        const availableWeeks = customWeeks.filter(week => {
-          try {
-            const weekDate = parse(week.period_from, 'yyyy-MM-dd', new Date());
-            return !isBefore(weekDate, userFirstWeekDate as Date);
-          } catch (error) {
-            console.error(`Error parsing date ${week.period_from}:`, error);
-            return false;
-          }
+        const sortedWeeks = [...customWeeks].sort((a, b) => {
+          const dateA = parse(a.period_from, 'yyyy-MM-dd', new Date());
+          const dateB = parse(b.period_from, 'yyyy-MM-dd', new Date());
+          return dateA.getTime() - dateB.getTime();
         });
         
-        const sortedWeeks = [...availableWeeks].sort((a, b) => {
-          try {
-            const dateA = parse(a.period_from, 'yyyy-MM-dd', new Date());
-            const dateB = parse(b.period_from, 'yyyy-MM-dd', new Date());
-            return dateA.getTime() - dateB.getTime();
-          } catch (error) {
-            console.error(`Error parsing dates during week sorting:`, error);
-            return 0;
-          }
+        const userWeeks = sortedWeeks.filter(week => {
+          const weekDate = parse(week.period_from, 'yyyy-MM-dd', new Date());
+          return !isBefore(weekDate, userFirstWeekDate as Date);
         });
         
-        console.log("All available weeks:", sortedWeeks.map(w => 
-          `${w.name} (${w.period_from}) - Status: ${weekStatuses[w.period_from] || 'undefined'}`
-        ));
-        
-        const needsRevisionWeek = sortedWeeks.find(week => {
+        for (const week of userWeeks) {
           const weekKey = week.period_from;
-          return weekStatuses[weekKey] === 'needs-revision';
-        });
-        
-        if (needsRevisionWeek) {
-          console.log(`Found needs-revision week: ${needsRevisionWeek.name} (${needsRevisionWeek.period_from}), status: ${weekStatuses[needsRevisionWeek.period_from]}`);
-          return {
-            date: parse(needsRevisionWeek.period_from, 'yyyy-MM-dd', new Date()),
-            weekData: needsRevisionWeek
-          };
+          const weekStatus = weekStatuses[weekKey];
+          
+          // Only consider weeks that are not already submitted or under review
+          if (!submittedWeeks.includes(weekKey) && 
+              weekStatus !== 'under-review' && 
+              weekStatus !== 'accepted') {
+            console.log(`Found first unsubmitted week: ${week.name} (${week.period_from}), status: ${weekStatus || 'unconfirmed'}`);
+            return {
+              date: parse(week.period_from, 'yyyy-MM-dd', new Date()),
+              weekData: week
+            };
+          }
         }
-        
-        const unconfirmedWeek = sortedWeeks.find(week => {
-          const weekKey = week.period_from;
-          return weekStatuses[weekKey] === 'unconfirmed';
-        });
-        
-        if (unconfirmedWeek) {
-          console.log(`Found unconfirmed week: ${unconfirmedWeek.name} (${unconfirmedWeek.period_from}), status: ${weekStatuses[unconfirmedWeek.period_from]}`);
+      }
+    }
+    
+    if (!adminOverride) {
+      const userWeeks = getUserWeeks();
+      for (const week of userWeeks) {
+        const weekKey = week.startDate;
+        if (!submittedWeeks.includes(weekKey)) {
           return {
-            date: parse(unconfirmedWeek.period_from, 'yyyy-MM-dd', new Date()),
-            weekData: unconfirmedWeek
+            date: parse(weekKey, 'yyyy-MM-dd', new Date()),
+            weekData: week
           };
         }
       }
@@ -138,16 +140,9 @@ export const useTimeSheetWeeks = ({
   };
 
   const handleReturnToFirstUnsubmittedWeek = () => {
-    console.log("Executing handleReturnToFirstUnsubmittedWeek");
-    
-    console.log("Available weekStatuses:", Object.entries(weekStatuses).map(([key, value]) => 
-      `${key}: ${value}`
-    ));
-    
     const firstUnsubmitted = findFirstUnsubmittedWeek();
-    console.log("Result from findFirstUnsubmittedWeek:", firstUnsubmitted);
-    
     if (firstUnsubmitted) {
+      // First, save the week data
       if (firstUnsubmitted.weekData) {
         console.log(`Setting current custom week to: ${firstUnsubmitted.weekData.name}`);
         if ('required_hours' in firstUnsubmitted.weekData) {
@@ -157,24 +152,26 @@ export const useTimeSheetWeeks = ({
         }
       }
       
+      // Then update the current date
       console.log(`Navigating to date: ${format(firstUnsubmitted.date, 'yyyy-MM-dd')}`);
       setCurrentDate(firstUnsubmitted.date);
       
+      // Save to localStorage if needed
       if (viewedUser.id && firstUnsubmitted.weekData) {
         localStorage.setItem(`selectedWeek_${viewedUser.id}`, firstUnsubmitted.weekData.id || '');
         console.log(`Saved week ${firstUnsubmitted.weekData.id} to localStorage for user ${viewedUser.id}`);
       }
       
       toast({
-        title: "Navigated to First Unconfirmed/Needs Revision Week",
+        title: "Navigated to First Unsubmitted Week",
         description: `Showing week of ${format(firstUnsubmitted.date, 'MMM d, yyyy')}`,
       });
     } else {
       toast({
-        title: "No Unconfirmed Weeks",
+        title: "No Unsubmitted Weeks",
         description: adminOverride 
-          ? "There are no unconfirmed or needs-revision weeks in the database for this user" 
-          : "All your weeks have been submitted or are under review",
+          ? "There are no unsubmitted weeks in the database for this user" 
+          : "All your weeks have been submitted",
       });
     }
   };
@@ -210,7 +207,14 @@ export const useTimeSheetWeeks = ({
       format(parse(week.period_from, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === weekKey
     );
     
-    return selectedWeek ? selectedWeek.required_hours : 40; // Default to 40 if no custom week found
+    if (selectedWeek) {
+      return selectedWeek.required_hours;
+    } else {
+      const defaultWeek = getUserWeeks().find(w => 
+        format(parse(w.startDate, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === weekKey
+      );
+      return defaultWeek?.hours || 40;
+    }
   };
 
   const hasUnsubmittedEarlierWeek = () => {
@@ -220,24 +224,14 @@ export const useTimeSheetWeeks = ({
     if (!userFirstWeek) return false;
     
     const sortedWeeks = [...customWeeks].sort((a, b) => {
-      try {
-        const dateA = parse(a.period_from, 'yyyy-MM-dd', new Date());
-        const dateB = parse(b.period_from, 'yyyy-MM-dd', new Date());
-        return dateA.getTime() - dateB.getTime();
-      } catch (error) {
-        console.error(`Error parsing dates during week sorting:`, error);
-        return 0;
-      }
+      const dateA = parse(a.period_from, 'yyyy-MM-dd', new Date());
+      const dateB = parse(b.period_from, 'yyyy-MM-dd', new Date());
+      return dateA.getTime() - dateB.getTime();
     });
     
     const currentWeek = customWeeks.find(week => {
-      try {
-        const weekDate = parse(week.period_from, 'yyyy-MM-dd', new Date());
-        return isSameDay(weekDate, currentDate);
-      } catch (error) {
-        console.error(`Error parsing date ${week.period_from}:`, error);
-        return false;
-      }
+      const weekDate = parse(week.period_from, 'yyyy-MM-dd', new Date());
+      return isSameDay(weekDate, currentDate);
     });
     
     if (!currentWeek) return false;
@@ -250,9 +244,7 @@ export const useTimeSheetWeeks = ({
     
     for (let i = userFirstWeekIndex; i < currentIndex; i++) {
       const weekKey = sortedWeeks[i].period_from;
-      const weekStatus = weekStatuses[weekKey];
-      
-      if (weekKey && (weekStatus === 'unconfirmed' || weekStatus === 'needs-revision' || !weekStatus)) {
+      if (weekKey && !submittedWeeks.includes(weekKey)) {
         return true;
       }
     }
@@ -268,6 +260,7 @@ export const useTimeSheetWeeks = ({
   };
 
   return {
+    getUserWeeks,
     findFirstUnsubmittedWeek,
     findFirstUnderReviewWeek,
     handleReturnToFirstUnsubmittedWeek,

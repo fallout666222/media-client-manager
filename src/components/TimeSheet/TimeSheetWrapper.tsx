@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { format } from 'date-fns';
 import { User, Client, TimeSheetStatus } from '@/types/timesheet';
@@ -56,7 +57,6 @@ export const TimeSheetWrapper: React.FC<TimeSheetWrapperProps> = ({
     handleSubmitForReview,
     handleApprove,
     handleReject,
-    handleReturnToUnconfirmed,
     handleSaveVisibleClients,
     handleSaveVisibleMediaTypes,
     getTotalHoursForWeek,
@@ -78,6 +78,7 @@ export const TimeSheetWrapper: React.FC<TimeSheetWrapperProps> = ({
     setFilterYear
   } = useTimeSheet();
 
+  // Convert customWeeks and weekStatuses to WeekData format for ProgressBar
   const progressBarWeeks: WeekData[] = customWeeks.map(week => {
     const timeSheetStatus = getCurrentWeekStatus(week.period_from);
     const weekStatus = mapTimeSheetStatusToWeekStatus(timeSheetStatus);
@@ -90,6 +91,7 @@ export const TimeSheetWrapper: React.FC<TimeSheetWrapperProps> = ({
     };
   });
 
+  // Current selected week for progress bar
   const selectedProgressWeek = currentCustomWeek ? {
     week: currentCustomWeek.name,
     status: mapTimeSheetStatusToWeekStatus(getCurrentWeekStatus(currentCustomWeek.period_from)),
@@ -97,6 +99,7 @@ export const TimeSheetWrapper: React.FC<TimeSheetWrapperProps> = ({
     periodFrom: currentCustomWeek.period_from
   } : null;
 
+  // Handle week selection in the progress bar
   const handleProgressWeekSelect = (week: WeekData) => {
     if (week.weekId) {
       handleProgressBarWeekSelect(week.weekId);
@@ -127,6 +130,7 @@ export const TimeSheetWrapper: React.FC<TimeSheetWrapperProps> = ({
         showSettings={showSettings}
       />
 
+      {/* Weekly Progress Bar Section */}
       <div className="mb-6">
         <h3 className="text-lg font-medium mb-2">Weekly Progress</h3>
         <StatusTimeline 
@@ -155,7 +159,6 @@ export const TimeSheetWrapper: React.FC<TimeSheetWrapperProps> = ({
         onSubmitForReview={handleSubmitForReview}
         onApprove={handleApprove}
         onReject={handleReject}
-        onReturnToUnconfirmed={handleReturnToUnconfirmed}
         readOnly={readOnly || (!isViewingOwnTimesheet && userRole !== 'manager' && userRole !== 'admin' && !adminOverride && !isUserHead)}
         firstWeek={viewedUser.firstWeek || firstWeek}
         weekId={currentCustomWeek?.id}
