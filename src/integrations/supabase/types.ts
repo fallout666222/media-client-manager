@@ -161,6 +161,7 @@ export type Database = {
       users: {
         Row: {
           created_at: string | null
+          dark_theme: boolean | null
           deletion_mark: boolean | null
           department_id: string | null
           description: string | null
@@ -170,6 +171,7 @@ export type Database = {
           hidden: boolean | null
           id: string
           job_position: string | null
+          language: string | null
           login: string
           name: string
           password: string
@@ -178,6 +180,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          dark_theme?: boolean | null
           deletion_mark?: boolean | null
           department_id?: string | null
           description?: string | null
@@ -187,6 +190,7 @@ export type Database = {
           hidden?: boolean | null
           id?: string
           job_position?: string | null
+          language?: string | null
           login: string
           name: string
           password: string
@@ -195,6 +199,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          dark_theme?: boolean | null
           deletion_mark?: boolean | null
           department_id?: string | null
           description?: string | null
@@ -204,6 +209,7 @@ export type Database = {
           hidden?: boolean | null
           id?: string
           job_position?: string | null
+          language?: string | null
           login?: string
           name?: string
           password?: string

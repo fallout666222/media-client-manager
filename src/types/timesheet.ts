@@ -71,6 +71,10 @@ export interface User {
 
   // User Head related fields
   user_head_id?: string;
+  
+  // New fields for settings
+  dark_theme?: boolean;
+  language?: 'en' | 'ru';
 }
 
 export interface UserFormData {

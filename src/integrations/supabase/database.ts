@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 
 // Custom Weeks
@@ -34,6 +35,25 @@ export const updateUser = async (id: string, user: any) => {
 
 export const authenticateUser = async (login: string, password: string) => {
   return await supabase.from('users').select('*').eq('login', login).eq('password', password).single();
+};
+
+// New function to get user settings
+export const getUserSettings = async (userId: string) => {
+  return await supabase
+    .from('users')
+    .select('dark_theme, language')
+    .eq('id', userId)
+    .single();
+};
+
+// New function to update user settings
+export const updateUserSettings = async (userId: string, settings: { dark_theme?: boolean, language?: string }) => {
+  return await supabase
+    .from('users')
+    .update(settings)
+    .eq('id', userId)
+    .select('dark_theme, language')
+    .single();
 };
 
 export const getUserFirstUnconfirmedWeek = async (userId: string) => {

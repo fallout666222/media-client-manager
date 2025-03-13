@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,10 +15,11 @@ import UserWeekPercentage from "./pages/UserWeekPercentage";
 import ManagerView from "./pages/ManagerView";
 import ClientTree from "./pages/ClientTree";
 import MediaTypeManagement from "./pages/MediaTypeManagement";
+import SettingsPage from "./pages/Settings";
 import { useState, useEffect } from "react";
 import { User, Client } from "./types/timesheet";
 import { Button } from "./components/ui/button";
-import { LogOut, Users, Calendar, UserCog, CalendarDays, Percent, Eye, Building, ArrowLeft, TreeDeciduous, Film } from "lucide-react";
+import { LogOut, Users, Calendar, UserCog, CalendarDays, Percent, Eye, Building, ArrowLeft, TreeDeciduous, Film, Settings } from "lucide-react";
 import { useToast } from "./hooks/use-toast";
 import * as db from "./integrations/supabase/database";
 import UserHeadView from "./pages/UserHeadView";
@@ -25,6 +27,7 @@ import { UserCircle } from "lucide-react";
 import { AdfsCallback } from "./pages/AuthCallbacks";
 import { StatusTimeline, WeekDetails } from "./components/ProgressBar";
 import { parse, isBefore } from 'date-fns';
+import { SettingsProvider } from "./contexts/SettingsContext";
 
 // Initialize QueryClient
 const queryClient = new QueryClient();
@@ -111,7 +114,9 @@ function AppContent() {
           firstWeek: data.first_week,
           first_custom_week_id: data.first_custom_week_id,
           firstCustomWeekId: data.first_custom_week_id,
-          deletion_mark: data.deletion_mark
+          deletion_mark: data.deletion_mark,
+          dark_theme: data.dark_theme,
+          language: data.language
         };
         setUser(fullUserData);
         localStorage.setItem('userSession', JSON.stringify(fullUserData));
@@ -321,11 +326,16 @@ function AppContent() {
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
-  return <>
+  return (
+    <SettingsProvider userId={user?.id}>
       {user && <div className="fixed top-4 right-4 z-50 flex items-center gap-2 flex-wrap justify-end">
           <span className="text-sm text-gray-600">
             Logged in as: {user.username} ({user.role})
           </span>
+          <NavButton to="/settings">
+            <Settings className="h-4 w-4" />
+            Settings
+          </NavButton>
           {user.role === 'admin' && <>
               <NavButton to="/view-users">
                 <Users className="h-4 w-4" />
@@ -407,8 +417,10 @@ function AppContent() {
               </div> : <Navigate to="/" replace />} />
         <Route path="/media-types" element={user?.role === 'admin' ? <MediaTypeManagement /> : <Navigate to="/" replace />} />
         <Route path="/user-head-view" element={user && isUserHead ? <UserHeadView currentUser={user} clients={clients} /> : <Navigate to="/" replace />} />
+        <Route path="/settings" element={user ? <SettingsPage currentUser={user} /> : <Navigate to="/login" replace />} />
       </Routes>
-    </>;
+    </SettingsProvider>
+  );
 }
 function UserProgressBar({
   userId,
