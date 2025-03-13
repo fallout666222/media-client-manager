@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { TimeSheetStatus } from '@/types/timesheet';
 import { WeekPicker } from './WeekPicker';
 import { ApprovalActions } from './ApprovalActions';
+import { useSettings } from '@/contexts/SettingsContext';
 
 interface TimeSheetControlsProps {
   currentDate: Date;
@@ -53,6 +54,7 @@ export const TimeSheetControls: React.FC<TimeSheetControlsProps> = ({
   filterYear,
   setFilterYear
 }: TimeSheetControlsProps) => {
+  const { language } = useSettings();
   
   // Enhanced debug logging - temporarily disabled
   useEffect(() => {

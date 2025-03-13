@@ -2,6 +2,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { RotateCcw } from "lucide-react";
+import { useSettings } from '@/contexts/SettingsContext';
 
 interface TimeSheetHeaderProps {
   userRole: string;
@@ -31,23 +32,49 @@ export const TimeSheetHeader = ({
 }: TimeSheetHeaderProps) => {
   // Calculate the effective hours based on percentage
   const effectiveWeekHours = Math.round(weekHours * (weekPercentage / 100));
+  const { language } = useSettings();
+  
+  const translations = {
+    en: {
+      timesheet: "Timesheet",
+      status: "Status",
+      loggedInAs: "Logged in as",
+      remainingHours: "Remaining Hours This Week",
+      of: "of",
+      weekPercentage: "Week Percentage",
+      goToFirstWeek: "Go to First Unconfirmed/Revision Week",
+      unknown: "Unknown"
+    },
+    ru: {
+      timesheet: "Табель",
+      status: "Статус",
+      loggedInAs: "Вы вошли как",
+      remainingHours: "Оставшиеся часы на этой неделе",
+      of: "из",
+      weekPercentage: "Процент недели",
+      goToFirstWeek: "Перейти к первой неподтвержденной неделе",
+      unknown: "Неизвестно"
+    }
+  };
+  
+  const t = translations[language];
   
   return (
     <div className="flex items-center justify-between">
       <div>
-        <h1 className="text-2xl font-bold">Timesheet</h1>
+        <h1 className="text-2xl font-bold">{t.timesheet}</h1>
         <p className="text-sm text-muted-foreground">
-          Status: <span className="font-medium capitalize">{status.replace('-', ' ')}</span>
+          {t.status}: <span className="font-medium capitalize">{status.replace('-', ' ')}</span>
         </p>
         <p className="text-sm text-muted-foreground">
-          Logged in as: <span className="font-medium capitalize">{userRole || 'Unknown'}</span>
+          {t.loggedInAs}: <span className="font-medium capitalize">{userRole || t.unknown}</span>
         </p>
         <p className="text-sm text-muted-foreground">
-          Remaining Hours This Week: <span className="font-medium">{remainingHours}</span> of {effectiveWeekHours}
+          {t.remainingHours}: <span className="font-medium">{remainingHours}</span> {t.of} {effectiveWeekHours}
         </p>
         {weekPercentage !== 100 && (
           <p className="text-sm text-muted-foreground">
-            Week Percentage: <span className="font-medium">{weekPercentage}%</span>
+            {t.weekPercentage}: <span className="font-medium">{weekPercentage}%</span>
           </p>
         )}
       </div>
@@ -58,10 +85,13 @@ export const TimeSheetHeader = ({
             onClick={onReturnToFirstUnsubmittedWeek}
             className="flex items-center gap-2"
             disabled={!hasCustomWeeks}
-            title={!hasCustomWeeks ? "No custom weeks available" : "Go to the first week that needs your attention (Unconfirmed or Needs Revision)"}
+            title={!hasCustomWeeks ? 
+              language === 'en' ? "No custom weeks available" : "Нет доступных недель" 
+              : language === 'en' ? "Go to the first week that needs your attention (Unconfirmed or Needs Revision)" 
+              : "Перейти к первой неделе, требующей вашего внимания (Неподтвержденная или Требует исправления)"}
           >
             <RotateCcw className="h-4 w-4" />
-            Go to First Unconfirmed/Revision Week
+            {t.goToFirstWeek}
           </Button>
         )}
       </div>

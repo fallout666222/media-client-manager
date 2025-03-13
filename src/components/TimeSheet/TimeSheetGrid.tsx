@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { TimeEntry, TimeSheetStatus } from '@/types/timesheet';
@@ -5,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useSettings } from '@/contexts/SettingsContext';
 
 interface TimeSheetGridProps {
   clients: string[];
@@ -32,6 +34,38 @@ export const TimeSheetGrid = ({
   const isFormDisabled = readOnly || status === 'under-review' || status === 'accepted';
   const { toast } = useToast();
   const [localTimeEntries, setLocalTimeEntries] = useState<Record<string, Record<string, number>>>({});
+  const { language } = useSettings();
+  
+  const translations = {
+    en: {
+      clientCategory: "Client/Category",
+      total: "Total",
+      cannotAddHours: "Cannot Add Hours",
+      totalHoursExceed: `Total hours cannot exceed ${Math.round(weekHours * (weekPercentage / 100))} for the week (${weekPercentage}% of ${weekHours})`,
+      hoursBelow: "Hours Below Required",
+      currentTotal: "Current total",
+      isBelow: "is below the required",
+      hoursForWeek: "hours for this week",
+      noClientsMedia: "No clients or media types are selected. Please go to settings to select clients and media types.",
+      noClients: "No clients are selected. Please go to settings to select clients.",
+      noMediaTypes: "No media types are selected. Please go to settings to select media types."
+    },
+    ru: {
+      clientCategory: "Клиент/Категория",
+      total: "Всего",
+      cannotAddHours: "Невозможно добавить часы",
+      totalHoursExceed: `Общее количество часов не может превышать ${Math.round(weekHours * (weekPercentage / 100))} на неделю (${weekPercentage}% от ${weekHours})`,
+      hoursBelow: "Часы ниже требуемых",
+      currentTotal: "Текущая сумма",
+      isBelow: "ниже требуемых",
+      hoursForWeek: "часов на эту неделю",
+      noClientsMedia: "Не выбраны клиенты или типы медиа. Перейдите в настройки, чтобы выбрать клиентов и типы медиа.",
+      noClients: "Не выбраны клиенты. Перейдите в настройки, чтобы выбрать клиентов.",
+      noMediaTypes: "Не выбраны типы медиа. Перейдите в настройки, чтобы выбрать типы медиа."
+    }
+  };
+  
+  const t = translations[language];
   
   useEffect(() => {
     const initialEntries: Record<string, Record<string, number>> = {};
@@ -60,7 +94,7 @@ export const TimeSheetGrid = ({
 
   const handleInputChange = (client: string, type: string, value: string) => {
     const hours = value === '' ? 0 : parseInt(value) || 0;
-    console.log(`Input change: ${client} - ${type} - ${hours}`);
+    // console.log(`Input change: ${client} - ${type} - ${hours}`);
     
     setLocalTimeEntries(prev => {
       const updated = { ...prev };
@@ -74,18 +108,18 @@ export const TimeSheetGrid = ({
     const hours = localTimeEntries[client]?.[type] || 0;
     const currentValue = timeEntries[client]?.[type]?.hours || 0;
     
-    console.log(`Input blur: ${client} - ${type} - hours: ${hours}, currentValue: ${currentValue}`);
+    // console.log(`Input blur: ${client} - ${type} - hours: ${hours}, currentValue: ${currentValue}`);
     
     if (hours !== currentValue) {
       const currentTotal = calculateTotalHours(client, type);
       const newTotal = currentTotal + hours;
       
-      console.log(`Current total: ${currentTotal}, New total: ${newTotal}, Limit: ${effectiveWeekHours}`);
+      // console.log(`Current total: ${currentTotal}, New total: ${newTotal}, Limit: ${effectiveWeekHours}`);
       
       if (newTotal > effectiveWeekHours && !isUserHead) {
         toast({
-          title: "Cannot Add Hours",
-          description: `Total hours cannot exceed ${effectiveWeekHours} for the week (${weekPercentage}% of ${weekHours})`,
+          title: t.cannotAddHours,
+          description: t.totalHoursExceed,
           variant: "destructive"
         });
         
@@ -100,13 +134,13 @@ export const TimeSheetGrid = ({
       
       if (isUserHead && newTotal < effectiveWeekHours) {
         toast({
-          title: "Hours Below Required",
-          description: `Current total (${newTotal}) is below the required ${effectiveWeekHours} hours for this week`,
+          title: t.hoursBelow,
+          description: `${t.currentTotal} (${newTotal}) ${t.isBelow} ${effectiveWeekHours} ${t.hoursForWeek}`,
           variant: "default"
         });
       }
       
-      console.log(`Calling onTimeUpdate with ${client}, ${type}, ${hours}`);
+      // console.log(`Calling onTimeUpdate with ${client}, ${type}, ${hours}`);
       onTimeUpdate(client, type, hours);
     }
   };
@@ -117,10 +151,10 @@ export const TimeSheetGrid = ({
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
           {clients.length === 0 && mediaTypes.length === 0 
-            ? "No clients or media types are selected. Please go to settings to select clients and media types."
+            ? t.noClientsMedia
             : clients.length === 0 
-              ? "No clients are selected. Please go to settings to select clients." 
-              : "No media types are selected. Please go to settings to select media types."
+              ? t.noClients
+              : t.noMediaTypes
           }
         </AlertDescription>
       </Alert>
@@ -132,13 +166,13 @@ export const TimeSheetGrid = ({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="text-left">Client/Category</TableHead>
+            <TableHead className="text-left">{t.clientCategory}</TableHead>
             {mediaTypes.map((type) => (
               <TableHead key={type} className="text-center">
                 {type}
               </TableHead>
             ))}
-            <TableHead className="text-center">Total</TableHead>
+            <TableHead className="text-center">{t.total}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -170,7 +204,7 @@ export const TimeSheetGrid = ({
             </TableRow>
           ))}
           <TableRow className="bg-muted/20">
-            <TableCell className="font-bold">Total</TableCell>
+            <TableCell className="font-bold">{t.total}</TableCell>
             {mediaTypes.map((type) => (
               <TableCell key={`total-${type}`} className="font-bold text-center">
                 {clients.reduce((sum, client) => 
