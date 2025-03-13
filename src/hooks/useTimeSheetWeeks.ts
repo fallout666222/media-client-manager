@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { format, parse, isBefore, isSameDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -64,17 +65,30 @@ export const useTimeSheetWeeks = ({
       if (viewedUser.firstCustomWeekId) {
         const userFirstCustomWeek = customWeeks.find(week => week.id === viewedUser.firstCustomWeekId);
         if (userFirstCustomWeek) {
-          userFirstWeekDate = parse(userFirstCustomWeek.period_from, 'yyyy-MM-dd', new Date());
+          try {
+            userFirstWeekDate = parse(userFirstCustomWeek.period_from, 'yyyy-MM-dd', new Date());
+          } catch (error) {
+            console.error(`Error parsing date ${userFirstCustomWeek.period_from}:`, error);
+          }
         }
       } else if (viewedUser.firstWeek) {
-        userFirstWeekDate = parse(viewedUser.firstWeek, 'yyyy-MM-dd', new Date());
+        try {
+          userFirstWeekDate = parse(viewedUser.firstWeek, 'yyyy-MM-dd', new Date());
+        } catch (error) {
+          console.error(`Error parsing date ${viewedUser.firstWeek}:`, error);
+        }
       }
       
       if (userFirstWeekDate) {
         const sortedWeeks = [...customWeeks].sort((a, b) => {
-          const dateA = parse(a.period_from, 'yyyy-MM-dd', new Date());
-          const dateB = parse(b.period_from, 'yyyy-MM-dd', new Date());
-          return dateA.getTime() - dateB.getTime();
+          try {
+            const dateA = parse(a.period_from, 'yyyy-MM-dd', new Date());
+            const dateB = parse(b.period_from, 'yyyy-MM-dd', new Date());
+            return dateA.getTime() - dateB.getTime();
+          } catch (error) {
+            console.error(`Error parsing dates during week sorting:`, error);
+            return 0;
+          }
         });
         
         const userWeeks = sortedWeeks.filter(week => {
@@ -91,8 +105,9 @@ export const useTimeSheetWeeks = ({
           const weekKey = week.period_from;
           const weekStatus = weekStatuses[weekKey];
           
-          if (weekStatus === 'unconfirmed' || weekStatus === 'needs-revision' || !weekStatus) {
-            console.log(`Found first unsubmitted/needs revision week: ${week.name} (${week.period_from}), status: ${weekStatus || 'unconfirmed'}`);
+          // Check for both 'unconfirmed' and 'needs-revision' status
+          if (weekStatus === 'unconfirmed' || weekStatus === 'needs-revision') {
+            console.log(`Found first unsubmitted/needs revision week: ${week.name} (${week.period_from}), status: ${weekStatus}`);
             return {
               date: parse(week.period_from, 'yyyy-MM-dd', new Date()),
               weekData: week
