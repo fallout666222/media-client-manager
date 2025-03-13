@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { format, parse, isBefore, isSameDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -60,7 +59,17 @@ export const useTimeSheetWeeks = ({
       }
       
       if (userFirstWeekDate) {
-        const sortedWeeks = [...customWeeks].sort((a, b) => {
+        const availableWeeks = customWeeks.filter(week => {
+          try {
+            const weekDate = parse(week.period_from, 'yyyy-MM-dd', new Date());
+            return !isBefore(weekDate, userFirstWeekDate as Date);
+          } catch (error) {
+            console.error(`Error parsing date ${week.period_from}:`, error);
+            return false;
+          }
+        });
+        
+        const sortedWeeks = [...availableWeeks].sort((a, b) => {
           try {
             const dateA = parse(a.period_from, 'yyyy-MM-dd', new Date());
             const dateB = parse(b.period_from, 'yyyy-MM-dd', new Date());
@@ -71,51 +80,34 @@ export const useTimeSheetWeeks = ({
           }
         });
         
-        const userWeeks = sortedWeeks.filter(week => {
-          try {
-            const weekDate = parse(week.period_from, 'yyyy-MM-dd', new Date());
-            return !isBefore(weekDate, userFirstWeekDate as Date);
-          } catch (error) {
-            console.error(`Error parsing date ${week.period_from}:`, error);
-            return false;
-          }
-        });
-        
-        // Debug logging to see what weeks and statuses we're checking
-        console.log("Available weeks to check:", userWeeks.map(w => 
+        console.log("All available weeks:", sortedWeeks.map(w => 
           `${w.name} (${w.period_from}) - Status: ${weekStatuses[w.period_from] || 'undefined'}`
         ));
-
-        // First look for needs-revision weeks as they should be prioritized
-        for (const week of userWeeks) {
+        
+        const needsRevisionWeek = sortedWeeks.find(week => {
           const weekKey = week.period_from;
-          const weekStatus = weekStatuses[weekKey];
-          
-          console.log(`First pass - checking week ${week.name} (${weekKey}): Status = ${weekStatus || 'undefined'}`);
-          
-          if (weekStatus === 'needs-revision') {
-            console.log(`Found first needs-revision week: ${week.name} (${week.period_from}), status: ${weekStatus}`);
-            return {
-              date: parse(week.period_from, 'yyyy-MM-dd', new Date()),
-              weekData: week
-            };
-          }
+          return weekStatuses[weekKey] === 'needs-revision';
+        });
+        
+        if (needsRevisionWeek) {
+          console.log(`Found needs-revision week: ${needsRevisionWeek.name} (${needsRevisionWeek.period_from}), status: ${weekStatuses[needsRevisionWeek.period_from]}`);
+          return {
+            date: parse(needsRevisionWeek.period_from, 'yyyy-MM-dd', new Date()),
+            weekData: needsRevisionWeek
+          };
         }
         
-        // Then look for unconfirmed weeks
-        for (const week of userWeeks) {
+        const unconfirmedWeek = sortedWeeks.find(week => {
           const weekKey = week.period_from;
-          const weekStatus = weekStatuses[weekKey];
-          
-          console.log(`Second pass - checking week ${week.name} (${weekKey}): Status = ${weekStatus || 'undefined'}`);
-          
-          if (weekStatus === 'unconfirmed') {
-            console.log(`Found first unconfirmed week: ${week.name} (${week.period_from}), status: ${weekStatus}`);
-            return {
-              date: parse(week.period_from, 'yyyy-MM-dd', new Date()),
-              weekData: week
-            };
-          }
+          return weekStatuses[weekKey] === 'unconfirmed';
+        });
+        
+        if (unconfirmedWeek) {
+          console.log(`Found unconfirmed week: ${unconfirmedWeek.name} (${unconfirmedWeek.period_from}), status: ${weekStatuses[unconfirmedWeek.period_from]}`);
+          return {
+            date: parse(unconfirmedWeek.period_from, 'yyyy-MM-dd', new Date()),
+            weekData: unconfirmedWeek
+          };
         }
       }
     }
@@ -148,7 +140,6 @@ export const useTimeSheetWeeks = ({
   const handleReturnToFirstUnsubmittedWeek = () => {
     console.log("Executing handleReturnToFirstUnsubmittedWeek");
     
-    // Debug what statuses we have in the weekStatuses object
     console.log("Available weekStatuses:", Object.entries(weekStatuses).map(([key, value]) => 
       `${key}: ${value}`
     ));

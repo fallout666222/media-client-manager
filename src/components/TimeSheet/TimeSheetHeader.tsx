@@ -61,7 +61,7 @@ export const TimeSheetHeader = ({
             title={!hasCustomWeeks ? "No custom weeks available" : "Go to the first week that needs your attention (Unconfirmed or Needs Revision)"}
           >
             <RotateCcw className="h-4 w-4" />
-            Go to First Unconfirmed/Revision Week
+            First Unconfirmed/Revision Week
           </Button>
         )}
         <Button
