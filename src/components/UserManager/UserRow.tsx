@@ -30,6 +30,14 @@ const UserRow: React.FC<UserRowProps> = ({
   // Ensure we have a valid user head or use a fallback
   const userHead = findUserById(user.user_head_id) || { id: "none", username: "No User Head" };
   
+  // Ensure we have a valid users array for TeamMemberSelector
+  const validUsers = Array.isArray(users) ? users : [];
+  
+  // Filter users to prevent self-assignment unless already set
+  const filteredUsers = validUsers.filter(
+    (head) => head.id !== user.id || user.user_head_id === user.id
+  );
+  
   return (
     <TableRow key={user.id}>
       <TableCell className="font-medium">{user.login || user.username}</TableCell>
@@ -57,7 +65,7 @@ const UserRow: React.FC<UserRowProps> = ({
       <TableCell>
         <TeamMemberSelector
           currentUser={adminUser}
-          users={users.filter((head) => head.id !== user.id || user.user_head_id === user.id)}
+          users={filteredUsers}
           onUserSelect={(selectedUser) => {
             onUserHeadChange(user, selectedUser.id === "none" ? undefined : selectedUser.id);
           }}
