@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { User, Department } from "@/types/timesheet";
 import { Link } from "react-router-dom";
-import { ArrowLeft, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Search, ChevronsUpDown, Check } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getUsers, getDepartments, updateUser } from "@/integrations/supabase/database";
 import SearchBar from "@/components/SearchBar";
