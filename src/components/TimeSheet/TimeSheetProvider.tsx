@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { format, parse, isSameDay } from 'date-fns';
 import { TimeSheetStatus, User, Client } from '@/types/timesheet';
@@ -7,7 +6,6 @@ import { useTimeSheetActions } from '@/hooks/useTimeSheetActions';
 import { useToast } from '@/hooks/use-toast';
 import { getCustomWeeks } from '@/integrations/supabase/database';
 
-// Add the missing constant
 const DEFAULT_AVAILABLE_MEDIA_TYPES = ['TV', 'Radio', 'Print', 'Digital'];
 
 interface TimeSheetContextType {
@@ -257,6 +255,27 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
   }, [currentUser.firstCustomWeekId, propCustomWeeks, initialWeekId, viewedUserId]);
 
   useEffect(() => {
+    if (customWeeks.length > 0) {
+      const currentDateFormatted = format(currentDate, 'yyyy-MM-dd');
+      
+      const matchingWeek = customWeeks.find(week => 
+        week.period_from === currentDateFormatted
+      );
+      
+      if (matchingWeek && (!currentCustomWeek || matchingWeek.id !== currentCustomWeek.id)) {
+        console.log(`Date changed to ${currentDateFormatted}, updating current week to: ${matchingWeek.name} (${matchingWeek.id})`);
+        setCurrentCustomWeek(matchingWeek);
+        setWeekHours(matchingWeek.required_hours);
+        
+        if (viewedUserId) {
+          localStorage.setItem(`selectedWeek_${viewedUserId}`, matchingWeek.id);
+          console.log(`Saved week ${matchingWeek.id} to localStorage for user ${viewedUserId}`);
+        }
+      }
+    }
+  }, [currentDate, customWeeks, currentCustomWeek, viewedUserId]);
+
+  useEffect(() => {
     if (impersonatedUser) {
       setViewedUser(impersonatedUser);
     } else {
@@ -269,12 +288,14 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
     
     const selectedWeek = customWeeks.find(week => week.id === weekId);
     if (selectedWeek) {
+      console.log(`Progress bar week selected: ${selectedWeek.name} (${selectedWeek.id})`);
       setCurrentDate(parse(selectedWeek.period_from, 'yyyy-MM-dd', new Date()));
       setCurrentCustomWeek(selectedWeek);
       setWeekHours(selectedWeek.required_hours);
       
       if (viewedUserId) {
         localStorage.setItem(`selectedWeek_${viewedUserId}`, selectedWeek.id);
+        console.log(`Saved selected week ${selectedWeek.id} to localStorage for user ${viewedUserId}`);
       }
     }
   };

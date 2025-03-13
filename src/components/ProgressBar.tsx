@@ -116,7 +116,7 @@ export const StatusTimeline: React.FC<StatusTimelineProps> = ({
       console.log('StatusTimeline - Selected week:', selectedWeek.week, 'WeekId:', selectedWeek.weekId);
     }
   }, [selectedWeek]);
-  
+
   return <div className="w-full overflow-x-auto py-4">
       <div className="flex items-center w-full min-w-min px-4">
         {filteredWeeks.map((weekData, index) => (

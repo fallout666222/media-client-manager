@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Select,
@@ -275,6 +276,7 @@ export const WeekPicker = ({
     }
   }, [currentWeek?.id, currentWeek, currentDate, onWeekChange, onWeekHoursChange, viewedUserId]);
 
+  // Synchronize the selected week ID with localStorage
   useEffect(() => {
     if (effectiveWeekId && viewedUserId) {
       localStorage.setItem(`selectedWeek_${viewedUserId}`, effectiveWeekId);

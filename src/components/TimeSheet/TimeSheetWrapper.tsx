@@ -109,7 +109,7 @@ export const TimeSheetWrapper: React.FC<TimeSheetWrapperProps> = ({
       };
     });
 
-  // Current selected week for progress bar
+  // Current selected week for progress bar - now using the currentCustomWeek directly
   const selectedProgressWeek = currentCustomWeek ? {
     week: currentCustomWeek.name,
     status: mapTimeSheetStatusToWeekStatus(getCurrentWeekStatus(currentCustomWeek.period_from)),
@@ -124,8 +124,14 @@ export const TimeSheetWrapper: React.FC<TimeSheetWrapperProps> = ({
         currentCustomWeek.name, 
         'ID:', currentCustomWeek.id, 
         'Period:', currentCustomWeek.period_from);
+      
+      if (selectedProgressWeek) {
+        console.log('TimeSheetWrapper - Selected progress week updated:', 
+          selectedProgressWeek.week, 
+          'ID:', selectedProgressWeek.weekId);
+      }
     }
-  }, [currentCustomWeek]);
+  }, [currentCustomWeek, selectedProgressWeek]);
 
   // Handle week selection in the progress bar
   const handleProgressWeekSelect = (week: WeekData) => {
