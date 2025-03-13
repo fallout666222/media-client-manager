@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -198,6 +199,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       
       const weekDate = new Date(status.week.period_from);
       
+      // Only consider weeks with 'under-review' status, ignore 'needs-revision'
       const isEarlier = isBefore(weekDate, currentWeekDate);
       const isUnderReview = status.status.name === 'under-review';
       

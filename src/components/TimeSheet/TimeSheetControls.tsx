@@ -54,7 +54,7 @@ export const TimeSheetControls: React.FC<TimeSheetControlsProps> = ({
   setFilterYear
 }: TimeSheetControlsProps) => {
   
-  // Add enhanced debug logging
+  // Enhanced debug logging
   useEffect(() => {
     if (isUserHead) {
       console.log("TimeSheetControls Debug:");
