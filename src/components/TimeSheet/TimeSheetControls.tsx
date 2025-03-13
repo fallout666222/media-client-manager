@@ -14,6 +14,7 @@ interface TimeSheetControlsProps {
   onSubmitForReview: () => void;
   onApprove: () => void;
   onReject: () => void;
+  onReturnToUnconfirmed?: () => void;
   readOnly?: boolean;
   firstWeek?: string;
   weekId?: string;
@@ -38,6 +39,7 @@ export const TimeSheetControls = ({
   onSubmitForReview,
   onApprove,
   onReject,
+  onReturnToUnconfirmed,
   readOnly = false,
   firstWeek,
   weekId,
@@ -82,6 +84,7 @@ export const TimeSheetControls = ({
         onSubmitForReview={onSubmitForReview}
         onApprove={onApprove}
         onReject={onReject}
+        onReturnToUnconfirmed={onReturnToUnconfirmed}
         disabled={readOnly}
         weekId={weekId}
         adminOverride={adminOverride}
