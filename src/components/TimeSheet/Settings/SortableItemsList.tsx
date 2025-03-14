@@ -12,6 +12,7 @@ import {
 import {
   SortableContext,
   horizontalListSortingStrategy,
+  sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
 import { SortableItem } from '../SortableItem';
 import { DEFAULT_SYSTEM_CLIENTS } from './constants';
@@ -34,7 +35,7 @@ export const SortableItemsList: React.FC<SortableItemsListProps> = ({
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates => sortableKeyboardCoordinates,
+      coordinateGetter: sortableKeyboardCoordinates,
     })
   );
 
