@@ -2,6 +2,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { RotateCcw } from "lucide-react";
+import { useSettings } from '@/contexts/SettingsContext';
 
 interface TimeSheetHeaderProps {
   userRole: string;
@@ -31,6 +32,7 @@ export const TimeSheetHeader = ({
 }: TimeSheetHeaderProps) => {
   // Calculate the effective hours based on percentage
   const effectiveWeekHours = Math.round(weekHours * (weekPercentage / 100));
+  const { theme } = useSettings();
   
   return (
     <div className="flex items-center justify-between">

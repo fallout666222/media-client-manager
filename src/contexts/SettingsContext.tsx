@@ -4,13 +4,10 @@ import * as db from '@/integrations/supabase/database';
 import { useToast } from '@/hooks/use-toast';
 
 type Theme = 'light' | 'dark';
-type Language = 'en' | 'ru';
 
 interface SettingsContextType {
   theme: Theme;
-  language: Language;
   setTheme: (theme: Theme) => Promise<void>;
-  setLanguage: (language: Language) => Promise<void>;
   isLoading: boolean;
 }
 
@@ -29,7 +26,6 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode; userId?: st
   userId
 }) => {
   const [theme, setThemeState] = useState<Theme>('light');
-  const [language, setLanguageState] = useState<Language>('en');
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -60,15 +56,6 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode; userId?: st
           const userTheme = data.dark_theme ? 'dark' : 'light';
           setThemeState(userTheme);
           applyTheme(userTheme);
-          
-          // Set language
-          if (data.language === 'en' || data.language === 'ru') {
-            const userLanguage = data.language as Language;
-            setLanguageState(userLanguage);
-          } else {
-            // Default to English if invalid language value
-            setLanguageState('en');
-          }
         }
       } catch (error) {
         console.error('Error loading user settings:', error);
@@ -100,45 +87,14 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode; userId?: st
       await db.updateUserSettings(userId, { dark_theme: newTheme === 'dark' });
       
       toast({
-        title: language === 'en' ? "Theme updated" : "Тема обновлена",
-        description: language === 'en' 
-          ? `Theme set to ${newTheme}` 
-          : `Тема установлена на ${newTheme === 'dark' ? 'темную' : 'светлую'}`
+        title: "Theme updated",
+        description: `Theme set to ${newTheme}`
       });
     } catch (error) {
       console.error('Error updating theme:', error);
       toast({
-        title: language === 'en' ? "Error" : "Ошибка",
-        description: language === 'en' 
-          ? "Failed to update theme" 
-          : "Не удалось обновить тему",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Update language in the database
-  const setLanguage = async (newLanguage: Language) => {
-    if (!userId) return;
-    
-    try {
-      setLanguageState(newLanguage);
-      
-      await db.updateUserSettings(userId, { language: newLanguage });
-      
-      toast({
-        title: newLanguage === 'en' ? "Language updated" : "Язык обновлен",
-        description: newLanguage === 'en' 
-          ? `Language set to English` 
-          : `Язык установлен на Русский`
-      });
-    } catch (error) {
-      console.error('Error updating language:', error);
-      toast({
-        title: language === 'en' ? "Error" : "Ошибка",
-        description: language === 'en' 
-          ? "Failed to update language" 
-          : "Не удалось обновить язык",
+        title: "Error",
+        description: "Failed to update theme",
         variant: "destructive"
       });
     }
@@ -146,9 +102,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode; userId?: st
 
   const value = {
     theme,
-    language,
     setTheme,
-    setLanguage,
     isLoading
   };
 
