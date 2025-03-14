@@ -1,92 +1,16 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { format, parse, isSameDay } from 'date-fns';
 import { TimeSheetStatus, User, Client } from '@/types/timesheet';
 import { useTimeSheetData } from '@/hooks/useTimeSheetData';
 import { useTimeSheetActions } from '@/hooks/useTimeSheetActions';
 import { useToast } from '@/hooks/use-toast';
-import { getCustomWeeks } from '@/integrations/supabase/database';
+import TimeSheetContext from './TimeSheetContext/TimeSheetContext';
+import { TimeSheetProviderProps } from './TimeSheetContext/types';
+import { useTimeSheetInitialization } from './TimeSheetContext/useTimeSheetInitialization';
+import { useClientMediaTypeManagement } from './TimeSheetContext/useClientMediaTypeManagement';
 
 const DEFAULT_AVAILABLE_MEDIA_TYPES = ['TV', 'Radio', 'Print', 'Digital'];
-
-interface TimeSheetContextType {
-  showSettings: boolean;
-  setShowSettings: React.Dispatch<React.SetStateAction<boolean>>;
-  customWeeks: any[];
-  viewedUser: User;
-  currentDate: Date;
-  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
-  weekHours: number;
-  setWeekHours: React.Dispatch<React.SetStateAction<number>>;
-  isViewingOwnTimesheet: boolean;
-  availableMediaTypes: string[];
-  setAvailableMediaTypes: React.Dispatch<React.SetStateAction<string[]>>;
-  availableClients: string[];
-  timeEntries: Record<string, Record<string, Record<string, { hours: number; status: TimeSheetStatus }>>>;
-  submittedWeeks: string[];
-  weekStatuses: Record<string, TimeSheetStatus>;
-  weekPercentage: number;
-  selectedClients: string[];
-  setSelectedClients: React.Dispatch<React.SetStateAction<string[]>>;
-  selectedMediaTypes: string[];
-  setSelectedMediaTypes: React.Dispatch<React.SetStateAction<string[]>>;
-  handleReturnToFirstUnsubmittedWeek: () => void;
-  handleNavigateToFirstUnderReviewWeek: () => void;
-  handleTimeUpdate: (client: string, mediaType: string, hours: number) => void;
-  handleSubmitForReview: () => void;
-  handleApprove: () => void;
-  handleReject: () => void;
-  handleReturnToUnconfirmed: () => void;
-  handleSaveVisibleClients: (clients: string[]) => void;
-  handleSaveVisibleMediaTypes: (types: string[]) => void;
-  getTotalHoursForWeek: () => number;
-  hasUnsubmittedEarlierWeek: () => boolean;
-  isCurrentWeekSubmitted: () => boolean;
-  handleAddClient: (client: string) => void;
-  handleAddMediaType: (type: string) => void;
-  handleRemoveClient: (client: string) => void;
-  handleRemoveMediaType: (type: string) => void;
-  handleSelectClient: (client: string) => void;
-  handleSelectMediaType: (type: string) => void;
-  handleReorderClients: (newOrder: string[]) => void;
-  handleReorderMediaTypes: (newOrder: string[]) => void;
-  timeUpdateHandler: (client: string, mediaType: string, hours: number) => void;
-  handleUserSelect: (user: User) => void;
-  handleWeekHoursChange: (hours: number) => void;
-  clientsWithEntries: string[];
-  mediaTypesWithEntries: string[];
-  getCurrentWeekStatus: (weekKey: string) => TimeSheetStatus;
-  currentCustomWeek: any;
-  handleProgressBarWeekSelect: (weekId: string) => void;
-  filterYear: number | null;
-  setFilterYear: React.Dispatch<React.SetStateAction<number | null>>;
-}
-
-const TimeSheetContext = createContext<TimeSheetContextType | undefined>(undefined);
-
-export const useTimeSheet = () => {
-  const context = useContext(TimeSheetContext);
-  if (context === undefined) {
-    throw new Error('useTimeSheet must be used within a TimeSheetProvider');
-  }
-  return context;
-};
-
-interface TimeSheetProviderProps {
-  userRole: 'admin' | 'user' | 'manager';
-  firstWeek: string;
-  currentUser: User;
-  users: User[];
-  clients: Client[];
-  readOnly?: boolean;
-  impersonatedUser?: User;
-  adminOverride?: boolean;
-  customWeeks?: any[];
-  initialWeekId?: string | null;
-  isUserHead?: boolean;
-  onTimeUpdate?: (weekId: string, client: string, mediaType: string, hours: number) => void;
-  checkEarlierWeeksUnderReview?: (weekId: string) => boolean;
-  children: React.ReactNode;
-}
 
 export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
   userRole,
@@ -105,7 +29,6 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
   children
 }) => {
   const [showSettings, setShowSettings] = useState(false);
-  const [customWeeks, setCustomWeeks] = useState<any[]>([]);
   const [viewedUser, setViewedUser] = useState<User>(impersonatedUser || currentUser);
   const viewedUserId = viewedUser.id;
   
@@ -133,10 +56,23 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
   });
   
   const [weekHours, setWeekHours] = useState<number>(40);
-  const isViewingOwnTimesheet = impersonatedUser ? adminOverride : viewedUser.id === currentUser.id;
   const [availableMediaTypes, setAvailableMediaTypes] = useState<string[]>(DEFAULT_AVAILABLE_MEDIA_TYPES);
+  const isViewingOwnTimesheet = impersonatedUser ? adminOverride : viewedUser.id === currentUser.id;
   const availableClients = clients.filter(client => !client.hidden).map(client => client.name);
-  const { toast } = useToast();
+  const [currentCustomWeekState, setCurrentCustomWeekState] = useState<any>(null);
+
+  // Use the initialization hook
+  const { customWeeks } = useTimeSheetInitialization({
+    currentUser,
+    viewedUser,
+    viewedUserId,
+    currentDate,
+    setCurrentDate,
+    setCurrentCustomWeek: setCurrentCustomWeekState,
+    setWeekHours,
+    propCustomWeeks,
+    initialWeekId
+  });
 
   const {
     timeEntries,
@@ -201,79 +137,26 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
     checkEarlierWeeksUnderReview
   });
 
-  useEffect(() => {
-    const fetchCustomWeeks = async () => {
-      try {
-        let weeksData;
-        
-        if (propCustomWeeks && propCustomWeeks.length > 0) {
-          weeksData = propCustomWeeks;
-          console.log(`Using ${weeksData.length} custom weeks from props`);
-        } else {
-          const { data } = await getCustomWeeks();
-          weeksData = data || [];
-          console.log(`Fetched ${weeksData.length} custom weeks from database`);
-        }
-        
-        setCustomWeeks(weeksData);
-        
-        const savedWeekId = viewedUserId ? localStorage.getItem(`selectedWeek_${viewedUserId}`) : null;
-        
-        if (savedWeekId && weeksData.length > 0) {
-          const savedWeek = weeksData.find((week: any) => week.id === savedWeekId);
-          if (savedWeek) {
-            console.log(`Setting to saved week from localStorage: ${savedWeek.name}`);
-            setCurrentDate(parse(savedWeek.period_from, 'yyyy-MM-dd', new Date()));
-            setCurrentCustomWeek(savedWeek);
-            setWeekHours(savedWeek.required_hours);
-            return;
-          }
-        }
-        
-        if (initialWeekId && weeksData.length > 0) {
-          const initialWeek = weeksData.find((week: any) => week.id === initialWeekId);
-          if (initialWeek) {
-            console.log(`Setting initial week to: ${initialWeek.name}`);
-            setCurrentDate(parse(initialWeek.period_from, 'yyyy-MM-dd', new Date()));
-            setCurrentCustomWeek(initialWeek);
-            setWeekHours(initialWeek.required_hours);
-          }
-        } else if (currentUser.firstCustomWeekId) {
-          const userFirstWeek = weeksData.find((week: any) => week.id === currentUser.firstCustomWeekId);
-          if (userFirstWeek) {
-            setCurrentDate(parse(userFirstWeek.period_from, 'yyyy-MM-dd', new Date()));
-            setCurrentCustomWeek(userFirstWeek);
-            setWeekHours(userFirstWeek.required_hours);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching custom weeks:', error);
-      }
-    };
-    
-    fetchCustomWeeks();
-  }, [currentUser.firstCustomWeekId, propCustomWeeks, initialWeekId, viewedUserId]);
-
-  useEffect(() => {
-    if (customWeeks.length > 0) {
-      const currentDateFormatted = format(currentDate, 'yyyy-MM-dd');
-      
-      const matchingWeek = customWeeks.find(week => 
-        week.period_from === currentDateFormatted
-      );
-      
-      if (matchingWeek && (!currentCustomWeek || matchingWeek.id !== currentCustomWeek.id)) {
-        console.log(`Date changed to ${currentDateFormatted}, updating current week to: ${matchingWeek.name} (${matchingWeek.id})`);
-        setCurrentCustomWeek(matchingWeek);
-        setWeekHours(matchingWeek.required_hours);
-        
-        if (viewedUserId) {
-          localStorage.setItem(`selectedWeek_${viewedUserId}`, matchingWeek.id);
-          console.log(`Saved week ${matchingWeek.id} to localStorage for user ${viewedUserId}`);
-        }
-      }
-    }
-  }, [currentDate, customWeeks, currentCustomWeek, viewedUserId]);
+  // Use client and media type management hook
+  const {
+    handleAddClient,
+    handleAddMediaType,
+    handleRemoveClient,
+    handleRemoveMediaType,
+    handleSelectClient,
+    handleSelectMediaType,
+    handleReorderClients,
+    handleReorderMediaTypes
+  } = useClientMediaTypeManagement({
+    userRole,
+    availableClients,
+    availableMediaTypes,
+    selectedClients,
+    setSelectedClients,
+    selectedMediaTypes,
+    setSelectedMediaTypes,
+    readOnly
+  });
 
   useEffect(() => {
     if (impersonatedUser) {
@@ -282,6 +165,13 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
       setViewedUser(currentUser);
     }
   }, [impersonatedUser, currentUser]);
+
+  // Sync the current custom week state with the actions hook state
+  useEffect(() => {
+    if (currentCustomWeekState && (!currentCustomWeek || currentCustomWeekState.id !== currentCustomWeek.id)) {
+      setCurrentCustomWeek(currentCustomWeekState);
+    }
+  }, [currentCustomWeekState, currentCustomWeek, setCurrentCustomWeek]);
 
   const handleProgressBarWeekSelect = (weekId: string) => {
     if (!customWeeks.length) return;
@@ -321,61 +211,6 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
         .map(([mediaType]) => mediaType)
     );
 
-  const handleAddClient = (client: string) => {
-    if (userRole !== 'admin') return;
-    
-    if (!availableClients.includes(client)) {
-      toast({
-        title: "Client Management Moved",
-        description: "Please add new clients from the Client Tree page",
-      });
-    }
-  };
-
-  const handleAddMediaType = (type: string) => {
-    if (userRole !== 'admin') return;
-    
-    if (!availableMediaTypes.includes(type)) {
-      setAvailableMediaTypes(prev => [...prev, type]);
-      setSelectedMediaTypes(prev => [...prev, type]);
-    }
-  };
-
-  const handleRemoveClient = (client: string) => {
-    if (readOnly) return;
-    setSelectedClients(prev => prev.filter(c => c !== client));
-  };
-
-  const handleRemoveMediaType = (type: string) => {
-    if (readOnly) return;
-    
-    if (userRole === 'admin') {
-      setAvailableMediaTypes(prev => prev.filter(t => t !== type));
-    }
-    
-    setSelectedMediaTypes(prev => prev.filter(t => t !== type));
-  };
-
-  const handleSelectClient = (client: string) => {
-    if (!selectedClients.includes(client)) {
-      setSelectedClients(prev => [...prev, client]);
-    }
-  };
-
-  const handleSelectMediaType = (type: string) => {
-    if (!selectedMediaTypes.includes(type)) {
-      setSelectedMediaTypes(prev => [...prev, type]);
-    }
-  };
-
-  const handleReorderClients = (newOrder: string[]) => {
-    setSelectedClients(newOrder);
-  };
-
-  const handleReorderMediaTypes = (newOrder: string[]) => {
-    setSelectedMediaTypes(newOrder);
-  };
-
   const timeUpdateHandler = async (client: string, mediaType: string, hours: number) => {
     if (onTimeUpdate && isUserHead) {
       const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
@@ -394,7 +229,7 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
     }
   };
 
-  const contextValue: TimeSheetContextType = {
+  const contextValue = {
     showSettings,
     setShowSettings,
     customWeeks,

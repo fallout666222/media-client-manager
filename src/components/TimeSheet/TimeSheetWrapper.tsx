@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { format, parse, isBefore } from 'date-fns';
 import { User, Client, TimeSheetStatus } from '@/types/timesheet';
@@ -7,7 +8,7 @@ import { TimeSheetContent } from '@/components/TimeSheet/TimeSheetContent';
 import { TeamMemberSelectorSection } from './TeamMemberSelectorSection';
 import { AdminOverrideAlert } from './AdminOverrideAlert';
 import { UnsubmittedWeeksAlert } from './UnsubmittedWeeksAlert';
-import { useTimeSheet } from './TimeSheetProvider';
+import { useTimeSheet } from './TimeSheetContext/TimeSheetContext';
 import { WeekData, StatusTimeline, WeekDetails } from '@/components/ProgressBar';
 import { mapTimeSheetStatusToWeekStatus } from '@/utils/statusMappers';
 

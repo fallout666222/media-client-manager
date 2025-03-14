@@ -2,7 +2,7 @@
 import React from 'react';
 import { User } from '@/types/timesheet';
 import { TeamMemberSelector } from '@/components/TeamMemberSelector';
-import { useTimeSheet } from './TimeSheetProvider';
+import { useTimeSheet } from './TimeSheetContext/TimeSheetContext';
 
 interface TeamMemberSelectorSectionProps {
   currentUser: User;
