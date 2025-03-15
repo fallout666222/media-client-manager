@@ -60,7 +60,6 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
   const availableClients = clients.filter(client => !client.hidden).map(client => client.name);
   const [currentCustomWeekState, setCurrentCustomWeekState] = useState<any>(null);
 
-  // Use the initialization hook
   const { customWeeks } = useTimeSheetInitialization({
     currentUser,
     viewedUser,
@@ -133,10 +132,11 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
     timeEntries,
     setTimeEntries,
     getCurrentWeekStatus,
-    checkEarlierWeeksUnderReview
+    checkEarlierWeeksUnderReview,
+    filterYear,
+    setFilterYear
   });
 
-  // Use client and media type management hook
   const {
     handleAddClient,
     handleAddMediaType,
@@ -166,7 +166,6 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
     }
   }, [impersonatedUser, currentUser]);
 
-  // Sync the current custom week state with the actions hook state
   useEffect(() => {
     if (currentCustomWeekState && (!currentCustomWeek || currentCustomWeekState.id !== currentCustomWeek.id)) {
       setCurrentCustomWeek(currentCustomWeekState);
