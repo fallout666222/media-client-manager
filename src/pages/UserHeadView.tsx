@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -25,6 +24,13 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import SearchBar from '@/components/SearchBar';
 import { format, parse, isBefore, getYear } from 'date-fns';
+import { TeamMemberSelector } from '@/components/TeamMemberSelector';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface UserHeadViewProps {
   currentUser: User;
@@ -39,6 +45,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
   const [firstUnderReviewWeek, setFirstUnderReviewWeek] = useState<any>(null);
   const [forceRefresh, setForceRefresh] = useState<number>(0);
   const [filterYear, setFilterYear] = useState<number | null>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
   const { toast } = useToast();
 
   const { data: users = [], isLoading, error } = useQuery({
@@ -65,6 +72,11 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
 
   const handleTeamMemberSelect = (userId: string) => {
     setSelectedTeamMember(userId);
+    
+    // If search term was used, clear it when selecting from dropdown
+    if (searchTerm) {
+      setSearchTerm("");
+    }
     
     // Load the saved year filter from localStorage if it exists
     const savedYearFilter = localStorage.getItem(`selectedYearFilter_${userId}`);
@@ -191,9 +203,20 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
 
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
-    setSelectedTeamMember(null);
-    setFirstUnconfirmedWeek(null);
-    setWeekStatuses([]);
+    
+    // Don't clear selected team member when typing in search
+    // This allows for searching while keeping the selected member
+    
+    // Show dropdown when typing in search
+    setShowDropdown(value.length > 0);
+  };
+
+  const handleSelectFromDropdown = (userId: string) => {
+    const selectedUser = users.find(u => u.id === userId);
+    if (selectedUser) {
+      handleTeamMemberSelect(userId);
+      setShowDropdown(false);
+    }
   };
 
   useEffect(() => {
@@ -497,19 +520,39 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
           <div className="mb-8">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
               <h2 className="text-lg font-medium">Select Team Member</h2>
-              <SearchBar 
-                value={searchTerm} 
-                onChange={handleSearchChange} 
-                placeholder="Search team members..." 
-                className="max-w-xs"
-              />
+              
+              <div className="relative w-full max-w-xs">
+                <SearchBar 
+                  value={searchTerm} 
+                  onChange={handleSearchChange} 
+                  placeholder="Search team members..." 
+                  className="w-full"
+                />
+                
+                {showDropdown && filteredTeamMembers.length > 0 && (
+                  <div className="absolute z-50 mt-1 w-full bg-white border border-input rounded-md shadow-lg">
+                    <ul className="py-1 max-h-60 overflow-auto">
+                      {filteredTeamMembers.map((member) => (
+                        <li 
+                          key={member.id}
+                          className="px-3 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer"
+                          onClick={() => handleSelectFromDropdown(member.id)}
+                        >
+                          {member.login} - {member.name}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
             </div>
-            <Select onValueChange={handleTeamMemberSelect}>
+            
+            <Select value={selectedTeamMember || ""} onValueChange={handleTeamMemberSelect}>
               <SelectTrigger className="w-[250px]">
                 <SelectValue placeholder="Select team member" />
               </SelectTrigger>
               <SelectContent>
-                {filteredTeamMembers.map((member) => (
+                {teamMembers.map((member) => (
                   <SelectItem key={member.id} value={member.id}>
                     {member.login}
                   </SelectItem>
