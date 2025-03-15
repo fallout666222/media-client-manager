@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { TimeSheetStatus, User } from '@/types/timesheet';
 import { useTimeSheetWeeks } from './useTimeSheetWeeks';
@@ -27,6 +26,8 @@ interface UseTimeSheetActionsProps {
   setTimeEntries: (entries: any) => void;
   getCurrentWeekStatus: (weekKey: string) => TimeSheetStatus;
   checkEarlierWeeksUnderReview?: (weekId: string) => boolean;
+  filterYear: number | null;
+  setFilterYear: (year: number | null) => void;
 }
 
 export const useTimeSheetActions = ({
@@ -49,7 +50,9 @@ export const useTimeSheetActions = ({
   timeEntries,
   setTimeEntries,
   getCurrentWeekStatus,
-  checkEarlierWeeksUnderReview
+  checkEarlierWeeksUnderReview,
+  filterYear,
+  setFilterYear
 }: UseTimeSheetActionsProps) => {
   const [currentCustomWeek, setCurrentCustomWeek] = useState<any>(null);
 
@@ -66,7 +69,9 @@ export const useTimeSheetActions = ({
     setCurrentCustomWeek,
     getTotalHoursForWeek: () => timeEntryOperations.getTotalHoursForWeek(),
     weekHours,
-    weekPercentage
+    weekPercentage,
+    filterYear,
+    setFilterYear
   });
 
   const timeEntryOperations = useTimeEntryOperations({

@@ -1,5 +1,6 @@
+
 import { useState } from 'react';
-import { format, parse, isBefore, isSameDay } from 'date-fns';
+import { format, parse, isBefore, isSameDay, getYear } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { TimeSheetStatus, User } from '@/types/timesheet';
 import { getWeekStatusNames, updateWeekStatus } from '@/integrations/supabase/database';
@@ -18,6 +19,8 @@ interface UseTimeSheetWeeksProps {
   getTotalHoursForWeek: () => number;
   weekHours: number;
   weekPercentage: number;
+  filterYear: number | null;
+  setFilterYear: (year: number | null) => void;
 }
 
 export const useTimeSheetWeeks = ({
@@ -33,7 +36,9 @@ export const useTimeSheetWeeks = ({
   setCurrentCustomWeek,
   getTotalHoursForWeek,
   weekHours,
-  weekPercentage
+  weekPercentage,
+  filterYear,
+  setFilterYear
 }: UseTimeSheetWeeksProps) => {
   const { toast } = useToast();
 
@@ -85,6 +90,7 @@ export const useTimeSheetWeeks = ({
       }
       
       if (userFirstWeekDate) {
+        // Important: Don't filter by year here - we want ALL weeks regardless of the current filter
         const sortedWeeks = [...customWeeks].sort((a, b) => {
           try {
             const dateA = parse(a.period_from, 'yyyy-MM-dd', new Date());
@@ -223,6 +229,15 @@ export const useTimeSheetWeeks = ({
     console.log("Result from findFirstUnsubmittedWeek:", firstUnsubmitted);
     
     if (firstUnsubmitted && firstUnsubmitted.date && firstUnsubmitted.weekData) {
+      // Update the year filter to match the year of the found week
+      try {
+        const weekYear = getYear(firstUnsubmitted.date);
+        console.log(`Updating year filter to match found week: ${weekYear}`);
+        setFilterYear(weekYear);
+      } catch (error) {
+        console.error("Error updating year filter:", error);
+      }
+      
       if (firstUnsubmitted.weekData) {
         console.log(`Setting current custom week to: ${firstUnsubmitted.weekData.name}`);
         if ('required_hours' in firstUnsubmitted.weekData) {
