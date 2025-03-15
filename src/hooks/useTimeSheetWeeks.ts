@@ -158,14 +158,21 @@ export const useTimeSheetWeeks = ({
     ));
     
     if (customWeeks.length > 0) {
+      // Sort all weeks chronologically regardless of year
       const sortedWeeks = [...customWeeks].sort((a, b) => {
-        const dateA = parse(a.period_from, 'yyyy-MM-dd', new Date());
-        const dateB = parse(b.period_from, 'yyyy-MM-dd', new Date());
-        return dateA.getTime() - dateB.getTime();
+        try {
+          const dateA = parse(a.period_from, 'yyyy-MM-dd', new Date());
+          const dateB = parse(b.period_from, 'yyyy-MM-dd', new Date());
+          return dateA.getTime() - dateB.getTime();
+        } catch (error) {
+          console.error(`Error parsing dates during week sorting:`, error);
+          return 0;
+        }
       });
       
       console.log("Sorted weeks:", sortedWeeks.map(w => `${w.name} (${w.period_from}): ${weekStatuses[w.period_from]}`));
       
+      // Find the first under-review week across all years
       for (const week of sortedWeeks) {
         const weekKey = week.period_from;
         if (weekStatuses[weekKey] === 'under-review') {
@@ -196,6 +203,21 @@ export const useTimeSheetWeeks = ({
         } else {
           setCurrentCustomWeek(null);
         }
+      }
+      
+      // Update the year filter to match the year of the found week
+      try {
+        const weekYear = getYear(firstUnderReview.date);
+        console.log(`Updating year filter to match found week: ${weekYear}`);
+        setFilterYear(weekYear);
+        
+        // Save the updated year filter to localStorage
+        if (viewedUser.id) {
+          localStorage.setItem(`selectedYearFilter_${viewedUser.id}`, weekYear.toString());
+          console.log(`Saved year filter ${weekYear} to localStorage for user ${viewedUser.id}`);
+        }
+      } catch (error) {
+        console.error("Error updating year filter:", error);
       }
       
       console.log(`Navigating to date: ${format(firstUnderReview.date, 'yyyy-MM-dd')}`);

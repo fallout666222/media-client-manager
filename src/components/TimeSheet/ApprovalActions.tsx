@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, CheckCircle, ChevronLeft, Send, RotateCcw } from 'lucide-react';
@@ -69,24 +68,28 @@ export const ApprovalActions: React.FC<ApprovalActionsProps> = ({
   };
 
   const renderUserHead = () => {
-    // Only show the button if there are earlier weeks under review AND we have the navigation function
-    if (!isUserHead || !hasEarlierWeeksUnderReview || !onNavigateToFirstUnderReview) {
+    // Show navigation button for user heads when there are weeks under review 
+    // OR the status is unconfirmed
+    if (!isUserHead || !onNavigateToFirstUnderReview) {
       return null;
     }
 
-    console.log("Rendering user head button - hasEarlierWeeksUnderReview:", hasEarlierWeeksUnderReview);
+    // Show the button if there are earlier weeks under review OR if the current week is unconfirmed
+    if (hasEarlierWeeksUnderReview || status === 'unconfirmed') {
+      return (
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={onNavigateToFirstUnderReview}
+          className="flex items-center gap-1"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Go to First Week Under Review
+        </Button>
+      );
+    }
 
-    return (
-      <Button
-        variant="secondary"
-        size="sm"
-        onClick={onNavigateToFirstUnderReview}
-        className="flex items-center gap-1"
-      >
-        <ChevronLeft className="h-4 w-4" />
-        Go to First Week Under Review
-      </Button>
-    );
+    return null;
   };
 
   const renderUserControls = () => {

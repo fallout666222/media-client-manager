@@ -24,7 +24,7 @@ import {
 } from '@/integrations/supabase/database';
 import { useQuery } from '@tanstack/react-query';
 import SearchBar from '@/components/SearchBar';
-import { format, parse, isBefore } from 'date-fns';
+import { format, parse, isBefore, getYear } from 'date-fns';
 
 interface UserHeadViewProps {
   currentUser: User;
@@ -38,6 +38,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
   const [weekStatuses, setWeekStatuses] = useState<any[]>([]);
   const [firstUnderReviewWeek, setFirstUnderReviewWeek] = useState<any>(null);
   const [forceRefresh, setForceRefresh] = useState<number>(0);
+  const [filterYear, setFilterYear] = useState<number | null>(null);
   const { toast } = useToast();
 
   const { data: users = [], isLoading, error } = useQuery({
@@ -64,6 +65,16 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
 
   const handleTeamMemberSelect = (userId: string) => {
     setSelectedTeamMember(userId);
+    
+    // Load the saved year filter from localStorage if it exists
+    const savedYearFilter = localStorage.getItem(`selectedYearFilter_${userId}`);
+    if (savedYearFilter) {
+      setFilterYear(parseInt(savedYearFilter));
+    } else {
+      // Default to current year if no saved filter
+      setFilterYear(new Date().getFullYear());
+    }
+    
     fetchFirstUnconfirmedWeek(userId);
     fetchWeekStatuses(userId);
     findFirstUnderReviewWeek(userId);
@@ -138,6 +149,19 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       if (firstUnderReviewWeek.week && selectedTeamMember) {
         localStorage.setItem(`selectedWeek_${selectedTeamMember}`, firstUnderReviewWeek.week_id);
         // console.log(`Saved selected week to localStorage: selectedWeek_${selectedTeamMember} = ${firstUnderReviewWeek.week_id}`);
+        
+        // Update the year filter to match the year of the found week
+        if (firstUnderReviewWeek.week.period_from) {
+          try {
+            const weekDate = new Date(firstUnderReviewWeek.week.period_from);
+            const weekYear = getYear(weekDate);
+            setFilterYear(weekYear);
+            localStorage.setItem(`selectedYearFilter_${selectedTeamMember}`, weekYear.toString());
+            console.log(`Updated year filter to ${weekYear} for user ${selectedTeamMember}`);
+          } catch (error) {
+            console.error("Error updating year filter:", error);
+          }
+        }
         
         setForceRefresh(prev => prev + 1);
         
