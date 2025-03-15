@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Select,
@@ -41,7 +40,6 @@ export const WeekPicker = ({
   const [availableWeeks, setAvailableWeeks] = useState<CustomWeek[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Add this to track the currently selected week ID
   const [currentWeekId, setCurrentWeekId] = useState<string | null>(null);
 
   const availableYears = useMemo(() => {
@@ -63,7 +61,6 @@ export const WeekPicker = ({
     return Array.from(years).sort();
   }, [availableWeeks]);
 
-  // Save filterYear to localStorage whenever it changes
   useEffect(() => {
     if (viewedUserId && filterYear !== null) {
       localStorage.setItem(`selectedYearFilter_${viewedUserId}`, filterYear.toString());
@@ -73,7 +70,6 @@ export const WeekPicker = ({
     }
   }, [filterYear, viewedUserId]);
 
-  // Load filterYear from localStorage on initial load
   useEffect(() => {
     if (viewedUserId) {
       const savedYearFilter = localStorage.getItem(`selectedYearFilter_${viewedUserId}`);
@@ -134,7 +130,6 @@ export const WeekPicker = ({
     try {
       firstWeekDate = parse(firstWeek, 'yyyy-MM-dd', new Date());
     } catch (error) {
-      // console.error('Error parsing first week date:', firstWeek, error);
       firstWeekDate = new Date(2020, 0, 1); // Default to Jan 1, 2020 if parsing fails
     }
     
@@ -145,7 +140,6 @@ export const WeekPicker = ({
         const weekStartDate = parse(week.startDate, 'yyyy-MM-dd', new Date());
         return !isBefore(weekStartDate, firstWeekDate);
       } catch (error) {
-        // console.error('Error filtering week by date:', week.startDate, error);
         return false;
       }
     });
@@ -158,7 +152,6 @@ export const WeekPicker = ({
           const weekYear = getYear(parse(week.startDate, 'yyyy-MM-dd', new Date())).toString();
           return weekYear === filterYear.toString();
         } catch (error) {
-          // console.error('Error filtering week by year:', week.startDate, error);
           return false;
         }
       });
@@ -172,13 +165,46 @@ export const WeekPicker = ({
         const dateB = parse(b.startDate, 'yyyy-MM-dd', new Date());
         return dateA.getTime() - dateB.getTime();
       } catch (error) {
-        // console.error('Error sorting weeks:', a.startDate, b.startDate, error);
         return 0;
       }
     });
   };
 
   const filteredWeeks = getFilteredWeeks();
+
+  const getAllAvailableWeeks = () => {
+    if (availableWeeks.length === 0) return [];
+    
+    let firstWeekDate;
+    try {
+      firstWeekDate = parse(firstWeek, 'yyyy-MM-dd', new Date());
+    } catch (error) {
+      firstWeekDate = new Date(2020, 0, 1); // Default to Jan 1, 2020 if parsing fails
+    }
+    
+    return availableWeeks.filter(week => {
+      if (!week.startDate) return false;
+      
+      try {
+        const weekStartDate = parse(week.startDate, 'yyyy-MM-dd', new Date());
+        return !isBefore(weekStartDate, firstWeekDate);
+      } catch (error) {
+        return false;
+      }
+    }).sort((a, b) => {
+      if (!a.startDate || !b.startDate) return 0;
+      
+      try {
+        const dateA = parse(a.startDate, 'yyyy-MM-dd', new Date());
+        const dateB = parse(b.startDate, 'yyyy-MM-dd', new Date());
+        return dateA.getTime() - dateB.getTime();
+      } catch (error) {
+        return 0;
+      }
+    });
+  };
+
+  const allSortedWeeks = getAllAvailableWeeks();
 
   const getCurrentWeek = () => {
     if (filteredWeeks.length === 0) return null;
@@ -214,7 +240,6 @@ export const WeekPicker = ({
     return filteredWeeks[0];
   };
 
-  // Update currentWeekId when currentDate changes
   useEffect(() => {
     const matchingWeek = filteredWeeks.find(week => {
       if (!week.startDate) return false;
@@ -276,7 +301,6 @@ export const WeekPicker = ({
     }
   }, [currentWeek?.id, currentWeek, currentDate, onWeekChange, onWeekHoursChange, viewedUserId]);
 
-  // Synchronize the selected week ID with localStorage
   useEffect(() => {
     if (effectiveWeekId && viewedUserId) {
       localStorage.setItem(`selectedWeek_${viewedUserId}`, effectiveWeekId);
@@ -315,6 +339,52 @@ export const WeekPicker = ({
     const currentIndex = filteredWeeks.findIndex(week => week.id === effectiveWeekId);
     if (currentIndex === -1) return;
 
+    const isAtStart = currentIndex === 0;
+    const isAtEnd = currentIndex === filteredWeeks.length - 1;
+
+    if ((isAtStart && direction === 'prev' || isAtEnd && direction === 'next') && filterYear !== null) {
+      const allWeeksIndex = allSortedWeeks.findIndex(week => week.id === effectiveWeekId);
+      if (allWeeksIndex === -1) return;
+
+      let newWeekIndex;
+      if (direction === 'prev' && allWeeksIndex > 0) {
+        newWeekIndex = allWeeksIndex - 1;
+      } else if (direction === 'next' && allWeeksIndex < allSortedWeeks.length - 1) {
+        newWeekIndex = allWeeksIndex + 1;
+      } else {
+        return;
+      }
+
+      const newWeek = allSortedWeeks[newWeekIndex];
+      if (!newWeek || !newWeek.startDate) return;
+
+      try {
+        const newWeekDate = parse(newWeek.startDate, "yyyy-MM-dd", new Date());
+        const newWeekYear = getYear(newWeekDate);
+        
+        if (newWeekYear !== filterYear) {
+          console.log(`Crossing year boundary: ${filterYear} -> ${newWeekYear}`);
+          setFilterYear(newWeekYear);
+          
+          if (viewedUserId) {
+            localStorage.setItem(`selectedYearFilter_${viewedUserId}`, newWeekYear.toString());
+          }
+        }
+        
+        onWeekChange(newWeekDate);
+        
+        if (viewedUserId) {
+          localStorage.setItem(`selectedWeek_${viewedUserId}`, newWeek.id);
+        }
+        
+        onWeekHoursChange(newWeek.hours);
+        setCurrentWeekId(newWeek.id);
+        return;
+      } catch (error) {
+        console.error('Error navigating across years:', error);
+      }
+    }
+
     let newIndex;
     if (direction === 'prev' && currentIndex > 0) {
       newIndex = currentIndex - 1;
@@ -326,24 +396,21 @@ export const WeekPicker = ({
 
     const newWeek = filteredWeeks[newIndex];
     if (!newWeek || !newWeek.startDate) {
-      // console.error('New week has no start date:', newWeek);
       return;
     }
     
     try {
-      // console.log(`WeekPicker: Navigating to ${direction} week: ${newWeek.name} (${newWeek.id})`);
       const date = parse(newWeek.startDate, "yyyy-MM-dd", new Date());
       onWeekChange(date);
       
       if (viewedUserId) {
         localStorage.setItem(`selectedWeek_${viewedUserId}`, newWeek.id);
-        // console.log(`WeekPicker: Saved week ${newWeek.id} to localStorage for user ${viewedUserId}`);
       }
       
       onWeekHoursChange(newWeek.hours);
       setCurrentWeekId(newWeek.id);
     } catch (error) {
-      // console.error('Error navigating to week:', newWeek.startDate, error);
+      console.error('Error navigating to week:', newWeek.startDate, error);
     }
   };
 
@@ -402,7 +469,7 @@ export const WeekPicker = ({
           variant="outline"
           size="icon"
           onClick={() => handleNavigateWeek('prev')}
-          disabled={!filteredWeeks.length || effectiveWeekId === filteredWeeks[0].id}
+          disabled={!filteredWeeks.length || (effectiveWeekId === filteredWeeks[0].id && filterYear === null)}
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
@@ -427,7 +494,7 @@ export const WeekPicker = ({
           variant="outline"
           size="icon"
           onClick={() => handleNavigateWeek('next')}
-          disabled={!filteredWeeks.length || effectiveWeekId === filteredWeeks[filteredWeeks.length - 1].id}
+          disabled={!filteredWeeks.length || (effectiveWeekId === filteredWeeks[filteredWeeks.length - 1].id && filterYear === null)}
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
