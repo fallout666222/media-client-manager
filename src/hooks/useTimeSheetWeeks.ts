@@ -58,18 +58,11 @@ export const useTimeSheetWeeks = ({
   };
 
   const findFirstUnsubmittedWeek = () => {
-    let hasUnsubmittedWeek = false;
-    
-    if (Object.keys(weekStatuses).length > 0) {
-      hasUnsubmittedWeek = Object.values(weekStatuses).some(
-        status => status === 'unconfirmed' || status === 'needs-revision'
-      );
-      
-      if (!hasUnsubmittedWeek) {
-        console.log("All custom weeks are either accepted or under review");
-        return null;
-      }
-    }
+    console.log("Starting findFirstUnsubmittedWeek");
+    console.log("Available customWeeks:", customWeeks.length);
+    console.log("Week statuses:", Object.entries(weekStatuses).map(([key, value]) => 
+      `${key}: ${value}`
+    ));
     
     if (customWeeks.length > 0) {
       let userFirstWeekDate: Date | null = null;
@@ -114,14 +107,14 @@ export const useTimeSheetWeeks = ({
         });
         
         console.log("Available weeks to check:", userWeeks.map(w => 
-          `${w.name} (${w.period_from}) - Status: ${weekStatuses[w.period_from] || 'undefined'}`
+          `${w.name} (${w.period_from}) - Status: ${weekStatuses[w.period_from] || 'unconfirmed'}`
         ));
         
         for (const week of userWeeks) {
           const weekKey = week.period_from;
-          const weekStatus = weekStatuses[weekKey];
+          const weekStatus = weekStatuses[weekKey] || 'unconfirmed';
           
-          console.log(`Checking week ${week.name} (${weekKey}): Status = ${weekStatus || 'undefined'}`);
+          console.log(`Checking week ${week.name} (${weekKey}): Status = ${weekStatus}`);
           
           if (weekStatus === 'unconfirmed' || weekStatus === 'needs-revision') {
             console.log(`Found first unsubmitted/needs revision week: ${week.name} (${week.period_from}), status: ${weekStatus}`);
@@ -316,9 +309,9 @@ export const useTimeSheetWeeks = ({
     
     for (let i = userFirstWeekIndex; i < currentIndex; i++) {
       const weekKey = sortedWeeks[i].period_from;
-      const weekStatus = weekStatuses[weekKey];
+      const weekStatus = weekStatuses[weekKey] || 'unconfirmed';
       
-      if (weekKey && (weekStatus === 'unconfirmed' || weekStatus === 'needs-revision' || !weekStatus)) {
+      if (weekKey && (weekStatus === 'unconfirmed' || weekStatus === 'needs-revision')) {
         return true;
       }
     }
