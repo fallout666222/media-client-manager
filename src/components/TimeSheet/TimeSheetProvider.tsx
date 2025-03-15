@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, parse, isSameDay } from 'date-fns';
 import { TimeSheetStatus, User, Client } from '@/types/timesheet';
@@ -151,6 +150,7 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
     userRole,
     availableClients,
     availableMediaTypes,
+    setAvailableMediaTypes,
     selectedClients,
     setSelectedClients,
     selectedMediaTypes,

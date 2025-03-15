@@ -6,10 +6,11 @@ interface UseClientMediaTypeManagementProps {
   userRole: 'admin' | 'user' | 'manager';
   availableClients: string[];
   availableMediaTypes: string[];
+  setAvailableMediaTypes: React.Dispatch<React.SetStateAction<string[]>>;
   selectedClients: string[];
-  setSelectedClients: (clients: string[]) => void;
+  setSelectedClients: React.Dispatch<React.SetStateAction<string[]>>;
   selectedMediaTypes: string[];
-  setSelectedMediaTypes: (types: string[]) => void;
+  setSelectedMediaTypes: React.Dispatch<React.SetStateAction<string[]>>;
   readOnly?: boolean;
 }
 
@@ -17,6 +18,7 @@ export const useClientMediaTypeManagement = ({
   userRole,
   availableClients,
   availableMediaTypes,
+  setAvailableMediaTypes,
   selectedClients,
   setSelectedClients,
   selectedMediaTypes,
@@ -40,35 +42,41 @@ export const useClientMediaTypeManagement = ({
     if (userRole !== 'admin') return;
     
     if (!availableMediaTypes.includes(type)) {
-      setAvailableMediaTypes(prev => [...prev, type]);
-      setSelectedMediaTypes(prev => [...prev, type]);
+      const updatedMediaTypes = [...availableMediaTypes, type];
+      setAvailableMediaTypes(updatedMediaTypes);
+      setSelectedMediaTypes([...selectedMediaTypes, type]);
     }
   };
 
   const handleRemoveClient = (client: string) => {
     if (readOnly) return;
-    setSelectedClients(prev => prev.filter(c => c !== client));
+    const updatedClients = selectedClients.filter(c => c !== client);
+    setSelectedClients(updatedClients);
   };
 
   const handleRemoveMediaType = (type: string) => {
     if (readOnly) return;
     
     if (userRole === 'admin') {
-      setAvailableMediaTypes(prev => prev.filter(t => t !== type));
+      const updatedAvailableTypes = availableMediaTypes.filter(t => t !== type);
+      setAvailableMediaTypes(updatedAvailableTypes);
     }
     
-    setSelectedMediaTypes(prev => prev.filter(t => t !== type));
+    const updatedSelectedTypes = selectedMediaTypes.filter(t => t !== type);
+    setSelectedMediaTypes(updatedSelectedTypes);
   };
 
   const handleSelectClient = (client: string) => {
     if (!selectedClients.includes(client)) {
-      setSelectedClients(prev => [...prev, client]);
+      const updatedClients = [...selectedClients, client];
+      setSelectedClients(updatedClients);
     }
   };
 
   const handleSelectMediaType = (type: string) => {
     if (!selectedMediaTypes.includes(type)) {
-      setSelectedMediaTypes(prev => [...prev, type]);
+      const updatedTypes = [...selectedMediaTypes, type];
+      setSelectedMediaTypes(updatedTypes);
     }
   };
 

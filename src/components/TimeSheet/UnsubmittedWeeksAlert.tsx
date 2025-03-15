@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useTimeSheet } from './TimeSheetProvider';
+import { useTimeSheet } from './TimeSheetContext/TimeSheetContext';
 
 interface UnsubmittedWeeksAlertProps {
   readOnly: boolean;
