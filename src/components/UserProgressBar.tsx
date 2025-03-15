@@ -9,13 +9,15 @@ interface UserProgressBarProps {
   customWeeks: any[];
   firstWeek: string;
   userRole: string;
+  filterYear?: number | null;
 }
 
 export function UserProgressBar({
   userId,
   customWeeks,
   firstWeek,
-  userRole
+  userRole,
+  filterYear = null
 }: UserProgressBarProps) {
   const [weeks, setWeeks] = useState<any[]>([]);
   const [selectedWeek, setSelectedWeek] = useState<any>(null);
@@ -50,7 +52,8 @@ export function UserProgressBar({
             if (statusData.week) {
               existingStatusMap.set(statusData.week.id, {
                 week: statusData.week.name,
-                status: (statusData.status?.name || 'unconfirmed') as 'accepted' | 'under revision' | 'under review' | 'Unconfirmed'
+                status: (statusData.status?.name || 'unconfirmed') as 'accepted' | 'under revision' | 'under review' | 'Unconfirmed',
+                periodFrom: statusData.week.period_from
               });
             }
           });
@@ -59,7 +62,8 @@ export function UserProgressBar({
             const existingStatus = existingStatusMap.get(week.id);
             return existingStatus || {
               week: week.name,
-              status: 'Unconfirmed' as 'accepted' | 'under revision' | 'under review' | 'Unconfirmed'
+              status: 'Unconfirmed' as 'accepted' | 'under revision' | 'under review' | 'Unconfirmed',
+              periodFrom: week.period_from
             };
           });
 
@@ -72,7 +76,8 @@ export function UserProgressBar({
         } else {
           formattedWeeks = allAvailableWeeks.map(week => ({
             week: week.name,
-            status: 'Unconfirmed' as 'accepted' | 'under revision' | 'under review' | 'Unconfirmed'
+            status: 'Unconfirmed' as 'accepted' | 'under revision' | 'under review' | 'Unconfirmed',
+            periodFrom: week.period_from
           }));
 
           formattedWeeks.sort((a, b) => {
@@ -113,7 +118,7 @@ export function UserProgressBar({
         weeks={weeks} 
         selectedWeek={selectedWeek} 
         onSelectWeek={handleSelectWeek} 
-        filterYear={null} 
+        filterYear={filterYear}
       />
       <WeekDetails weekData={selectedWeek} />
     </div>

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { Check, Info, AlertCircle, HelpCircle } from 'lucide-react';
+import { Check, Info, AlertCircle, HelpCircle, Filter } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { parse, format, isWithinInterval, getYear } from 'date-fns';
@@ -80,6 +80,18 @@ export const StatusTimeline: React.FC<StatusTimelineProps> = ({
   onSelectWeek,
   filterYear = null
 }) => {
+  // If filterYear is null (All years), show a message instead of the progress bar
+  if (filterYear === null) {
+    return (
+      <div className="w-full py-4 px-4">
+        <div className="flex items-center justify-center p-4 border border-dashed border-gray-300 rounded-md bg-gray-50">
+          <Filter className="h-5 w-5 text-gray-400 mr-2" />
+          <p className="text-gray-500 font-medium">Filter by year to see weekly progress bar</p>
+        </div>
+      </div>
+    );
+  }
+
   // Filter weeks by year if filterYear is provided
   const filteredWeeks = filterYear ? weeks.filter(week => {
     if (week.periodFrom) {
@@ -93,6 +105,7 @@ export const StatusTimeline: React.FC<StatusTimelineProps> = ({
     }
     return true;
   }) : weeks;
+
   return <div className="w-full overflow-x-auto py-4">
       <div className="flex items-center w-full min-w-min px-4">
         {filteredWeeks.map((weekData, index) => <StatusCell key={weekData.week} weekData={weekData} onSelect={onSelectWeek} isSelected={selectedWeek?.week === weekData.week} isFirst={index === 0} isLast={index === filteredWeeks.length - 1} className="flex-1" />)}
