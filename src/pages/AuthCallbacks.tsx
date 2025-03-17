@@ -51,109 +51,57 @@ export const AdfsCallback = () => {
           throw new Error('Не получен код авторизации от ADFS');
         }
         
-        // Exchange the code for tokens
-        // In a real implementation, this would be done securely on the backend
-        const adfsUrl = import.meta.env.VITE_ADFS_URL || 'https://adfs.example.org/adfs';
-        const clientId = import.meta.env.VITE_ADFS_CLIENT_ID || 'your-client-id';
-        const clientSecret = import.meta.env.VITE_ADFS_CLIENT_SECRET || 'your-client-secret';
-        const redirectUri = window.location.origin + '/auth/adfs-callback';
-        
-        // Usually this request should be made from a secure backend to protect client secret
-        const response = await fetch(`${adfsUrl}/oauth2/token`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: new URLSearchParams({
-            grant_type: 'authorization_code',
-            client_id: clientId,
-            client_secret: clientSecret,
-            code: code,
-            redirect_uri: redirectUri,
-          }),
+        // Exchange the code for tokens using a secure backend function
+        const { data, error } = await supabase.functions.invoke('adfs-token-exchange', {
+          body: { 
+            code, 
+            redirectUri: window.location.origin + '/auth/adfs-callback'
+          }
         });
         
-        if (!response.ok) {
-          const responseData = await response.json().catch(() => null);
-          
-          if (responseData && responseData.error) {
-            switch(responseData.error) {
-              case 'invalid_grant':
-                throw new Error('Недействительный код авторизации или истек срок его действия.');
-              case 'invalid_client':
-                throw new Error('Недопустимый ID клиента или секрет клиента.');
-              case 'invalid_request':
-                throw new Error('Неверный запрос обмена токенами.');
-              default:
-                throw new Error(`Ошибка при обмене кода на токены: ${responseData.error}`);
-            }
-          }
-          
-          throw new Error('Не удалось обменять код авторизации на токены.');
+        if (error) {
+          console.error('Token exchange error:', error);
+          throw new Error(`Ошибка при обмене кода на токены: ${error.message}`);
         }
         
-        const tokenData = await response.json();
-        
-        // Parse the ID token to get user information
-        // In a real implementation, you should validate the token
-        const idToken = tokenData.id_token;
-        const idTokenPayload = JSON.parse(atob(idToken.split('.')[1]));
-        
-        // Find the user in your system based on the claims in the ID token
-        // For example, you might look up a user by email or UPN
-        const userEmail = idTokenPayload.email || idTokenPayload.upn;
-        
-        if (!userEmail) {
-          throw new Error('Не найден email или UPN в ID токене');
-        }
-        
-        // Now find the user in your database using Supabase
-        // You might need to adjust this based on your database schema
-        const { data, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('email', userEmail)
-          .single();
-        
-        if (error || !data) {
-          throw new Error(`Пользователь с email ${userEmail} не найден в системе`);
+        if (!data || !data.user) {
+          throw new Error('Не удалось получить информацию о пользователе');
         }
         
         // Create a properly formatted User object
-        const userRole = data.type as 'admin' | 'user' | 'manager';
+        const userRole = data.user.type as 'admin' | 'user' | 'manager';
         
         const appUser: User = {
-          id: data.id,
-          username: data.login,
-          name: data.name,
+          id: data.user.id,
+          username: data.user.login,
+          name: data.user.name,
           role: userRole,
-          password: data.password,
-          firstWeek: data.first_week,
-          firstCustomWeekId: data.first_custom_week_id,
-          login: data.login,
-          type: data.type,
-          email: data.email,
-          job_position: data.job_position,
-          description: data.description,
-          department_id: data.department_id,
-          departmentId: data.department_id,
-          deletion_mark: data.deletion_mark,
-          user_head_id: data.user_head_id,
-          hidden: data.hidden
+          password: data.user.password,
+          firstWeek: data.user.first_week,
+          firstCustomWeekId: data.user.first_custom_week_id,
+          login: data.user.login,
+          type: data.user.type,
+          email: data.user.email,
+          job_position: data.user.job_position,
+          description: data.user.description,
+          department_id: data.user.department_id,
+          departmentId: data.user.department_id,
+          deletion_mark: data.user.deletion_mark,
+          user_head_id: data.user.user_head_id,
+          hidden: data.user.hidden
         };
-        
-        // Save user data to localStorage for session persistence
-        localStorage.setItem('userSession', JSON.stringify(appUser));
         
         // Check if user has unconfirmed weeks
         try {
           const { getUserFirstUnconfirmedWeek } = await import('@/integrations/supabase/database');
-          const firstUnconfirmedWeek = await getUserFirstUnconfirmedWeek(data.id);
+          const firstUnconfirmedWeek = await getUserFirstUnconfirmedWeek(data.user.id);
           if (firstUnconfirmedWeek) {
-            localStorage.setItem('redirectToWeek', JSON.stringify({
+            // Store redirect info in session cookie instead of localStorage
+            const redirectData = JSON.stringify({
               weekId: firstUnconfirmedWeek.id,
               date: firstUnconfirmedWeek.period_from
-            }));
+            });
+            document.cookie = `redirectToWeek=${encodeURIComponent(redirectData)}; path=/; SameSite=Strict`;
           }
         } catch (error) {
           console.error('Error getting first unconfirmed week:', error);
@@ -162,7 +110,7 @@ export const AdfsCallback = () => {
         // Show success toast
         toast({
           title: "Добро пожаловать!",
-          description: `Вы успешно вошли в систему как ${data.name}`
+          description: `Вы успешно вошли в систему как ${data.user.name}`
         });
         
         // Redirect to the main page
