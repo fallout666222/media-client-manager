@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +6,7 @@ import { User } from "@/types/timesheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -25,6 +25,8 @@ export const Login = ({
   const [kerberosError, setKerberosError] = useState<string | null>(null);
   const [adfsLoading, setAdfsLoading] = useState(false);
   const [adfsError, setAdfsError] = useState<string | null>(null);
+  const [samlLoading, setSamlLoading] = useState(false);
+  const [samlError, setSamlError] = useState<string | null>(null);
 
   const handleFormSubmit = async (event: React.SyntheticEvent) => {
     event.preventDefault();
@@ -160,7 +162,7 @@ export const Login = ({
           description: data.user.description,
           department_id: data.user.department_id,
           departmentId: data.user.department_id,
-          deletion_mark: data.user.deletion_mark,
+          deletion_mark: data.deletion_mark,
           user_head_id: data.user.user_head_id,
           hidden: data.user.hidden
         };
@@ -261,6 +263,61 @@ export const Login = ({
     }
   };
 
+  const handleSamlLogin = async () => {
+    try {
+      setSamlLoading(true);
+      setSamlError(null);
+
+      console.log('Initiating SAML authentication');
+      
+      // Call the SAML initiation Edge Function
+      const { data, error } = await supabase.functions.invoke('saml-initiate', {
+        body: { 
+          redirectUri: window.location.origin + '/auth/saml-callback'
+        }
+      });
+      
+      if (error) {
+        console.error('SAML initiation error:', error);
+        throw new Error('saml_initiation_error');
+      }
+      
+      if (!data || !data.redirectUrl) {
+        throw new Error('saml_response_error');
+      }
+      
+      // Redirect the user to the ADFS SAML login page
+      window.location.href = data.redirectUrl;
+      
+    } catch (error) {
+      console.error('SAML login error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'unknown_error';
+      
+      // Set appropriate error message based on error type
+      switch(errorMessage) {
+        case 'saml_not_configured':
+          setSamlError('SAML не настроен. Пожалуйста, обратитесь к администратору системы.');
+          break;
+        case 'saml_initiation_error':
+          setSamlError('Ошибка при инициации SAML аутентификации. Проверьте конфигурацию сервера.');
+          break;
+        case 'saml_response_error':
+          setSamlError('Некорректный ответ от сервера SAML. Обратитесь к администратору.');
+          break;
+        default:
+          setSamlError('Произошла неизвестная ошибка при авторизации через SAML. Пожалуйста, попробуйте позже или используйте другой метод входа.');
+      }
+      
+      toast({
+        title: "Ошибка SAML аутентификации",
+        description: "Возникла проблема с единым входом через SAML. Пожалуйста, попробуйте еще раз или используйте другой метод входа.",
+        variant: "destructive"
+      });
+    } finally {
+      setSamlLoading(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-lg">
@@ -272,10 +329,11 @@ export const Login = ({
         </div>
         
         <Tabs defaultValue="password" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="password">Password</TabsTrigger>
             <TabsTrigger value="kerberos">Kerberos SSO</TabsTrigger>
-            <TabsTrigger value="adfs">ADFS SSO</TabsTrigger>
+            <TabsTrigger value="adfs">ADFS OAuth</TabsTrigger>
+            <TabsTrigger value="saml">ADFS SAML</TabsTrigger>
           </TabsList>
           
           <TabsContent value="password">
@@ -325,8 +383,8 @@ export const Login = ({
               <Alert className="bg-blue-50 border-blue-200">
                 <InfoIcon className="h-4 w-4 text-blue-500" />
                 <AlertDescription>
-                  ADFS single sign-on allows you to authenticate using your organization's
-                  Active Directory Federation Services. You will be redirected to your
+                  ADFS OAuth single sign-on allows you to authenticate using your organization's
+                  Active Directory Federation Services with OAuth protocol. You will be redirected to your
                   organization's login page.
                 </AlertDescription>
               </Alert>
@@ -342,7 +400,34 @@ export const Login = ({
                 onClick={handleAdfsLogin}
                 disabled={adfsLoading}
               >
-                {adfsLoading ? "Redirecting..." : "Sign in with ADFS"}
+                {adfsLoading ? "Redirecting..." : "Sign in with ADFS OAuth"}
+              </Button>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="saml">
+            <div className="mt-8 space-y-6">
+              <Alert className="bg-blue-50 border-blue-200">
+                <InfoIcon className="h-4 w-4 text-blue-500" />
+                <AlertDescription>
+                  ADFS SAML single sign-on allows you to authenticate using your organization's
+                  Active Directory Federation Services with SAML protocol. This is ideal for enterprise
+                  environments with SAML-based identity providers.
+                </AlertDescription>
+              </Alert>
+              
+              {samlError && (
+                <Alert variant="destructive">
+                  <AlertDescription>{samlError}</AlertDescription>
+                </Alert>
+              )}
+              
+              <Button 
+                className="w-full"
+                onClick={handleSamlLogin}
+                disabled={samlLoading}
+              >
+                {samlLoading ? "Redirecting..." : "Sign in with ADFS SAML"}
               </Button>
             </div>
           </TabsContent>
