@@ -1,3 +1,4 @@
+
 import { Routes, Route, Navigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -15,7 +16,6 @@ import MediaTypeManagement from "@/pages/MediaTypeManagement";
 import SettingsPage from "@/pages/Settings";
 import UserHeadView from "@/pages/UserHeadView";
 import { AdfsCallback } from "@/pages/AuthCallbacks";
-import { SamlCallback } from "@/pages/SamlCallback";
 import { useApp } from "@/contexts/AppContext";
 
 export function AppRoutes() {
@@ -77,8 +77,6 @@ export function AppRoutes() {
       />
 
       <Route path="/auth/adfs-callback" element={<AdfsCallback />} />
-
-      <Route path="/auth/saml-callback" element={<SamlCallback />} />
 
       <Route 
         path="/view-users" 

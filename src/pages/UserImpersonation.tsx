@@ -28,8 +28,10 @@ const UserImpersonation = ({ clients }: UserImpersonationProps) => {
       try {
         setLoading(true);
         
+        // Fetch users
         const { data: usersData } = await getUsers();
         
+        // Fetch custom weeks
         const { data: weeksData } = await getCustomWeeks();
         
         if (weeksData) {
@@ -38,6 +40,7 @@ const UserImpersonation = ({ clients }: UserImpersonationProps) => {
         }
         
         if (usersData) {
+          // Create admin user for context
           const admin: User = {
             id: 'admin',
             username: 'admin',
@@ -63,32 +66,40 @@ const UserImpersonation = ({ clients }: UserImpersonationProps) => {
 
   const handleImpersonateUser = async (user: User) => {
     try {
+      // Reset initial week ID
       setInitialWeekId(null);
       
+      // Find most recent week with filled hours for this user
       if (user.id && customWeeks.length > 0) {
         let mostRecentWeekWithHours = null;
         
+        // Check each week for hours data, start from the end (most recent)
         for (const week of customWeeks) {
           const { data: hoursData } = await getWeekHours(user.id, week.id);
           
+          // If this week has hours entries, use it
           if (hoursData && hoursData.length > 0) {
             mostRecentWeekWithHours = week;
             break;
           }
         }
         
+        // If we found a week with hours, set it as initial
         if (mostRecentWeekWithHours) {
           console.log(`Found recent week with hours: ${mostRecentWeekWithHours.name}`);
           setInitialWeekId(mostRecentWeekWithHours.id);
         } else if (customWeeks.length > 0) {
+          // Otherwise, use the first week from custom_weeks
           console.log(`No weeks with hours found, using first week: ${customWeeks[0].name}`);
           setInitialWeekId(customWeeks[0].id);
         }
       }
       
+      // Set the selected user
       setSelectedUser(user);
     } catch (error) {
       console.error('Error finding week with hours:', error);
+      // Set the user anyway, we'll default to the first week
       setSelectedUser(user);
     }
   };
@@ -158,6 +169,7 @@ const UserImpersonation = ({ clients }: UserImpersonationProps) => {
           </Card>
         )}
         
+        {/* Timesheet with admin privileges */}
         <div>
           <h2 className="text-xl font-semibold mb-4">Timesheet Management</h2>
           <p className="text-sm text-muted-foreground mb-4">
