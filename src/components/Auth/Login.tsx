@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -196,10 +195,6 @@ export const Login = ({
       // In a real implementation, this would redirect to the ADFS authentication endpoint
       console.log('Initiating ADFS authentication');
       
-      // The ADFS authentication is typically initiated by redirecting to the ADFS server
-      // This configuration should be set in the .env file and the URL should be constructed 
-      // as per the ADFS requirements
-      
       const adfsUrl = import.meta.env.VITE_ADFS_URL || 'https://adfs.example.org/adfs';
       const clientId = import.meta.env.VITE_ADFS_CLIENT_ID || 'your-client-id';
       const redirectUri = encodeURIComponent(window.location.origin + '/auth/adfs-callback');
@@ -209,12 +204,12 @@ export const Login = ({
         throw new Error('adfs_not_configured');
       }
       
-      // Construct the authorization URL
+      // Construct the authorization URL - NO CLIENT SECRET HERE
+      // We only include the parameters needed for the authorization request
       const authUrl = `${adfsUrl}/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&resource=https://timesheet.app&scope=openid profile email`;
       
       // Before redirecting, check if the ADFS server is available
       try {
-        // Modified: Removed the timeout property as it's not supported in the fetch API
         const pingResponse = await fetch(`${adfsUrl}/ping`, { 
           method: 'GET',
           mode: 'no-cors',
