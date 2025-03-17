@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { initiateSamlAuth, initiateAdfsAuth } from '@/utils/samlUtils';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -21,6 +22,7 @@ export const Login = ({
   const [password, setPassword] = useState("");
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [authLoading, setAuthLoading] = useState(false);
   const [kerberosLoading, setKerberosLoading] = useState(false);
   const [kerberosError, setKerberosError] = useState<string | null>(null);
   const [adfsLoading, setAdfsLoading] = useState(false);
@@ -192,129 +194,37 @@ export const Login = ({
 
   const handleAdfsLogin = async () => {
     try {
-      setAdfsLoading(true);
-      setAdfsError(null);
-
-      // In a real implementation, this would redirect to the ADFS authentication endpoint
-      console.log('Initiating ADFS authentication');
-      
-      // The ADFS authentication is typically initiated by redirecting to the ADFS server
-      // This configuration should be set in the .env file and the URL should be constructed 
-      // as per the ADFS requirements
-      
-      const adfsUrl = import.meta.env.VITE_ADFS_URL || 'https://adfs.example.org/adfs';
-      const clientId = import.meta.env.VITE_ADFS_CLIENT_ID || 'your-client-id';
-      const redirectUri = encodeURIComponent(window.location.origin + '/auth/adfs-callback');
-      
-      // Check if ADFS URL is configured
-      if (!adfsUrl || adfsUrl === 'https://adfs.example.org/adfs') {
-        throw new Error('adfs_not_configured');
-      }
-      
-      // Construct the authorization URL
-      const authUrl = `${adfsUrl}/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&resource=https://timesheet.app&scope=openid profile email`;
-      
-      // Before redirecting, check if the ADFS server is available
-      try {
-        // Modified: Removed the timeout property as it's not supported in the fetch API
-        const pingResponse = await fetch(`${adfsUrl}/ping`, { 
-          method: 'GET',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          cache: 'no-cache'
-        });
-        
-        // Redirect the user to the ADFS login page
-        window.location.href = authUrl;
-      } catch (connectionError) {
-        console.error('ADFS server connection error:', connectionError);
-        throw new Error('adfs_connection_error');
-      }
-      
+      setAuthLoading(true);
+      const redirectUri = window.location.origin + '/auth/adfs-callback';
+      const authUrl = initiateAdfsAuth(redirectUri);
+      window.location.href = authUrl;
     } catch (error) {
       console.error('ADFS login error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'unknown_error';
-      
-      // Set appropriate error message based on error type
-      switch(errorMessage) {
-        case 'adfs_not_configured':
-          setAdfsError('ADFS не настроен. Пожалуйста, обратитесь к администратору системы.');
-          break;
-        case 'adfs_connection_error':
-          setAdfsError('Не удалось подключиться к серверу ADFS. Проверьте сетевое подключение и доступность сервера.');
-          break;
-        case 'user_not_found':
-          setAdfsError(`Пользователь "${username || 'Unknown'}" не найден в системе.`);
-          break;
-        case 'insufficient_permissions':
-          setAdfsError('Недостаточно прав для входа в систему. Обратитесь к администратору.');
-          break;
-        default:
-          setAdfsError('Произошла неизвестная ошибка при авторизации через ADFS. Пожалуйста, попробуйте позже или используйте другой метод входа.');
-      }
-      
+      const errorMessage = error instanceof Error ? error.message : 'Error initiating ADFS login';
       toast({
-        title: "Ошибка ADFS аутентификации",
-        description: "Возникла проблема с единым входом. Пожалуйста, попробуйте еще раз или используйте другой метод входа.",
+        title: "ADFS Login Error",
+        description: errorMessage,
         variant: "destructive"
       });
-    } finally {
-      setAdfsLoading(false);
+      setAuthLoading(false);
     }
   };
 
   const handleSamlLogin = async () => {
     try {
-      setSamlLoading(true);
-      setSamlError(null);
-
-      console.log('Initiating SAML authentication');
-      
-      // Call the SAML initiation Edge Function
-      const { data, error } = await supabase.functions.invoke('saml-initiate', {
-        body: { 
-          redirectUri: window.location.origin + '/auth/saml-callback'
-        }
-      });
-      
-      if (error) {
-        console.error('SAML initiation error:', error);
-        throw new Error('saml_initiation_error');
-      }
-      
-      if (!data || !data.redirectUrl) {
-        throw new Error('saml_response_error');
-      }
-      
-      // Redirect the user to the ADFS SAML login page
-      window.location.href = data.redirectUrl;
-      
+      setAuthLoading(true);
+      const redirectUri = window.location.origin + '/auth/saml-callback';
+      const redirectUrl = await initiateSamlAuth(redirectUri);
+      window.location.href = redirectUrl;
     } catch (error) {
       console.error('SAML login error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'unknown_error';
-      
-      // Set appropriate error message based on error type
-      switch(errorMessage) {
-        case 'saml_not_configured':
-          setSamlError('SAML не настроен. Пожалуйста, обратитесь к администратору системы.');
-          break;
-        case 'saml_initiation_error':
-          setSamlError('Ошибка при инициации SAML аутентификации. Проверьте конфигурацию сервера.');
-          break;
-        case 'saml_response_error':
-          setSamlError('Некорректный ответ от сервера SAML. Обратитесь к администратору.');
-          break;
-        default:
-          setSamlError('Произошла неизвестная ошибка при авторизации через SAML. Пожалуйста, попробуйте позже или используйте другой метод входа.');
-      }
-      
+      const errorMessage = error instanceof Error ? error.message : 'Error initiating SAML login';
       toast({
-        title: "Ошибка SAML аутентификации",
-        description: "Возникла проблема с единым входом через SAML. Пожалуйста, попробуйте еще раз или используйте другой метод входа.",
+        title: "SAML Login Error",
+        description: errorMessage,
         variant: "destructive"
       });
-    } finally {
-      setSamlLoading(false);
+      setAuthLoading(false);
     }
   };
 
@@ -396,11 +306,12 @@ export const Login = ({
               )}
               
               <Button 
-                className="w-full"
+                className="w-full flex items-center justify-center gap-2"
                 onClick={handleAdfsLogin}
-                disabled={adfsLoading}
+                variant="outline"
+                disabled={authLoading}
               >
-                {adfsLoading ? "Redirecting..." : "Sign in with ADFS OAuth"}
+                <UserIcon className="h-4 w-4" /> ADFS Login
               </Button>
             </div>
           </TabsContent>
@@ -423,11 +334,12 @@ export const Login = ({
               )}
               
               <Button 
-                className="w-full"
+                className="w-full flex items-center justify-center gap-2"
                 onClick={handleSamlLogin}
-                disabled={samlLoading}
+                variant="outline"
+                disabled={authLoading}
               >
-                {samlLoading ? "Redirecting..." : "Sign in with ADFS SAML"}
+                <UserIcon className="h-4 w-4" /> SAML Login
               </Button>
             </div>
           </TabsContent>

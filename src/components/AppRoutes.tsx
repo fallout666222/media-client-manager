@@ -1,21 +1,21 @@
 
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
-import { Index } from '@/pages/Index';
-import { TimeSheet } from '@/pages/TimeSheet';
-import { UserImpersonation } from '@/pages/UserImpersonation';
-import { UserFirstWeekManagement } from '@/pages/UserFirstWeekManagement';
-import { UserManagerAssignment } from '@/pages/UserManagerAssignment';
-import { Settings } from '@/pages/Settings';
-import { ClientTree } from '@/pages/ClientTree';
+import Index from '@/pages/Index';
+import TimeSheet from '@/pages/TimeSheet';
+import UserImpersonation from '@/pages/UserImpersonation';
+import UserFirstWeekManagement from '@/pages/UserFirstWeekManagement';
+import UserManagerAssignment from '@/pages/UserManagerAssignment';
+import Settings from '@/pages/Settings';
+import ClientTree from '@/pages/ClientTree';
 import { ProtectedRoute } from './ProtectedRoute';
 import { Login } from './Auth/Login';
 import { AdfsCallback, SamlCallback } from '@/pages/AuthCallbacks';
-import { CustomWeeks } from '@/pages/CustomWeeks';
-import { MediaTypeManagement } from '@/pages/MediaTypeManagement';
-import { UserHeadView } from '@/pages/UserHeadView';
-import { ManagerView } from '@/pages/ManagerView';
-import { UserWeekPercentage } from '@/pages/UserWeekPercentage';
+import CustomWeeks from '@/pages/CustomWeeks';
+import MediaTypeManagement from '@/pages/MediaTypeManagement';
+import UserHeadView from '@/pages/UserHeadView';
+import ManagerView from '@/pages/ManagerView';
+import UserWeekPercentage from '@/pages/UserWeekPercentage';
 
 export const AppRoutes = () => {
   const { user, users, loading, handleLogin } = useApp();

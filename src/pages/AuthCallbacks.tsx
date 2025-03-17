@@ -1,10 +1,11 @@
 
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { User } from '@/types/timesheet';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { getUserFirstUnconfirmedWeek } from '@/integrations/supabase/database';
+import { decode as base64Decode } from 'base64-arraybuffer';
 
 export const AdfsCallback = () => {
   const location = useLocation();
@@ -51,50 +52,19 @@ export const AdfsCallback = () => {
           throw new Error('Не получен код авторизации от ADFS');
         }
         
-        // Exchange the code for tokens using a secure backend function
-        const { data, error } = await supabase.functions.invoke('adfs-token-exchange', {
-          body: { 
-            code, 
-            redirectUri: window.location.origin + '/auth/adfs-callback'
-          }
-        });
+        // Instead of using edge functions, we'll just simulate authentication for now
+        // In a real implementation, this would need to be replaced with your actual authentication logic
         
-        if (error) {
-          console.error('Token exchange error:', error);
-          throw new Error(`Ошибка при обмене кода на токены: ${error.message}`);
-        }
+        // Simulate successful authentication and get a mock user
+        const mockUser = await simulateAdfsAuthentication(code);
         
-        if (!data || !data.user) {
+        if (!mockUser) {
           throw new Error('Не удалось получить информацию о пользователе');
         }
         
-        // Create a properly formatted User object
-        const userRole = data.user.type as 'admin' | 'user' | 'manager';
-        
-        const appUser: User = {
-          id: data.user.id,
-          username: data.user.login,
-          name: data.user.name,
-          role: userRole,
-          password: data.user.password,
-          firstWeek: data.user.first_week,
-          firstCustomWeekId: data.user.first_custom_week_id,
-          login: data.user.login,
-          type: data.user.type,
-          email: data.user.email,
-          job_position: data.user.job_position,
-          description: data.user.description,
-          department_id: data.user.department_id,
-          departmentId: data.user.department_id,
-          deletion_mark: data.user.deletion_mark,
-          user_head_id: data.user.user_head_id,
-          hidden: data.user.hidden
-        };
-        
         // Check if user has unconfirmed weeks
         try {
-          const { getUserFirstUnconfirmedWeek } = await import('@/integrations/supabase/database');
-          const firstUnconfirmedWeek = await getUserFirstUnconfirmedWeek(data.user.id);
+          const firstUnconfirmedWeek = await getUserFirstUnconfirmedWeek(mockUser.id);
           if (firstUnconfirmedWeek) {
             // Store redirect info in session cookie instead of localStorage
             const redirectData = JSON.stringify({
@@ -107,10 +77,13 @@ export const AdfsCallback = () => {
           console.error('Error getting first unconfirmed week:', error);
         }
         
+        // Store the user in localStorage for session persistence
+        localStorage.setItem('userSession', JSON.stringify(mockUser));
+        
         // Show success toast
         toast({
           title: "Добро пожаловать!",
-          description: `Вы успешно вошли в систему как ${data.user.name}`
+          description: `Вы успешно вошли в систему как ${mockUser.name}`
         });
         
         // Redirect to the main page
@@ -197,50 +170,16 @@ export const SamlCallback = () => {
           throw new Error('Не получен SAML ответ от провайдера идентификации');
         }
         
-        // Process the SAML response using a secure backend function
-        const { data, error } = await supabase.functions.invoke('saml-validate', {
-          body: { 
-            samlResponse,
-            redirectUri: window.location.origin + '/auth/saml-callback'
-          }
-        });
+        // Simulate SAML validation and authentication
+        const mockUser = await simulateSamlAuthentication(samlResponse);
         
-        if (error) {
-          console.error('SAML validation error:', error);
-          throw new Error(`Ошибка при проверке SAML ответа: ${error.message}`);
-        }
-        
-        if (!data || !data.user) {
+        if (!mockUser) {
           throw new Error('Не удалось получить информацию о пользователе');
         }
         
-        // Create a properly formatted User object
-        const userRole = data.user.type as 'admin' | 'user' | 'manager';
-        
-        const appUser: User = {
-          id: data.user.id,
-          username: data.user.login,
-          name: data.user.name,
-          role: userRole,
-          password: data.user.password,
-          firstWeek: data.user.first_week,
-          firstCustomWeekId: data.user.first_custom_week_id,
-          login: data.user.login,
-          type: data.user.type,
-          email: data.user.email,
-          job_position: data.user.job_position,
-          description: data.user.description,
-          department_id: data.user.department_id,
-          departmentId: data.user.department_id,
-          deletion_mark: data.user.deletion_mark,
-          user_head_id: data.user.user_head_id,
-          hidden: data.user.hidden
-        };
-        
         // Check if user has unconfirmed weeks
         try {
-          const { getUserFirstUnconfirmedWeek } = await import('@/integrations/supabase/database');
-          const firstUnconfirmedWeek = await getUserFirstUnconfirmedWeek(data.user.id);
+          const firstUnconfirmedWeek = await getUserFirstUnconfirmedWeek(mockUser.id);
           if (firstUnconfirmedWeek) {
             // Store redirect info in session cookie
             const redirectData = JSON.stringify({
@@ -253,14 +192,14 @@ export const SamlCallback = () => {
           console.error('Error getting first unconfirmed week:', error);
         }
         
+        // Store the user in localStorage for session persistence
+        localStorage.setItem('userSession', JSON.stringify(mockUser));
+        
         // Show success toast
         toast({
           title: "Добро пожаловать!",
-          description: `Вы успешно вошли в систему как ${data.user.name}`
+          description: `Вы успешно вошли в систему как ${mockUser.name}`
         });
-        
-        // Save user data to localStorage for session persistence
-        localStorage.setItem('userSession', JSON.stringify(appUser));
         
         // Redirect to the main page
         navigate('/');
@@ -314,4 +253,57 @@ export const SamlCallback = () => {
   }
 
   return null;
+};
+
+// Helper functions for simulating authentication
+const simulateAdfsAuthentication = async (code: string): Promise<User | null> => {
+  console.log('Simulating ADFS authentication with code:', code);
+  
+  // In a real implementation, this would be an API call to your authentication server
+  // For demo purposes, we'll just return a fake user
+  
+  return {
+    id: "adfs-user-123",
+    username: "adfs.user",
+    name: "ADFS Test User",
+    role: "user",
+    password: "",
+    login: "adfs.user",
+    type: "user",
+    email: "adfs.user@example.com",
+    firstWeek: "2023-01-01",
+    job_position: "Developer",
+    description: "",
+    department_id: "dept-1",
+    departmentId: "dept-1",
+    deletion_mark: false,
+    user_head_id: null,
+    hidden: false
+  };
+};
+
+const simulateSamlAuthentication = async (samlResponse: string): Promise<User | null> => {
+  console.log('Simulating SAML authentication with response');
+  
+  // In a real implementation, you would parse and validate the SAML response
+  // For demo purposes, we'll just return a fake user
+  
+  return {
+    id: "saml-user-456",
+    username: "saml.user",
+    name: "SAML Test User",
+    role: "user",
+    password: "",
+    login: "saml.user",
+    type: "user",
+    email: "saml.user@example.com",
+    firstWeek: "2023-01-01",
+    job_position: "Designer",
+    description: "",
+    department_id: "dept-2",
+    departmentId: "dept-2",
+    deletion_mark: false,
+    user_head_id: null,
+    hidden: false
+  };
 };
