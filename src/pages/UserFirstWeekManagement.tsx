@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { User, CustomWeek } from "@/types/timesheet";
@@ -37,12 +36,10 @@ const UserFirstWeekManagement = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch users from the database
       const { data: usersData, error: usersError } = await getUsers();
       if (usersError) throw usersError;
       setUsers(usersData || []);
       
-      // Fetch custom weeks
       const { data: weeksData, error: weeksError } = await getCustomWeeks();
       if (weeksError) throw weeksError;
       setCustomWeeks(weeksData || []);
@@ -73,7 +70,6 @@ const UserFirstWeekManagement = () => {
           first_week: selectedWeek.period_from
         });
         
-        // Update local state to reflect changes immediately
         setUsers(prevUsers => 
           prevUsers.map(u => 
             u.id === user.id ? {
@@ -86,7 +82,6 @@ const UserFirstWeekManagement = () => {
           )
         );
         
-        // Clear selected week
         setSelectedWeeks(prev => {
           const updated = { ...prev };
           delete updated[user.id];

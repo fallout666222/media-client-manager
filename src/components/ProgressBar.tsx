@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Check, Info, AlertCircle, HelpCircle, Filter } from 'lucide-react';
@@ -96,6 +95,7 @@ export const StatusTimeline: React.FC<StatusTimelineProps> = ({
   const filteredWeeks = filterYear ? weeks.filter(week => {
     if (week.periodFrom) {
       try {
+        // This should be compatible with date-fns v3
         const weekDate = parse(week.periodFrom, 'yyyy-MM-dd', new Date());
         return getYear(weekDate) === filterYear;
       } catch (error) {
