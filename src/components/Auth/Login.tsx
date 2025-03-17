@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,8 +7,6 @@ import { User } from "@/types/timesheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { initiateSamlAuth, initiateAdfsAuth } from '@/utils/samlUtils';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -22,13 +21,10 @@ export const Login = ({
   const [password, setPassword] = useState("");
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [authLoading, setAuthLoading] = useState(false);
   const [kerberosLoading, setKerberosLoading] = useState(false);
   const [kerberosError, setKerberosError] = useState<string | null>(null);
   const [adfsLoading, setAdfsLoading] = useState(false);
   const [adfsError, setAdfsError] = useState<string | null>(null);
-  const [samlLoading, setSamlLoading] = useState(false);
-  const [samlError, setSamlError] = useState<string | null>(null);
 
   const handleFormSubmit = async (event: React.SyntheticEvent) => {
     event.preventDefault();
@@ -164,7 +160,7 @@ export const Login = ({
           description: data.user.description,
           department_id: data.user.department_id,
           departmentId: data.user.department_id,
-          deletion_mark: data.deletion_mark,
+          deletion_mark: data.user.deletion_mark,
           user_head_id: data.user.user_head_id,
           hidden: data.user.hidden
         };
@@ -194,37 +190,74 @@ export const Login = ({
 
   const handleAdfsLogin = async () => {
     try {
-      setAuthLoading(true);
-      const redirectUri = window.location.origin + '/auth/adfs-callback';
-      const authUrl = initiateAdfsAuth(redirectUri);
-      window.location.href = authUrl;
+      setAdfsLoading(true);
+      setAdfsError(null);
+
+      // In a real implementation, this would redirect to the ADFS authentication endpoint
+      console.log('Initiating ADFS authentication');
+      
+      // The ADFS authentication is typically initiated by redirecting to the ADFS server
+      // This configuration should be set in the .env file and the URL should be constructed 
+      // as per the ADFS requirements
+      
+      const adfsUrl = import.meta.env.VITE_ADFS_URL || 'https://adfs.example.org/adfs';
+      const clientId = import.meta.env.VITE_ADFS_CLIENT_ID || 'your-client-id';
+      const redirectUri = encodeURIComponent(window.location.origin + '/auth/adfs-callback');
+      
+      // Check if ADFS URL is configured
+      if (!adfsUrl || adfsUrl === 'https://adfs.example.org/adfs') {
+        throw new Error('adfs_not_configured');
+      }
+      
+      // Construct the authorization URL
+      const authUrl = `${adfsUrl}/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&resource=https://timesheet.app&scope=openid profile email`;
+      
+      // Before redirecting, check if the ADFS server is available
+      try {
+        // Modified: Removed the timeout property as it's not supported in the fetch API
+        const pingResponse = await fetch(`${adfsUrl}/ping`, { 
+          method: 'GET',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          cache: 'no-cache'
+        });
+        
+        // Redirect the user to the ADFS login page
+        window.location.href = authUrl;
+      } catch (connectionError) {
+        console.error('ADFS server connection error:', connectionError);
+        throw new Error('adfs_connection_error');
+      }
+      
     } catch (error) {
       console.error('ADFS login error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Error initiating ADFS login';
+      const errorMessage = error instanceof Error ? error.message : 'unknown_error';
+      
+      // Set appropriate error message based on error type
+      switch(errorMessage) {
+        case 'adfs_not_configured':
+          setAdfsError('ADFS не настроен. Пожалуйста, обратитесь к администратору системы.');
+          break;
+        case 'adfs_connection_error':
+          setAdfsError('Не удалось подключиться к серверу ADFS. Проверьте сетевое подключение и доступность сервера.');
+          break;
+        case 'user_not_found':
+          setAdfsError(`Пользователь "${username || 'Unknown'}" не найден в системе.`);
+          break;
+        case 'insufficient_permissions':
+          setAdfsError('Недостаточно прав для входа в систему. Обратитесь к администратору.');
+          break;
+        default:
+          setAdfsError('Произошла неизвестная ошибка при авторизации через ADFS. Пожалуйста, попробуйте позже или используйте другой метод входа.');
+      }
+      
       toast({
-        title: "ADFS Login Error",
-        description: errorMessage,
+        title: "Ошибка ADFS аутентификации",
+        description: "Возникла проблема с единым входом. Пожалуйста, попробуйте еще раз или используйте другой метод входа.",
         variant: "destructive"
       });
-      setAuthLoading(false);
-    }
-  };
-
-  const handleSamlLogin = async () => {
-    try {
-      setAuthLoading(true);
-      const redirectUri = window.location.origin + '/auth/saml-callback';
-      const redirectUrl = await initiateSamlAuth(redirectUri);
-      window.location.href = redirectUrl;
-    } catch (error) {
-      console.error('SAML login error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Error initiating SAML login';
-      toast({
-        title: "SAML Login Error",
-        description: errorMessage,
-        variant: "destructive"
-      });
-      setAuthLoading(false);
+    } finally {
+      setAdfsLoading(false);
     }
   };
 
@@ -239,11 +272,10 @@ export const Login = ({
         </div>
         
         <Tabs defaultValue="password" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="password">Password</TabsTrigger>
             <TabsTrigger value="kerberos">Kerberos SSO</TabsTrigger>
-            <TabsTrigger value="adfs">ADFS OAuth</TabsTrigger>
-            <TabsTrigger value="saml">ADFS SAML</TabsTrigger>
+            <TabsTrigger value="adfs">ADFS SSO</TabsTrigger>
           </TabsList>
           
           <TabsContent value="password">
@@ -293,8 +325,8 @@ export const Login = ({
               <Alert className="bg-blue-50 border-blue-200">
                 <InfoIcon className="h-4 w-4 text-blue-500" />
                 <AlertDescription>
-                  ADFS OAuth single sign-on allows you to authenticate using your organization's
-                  Active Directory Federation Services with OAuth protocol. You will be redirected to your
+                  ADFS single sign-on allows you to authenticate using your organization's
+                  Active Directory Federation Services. You will be redirected to your
                   organization's login page.
                 </AlertDescription>
               </Alert>
@@ -306,40 +338,11 @@ export const Login = ({
               )}
               
               <Button 
-                className="w-full flex items-center justify-center gap-2"
+                className="w-full"
                 onClick={handleAdfsLogin}
-                variant="outline"
-                disabled={authLoading}
+                disabled={adfsLoading}
               >
-                <UserIcon className="h-4 w-4" /> ADFS Login
-              </Button>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="saml">
-            <div className="mt-8 space-y-6">
-              <Alert className="bg-blue-50 border-blue-200">
-                <InfoIcon className="h-4 w-4 text-blue-500" />
-                <AlertDescription>
-                  ADFS SAML single sign-on allows you to authenticate using your organization's
-                  Active Directory Federation Services with SAML protocol. This is ideal for enterprise
-                  environments with SAML-based identity providers.
-                </AlertDescription>
-              </Alert>
-              
-              {samlError && (
-                <Alert variant="destructive">
-                  <AlertDescription>{samlError}</AlertDescription>
-                </Alert>
-              )}
-              
-              <Button 
-                className="w-full flex items-center justify-center gap-2"
-                onClick={handleSamlLogin}
-                variant="outline"
-                disabled={authLoading}
-              >
-                <UserIcon className="h-4 w-4" /> SAML Login
+                {adfsLoading ? "Redirecting..." : "Sign in with ADFS"}
               </Button>
             </div>
           </TabsContent>

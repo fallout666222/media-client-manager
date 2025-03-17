@@ -1,8 +1,8 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Client } from '@/types/timesheet';
 import * as db from '@/integrations/supabase/database';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 
 interface AppContextType {
   user: User | null;
@@ -38,16 +38,6 @@ export const useApp = () => {
   return context;
 };
 
-// Helper function to get cookie value by name
-const getCookie = (name: string): string | null => {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) {
-    return decodeURIComponent(parts.pop()?.split(';').shift() || '');
-  }
-  return null;
-};
-
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -58,72 +48,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   
   const { toast } = useToast();
 
-  // Load user session from cookie instead of localStorage
+  // Load user session from localStorage
   useEffect(() => {
-    const loadUserSession = async () => {
+    const loadUserSession = () => {
       try {
-        // Check if we have a user session from cookies
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Error getting session:', error);
-          setLoading(false);
-          return;
-        }
-        
-        if (session) {
-          const { data: userData, error: userError } = await db.getUserById(session.user.id);
-          
-          if (userError || !userData) {
-            console.error('Error getting user details:', userError);
-            setLoading(false);
-            return;
-          }
-          
-          const userRole = userData.type as 'admin' | 'user' | 'manager';
-          
-          const appUser: User = {
-            id: userData.id,
-            username: userData.login,
-            name: userData.name,
-            role: userRole,
-            password: userData.password,
-            firstWeek: userData.first_week,
-            firstCustomWeekId: userData.first_custom_week_id,
-            login: userData.login,
-            type: userData.type,
-            email: userData.email,
-            job_position: userData.job_position,
-            description: userData.description,
-            department_id: userData.department_id,
-            departmentId: userData.department_id,
-            deletion_mark: userData.deletion_mark,
-            user_head_id: userData.user_head_id,
-            hidden: userData.hidden
-          };
-          
-          setUser(appUser);
-        } else {
-          // Fallback to check localStorage for backwards compatibility
-          // This can be removed after migration is complete
-          const storedUser = localStorage.getItem('userSession');
-          if (storedUser) {
-            const userData = JSON.parse(storedUser);
-            console.log('Retrieved user session from localStorage (legacy):', userData);
-            setUser(userData);
-            
-            // Migrate to cookie-based session if possible
-            if (userData.id) {
-              await handleLogin(userData);
-              // Remove from localStorage after migration
-              localStorage.removeItem('userSession');
-            }
-          }
+        const storedUser = localStorage.getItem('userSession');
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          console.log('Retrieved user session from localStorage:', userData);
+          setUser(userData);
         }
       } catch (error) {
         console.error('Error loading user session:', error);
+        localStorage.removeItem('userSession');
       } finally {
-        if (!user) {
+        if (!localStorage.getItem('userSession')) {
           setLoading(false);
         }
       }
@@ -208,16 +147,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
         
         setUser(fullUserData);
-        
-        // Create session in Supabase Auth
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: data.email,
-          password: userData.password || 'placeholder-for-sso-users'
-        });
-        
-        if (signInError) {
-          console.error('Error creating session:', signInError);
-        }
+        localStorage.setItem('userSession', JSON.stringify(fullUserData));
       }
     } catch (error) {
       console.error('Error getting user details:', error);
@@ -230,18 +160,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const handleLogout = async () => {
-    // Clear the session cookie by setting an expired date
-    document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Strict";
-    document.cookie = "redirectToWeek=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Strict";
-    
-    // Sign out from Supabase auth
-    await supabase.auth.signOut();
-    
-    // Clear local state
+  const handleLogout = () => {
     setUser(null);
-    
-    // Legacy cleanup - can be removed after full migration
     localStorage.removeItem('userSession');
     localStorage.removeItem('redirectToWeek');
     
