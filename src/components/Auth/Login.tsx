@@ -6,6 +6,8 @@ import { User } from "@/types/timesheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -24,6 +26,7 @@ export const Login = ({
   const [kerberosError, setKerberosError] = useState<string | null>(null);
   const [adfsLoading, setAdfsLoading] = useState(false);
   const [adfsError, setAdfsError] = useState<string | null>(null);
+  const [adfsProtocol, setAdfsProtocol] = useState<"oauth" | "saml">("oauth");
 
   const handleFormSubmit = async (event: React.SyntheticEvent) => {
     event.preventDefault();
@@ -49,10 +52,8 @@ export const Login = ({
       if (data) {
         console.log('Authentication successful:', data);
 
-        // Properly cast the role type to satisfy TypeScript
         const userRole = data.type as 'admin' | 'user' | 'manager';
 
-        // Create a properly formatted User object with ALL fields
         const appUser: User = {
           id: data.id,
           username: data.login,
@@ -73,7 +74,6 @@ export const Login = ({
           hidden: data.hidden
         };
         
-        // Save user data to localStorage for session persistence
         localStorage.setItem('userSession', JSON.stringify(appUser));
         
         onLogin(appUser);
@@ -82,13 +82,11 @@ export const Login = ({
           description: `You are now logged in as ${data.name}`
         });
 
-        // Check if user has unconfirmed or needs-revision weeks
         try {
           console.log('Checking for unconfirmed weeks for user:', data.id);
           const firstUnconfirmedWeek = await getUserFirstUnconfirmedWeek(data.id);
           if (firstUnconfirmedWeek) {
             console.log('Found unconfirmed week to redirect to:', firstUnconfirmedWeek);
-            // Set the first unconfirmed week in localStorage to redirect after login
             localStorage.setItem('redirectToWeek', JSON.stringify({
               weekId: firstUnconfirmedWeek.id,
               date: firstUnconfirmedWeek.period_from
@@ -123,15 +121,11 @@ export const Login = ({
       setKerberosLoading(true);
       setKerberosError(null);
 
-      // In a real implementation, this would communicate with your Kerberos
-      // authentication endpoint on your server
       console.log('Attempting Kerberos SSO authentication');
       
-      // Mock implementation for now - in a real scenario this would be replaced 
-      // with a call to your Kerberos authentication endpoint
       const response = await fetch('/api/kerberos-auth', {
         method: 'GET',
-        credentials: 'include', // Important for Kerberos - sends cookies/auth headers
+        credentials: 'include',
       });
       
       if (!response.ok) {
@@ -140,7 +134,6 @@ export const Login = ({
       
       const data = await response.json();
       
-      // Process the user data similarly to the standard login flow
       if (data.user) {
         const userRole = data.user.type as 'admin' | 'user' | 'manager';
         
@@ -149,7 +142,7 @@ export const Login = ({
           username: data.user.login,
           name: data.user.name,
           role: userRole,
-          password: '',  // No password needed for Kerberos auth
+          password: '',
           firstWeek: data.user.first_week,
           firstCustomWeekId: data.user.first_custom_week_id,
           login: data.user.login,
@@ -192,49 +185,83 @@ export const Login = ({
       setAdfsLoading(true);
       setAdfsError(null);
 
-      // In a real implementation, this would redirect to the ADFS authentication endpoint
-      console.log('Initiating ADFS authentication');
+      console.log(`Initiating ADFS authentication using ${adfsProtocol} protocol`);
       
       const adfsUrl = import.meta.env.VITE_ADFS_URL || 'https://adfs.example.org/adfs';
       const clientId = import.meta.env.VITE_ADFS_CLIENT_ID || 'your-client-id';
       const redirectUri = encodeURIComponent(window.location.origin + '/auth/adfs-callback');
       
-      // Check if ADFS URL is configured
       if (!adfsUrl || adfsUrl === 'https://adfs.example.org/adfs') {
         throw new Error('adfs_not_configured');
       }
       
-      // Construct the authorization URL - NO CLIENT SECRET HERE
-      // We only include the parameters needed for the authorization request
-      const authUrl = `${adfsUrl}/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&resource=https://timesheet.app&scope=openid profile email`;
-      
-      // Before redirecting, check if the ADFS server is available
-      try {
-        const pingResponse = await fetch(`${adfsUrl}/ping`, { 
-          method: 'GET',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          cache: 'no-cache'
-        });
+      if (adfsProtocol === "oauth") {
+        const authUrl = `${adfsUrl}/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&resource=https://timesheet.app&scope=openid profile email`;
         
-        // Redirect the user to the ADFS login page
-        window.location.href = authUrl;
-      } catch (connectionError) {
-        console.error('ADFS server connection error:', connectionError);
-        throw new Error('adfs_connection_error');
+        try {
+          const pingResponse = await fetch(`${adfsUrl}/ping`, { 
+            method: 'GET',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            cache: 'no-cache'
+          });
+          
+          window.location.href = authUrl;
+        } catch (connectionError) {
+          console.error('ADFS server connection error:', connectionError);
+          throw new Error('adfs_connection_error');
+        }
+      } else {
+        try {
+          const response = await fetch(`${window.location.origin}/api/auth/initiate-saml`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+              redirectUri: window.location.origin + '/auth/saml-callback'
+            }),
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to initiate SAML authentication');
+          }
+          
+          const { samlRequest } = await response.json();
+          
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = `${adfsUrl}/saml/sso`;
+          form.style.display = 'none';
+          
+          const samlRequestInput = document.createElement('input');
+          samlRequestInput.type = 'hidden';
+          samlRequestInput.name = 'SAMLRequest';
+          samlRequestInput.value = samlRequest;
+          form.appendChild(samlRequestInput);
+          
+          document.body.appendChild(form);
+          form.submit();
+        } catch (connectionError) {
+          console.error('SAML initiation error:', connectionError);
+          throw new Error('saml_initiation_error');
+        }
       }
       
     } catch (error) {
       console.error('ADFS login error:', error);
       const errorMessage = error instanceof Error ? error.message : 'unknown_error';
       
-      // Set appropriate error message based on error type
       switch(errorMessage) {
         case 'adfs_not_configured':
           setAdfsError('ADFS не настроен. Пожалуйста, обратитесь к администратору системы.');
           break;
         case 'adfs_connection_error':
           setAdfsError('Не удалось подключиться к серверу ADFS. Проверьте сетевое подключение и доступность сервера.');
+          break;
+        case 'saml_initiation_error':
+          setAdfsError('Не удалось инициировать аутентификацию SAML. Проверьте настройки ADFS и доступность сервера.');
           break;
         case 'user_not_found':
           setAdfsError(`Пользователь "${username || 'Unknown'}" не найден в системе.`);
@@ -326,6 +353,22 @@ export const Login = ({
                 </AlertDescription>
               </Alert>
               
+              <RadioGroup 
+                className="mb-4" 
+                defaultValue="oauth" 
+                value={adfsProtocol} 
+                onValueChange={(value) => setAdfsProtocol(value as "oauth" | "saml")}
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="oauth" id="oauth" />
+                  <Label htmlFor="oauth">OAuth 2.0</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="saml" id="saml" />
+                  <Label htmlFor="saml">SAML 2.0</Label>
+                </div>
+              </RadioGroup>
+              
               {adfsError && (
                 <Alert variant="destructive">
                   <AlertDescription>{adfsError}</AlertDescription>
@@ -337,7 +380,7 @@ export const Login = ({
                 onClick={handleAdfsLogin}
                 disabled={adfsLoading}
               >
-                {adfsLoading ? "Redirecting..." : "Sign in with ADFS"}
+                {adfsLoading ? "Redirecting..." : `Sign in with ADFS (${adfsProtocol.toUpperCase()})`}
               </Button>
             </div>
           </TabsContent>
