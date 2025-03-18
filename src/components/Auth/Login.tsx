@@ -34,19 +34,23 @@ export const Login = ({
         authenticateUser,
         getUserFirstUnconfirmedWeek
       } = await import('@/integrations/supabase/database');
+      
+      console.log('Attempting to authenticate user:', username);
       const {
         data,
         error
       } = await authenticateUser(username, password);
+      
       if (error) {
         console.error('Authentication error:', error);
         toast({
           title: "Authentication Error",
-          description: "Invalid username or password",
+          description: error.message || "Invalid username or password",
           variant: "destructive"
         });
         return;
       }
+      
       if (data) {
         console.log('Authentication successful:', data);
 
@@ -111,7 +115,9 @@ export const Login = ({
       console.error('Login error:', error);
       toast({
         title: "Login Error",
-        description: "There was a problem logging in. Please try again.",
+        description: error instanceof Error 
+          ? `Error: ${error.message}` 
+          : "There was a problem logging in. Please check your connection to the Supabase server.",
         variant: "destructive"
       });
     } finally {

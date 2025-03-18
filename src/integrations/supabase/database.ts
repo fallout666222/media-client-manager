@@ -1,9 +1,13 @@
-
 import { supabase } from './client';
 
 // Custom Weeks
 export const getCustomWeeks = async () => {
-  return await supabase.from('custom_weeks').select('*').order('period_from', { ascending: true });
+  try {
+    return await supabase.from('custom_weeks').select('*').order('period_from', { ascending: true });
+  } catch (error) {
+    console.error('Error fetching custom weeks:', error);
+    return { data: null, error };
+  }
 };
 
 export const createCustomWeek = async (week: { name: string, period_from: string, period_to: string, required_hours: number }) => {
@@ -12,10 +16,15 @@ export const createCustomWeek = async (week: { name: string, period_from: string
 
 // Users
 export const getUsers = async () => {
-  return await supabase.from('users').select(`
-    *,
-    department:departments(name)
-  `).eq('deletion_mark', false);
+  try {
+    return await supabase.from('users').select(`
+      *,
+      department:departments(name)
+    `).eq('deletion_mark', false);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    return { data: null, error };
+  }
 };
 
 export const getUserById = async (id: string) => {
@@ -34,7 +43,13 @@ export const updateUser = async (id: string, user: any) => {
 };
 
 export const authenticateUser = async (login: string, password: string) => {
-  return await supabase.from('users').select('*').eq('login', login).eq('password', password).single();
+  try {
+    console.log(`Authenticating user: ${login}`);
+    return await supabase.from('users').select('*').eq('login', login).eq('password', password).single();
+  } catch (error) {
+    console.error('Authentication error:', error);
+    return { data: null, error: { message: 'Authentication failed. Please check your connection to the server.' } };
+  }
 };
 
 // New function to get user settings
