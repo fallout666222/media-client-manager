@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { User } from "@/types/timesheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { InfoIcon } from "lucide-react";
+import { InfoIcon, User as UserIcon } from "lucide-react";
 
 interface LoginProps {
   onLogin: (user: User) => void;
