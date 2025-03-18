@@ -1,10 +1,10 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { User } from '@/types/timesheet';
 import { useApp } from '@/contexts/AppContext';
 import { useToast } from '@/hooks/use-toast';
+import { processSAMLCallback } from '@/utils/samlAuth';
 
 export const AdfsCallback = () => {
   const [loading, setLoading] = useState(true);
@@ -18,9 +18,6 @@ export const AdfsCallback = () => {
       try {
         setLoading(true);
         
-        // In a real implementation, this would validate the ADFS token
-        // and get the user details from your backend
-        
         // Get the code from the URL
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
@@ -29,47 +26,34 @@ export const AdfsCallback = () => {
           throw new Error('No authorization code found in URL');
         }
         
-        // For this client-side example, mock a successful authentication response
-        // In a real implementation, this would call your Supabase function to exchange the code for a token
         console.log('Received ADFS code:', code);
         
-        // Simulate a successful auth response (would normally come from exchanging the code)
-        const mockUser = {
-          id: '1',
-          login: 'admin',
-          name: 'Administrator',
-          type: 'admin',
-          password: '', // Not needed for ADFS auth
-          first_week: '2024-01-01',
-          first_custom_week_id: null,
-          email: 'admin@example.com',
-          job_position: 'Administrator',
-          description: 'System Administrator',
-          department_id: '1',
-          deletion_mark: false,
-          user_head_id: null,
-          hidden: false,
-        };
+        // Process the SAML callback with the authorization code
+        const userData = await processSAMLCallback(code);
+        
+        if (!userData) {
+          throw new Error('Failed to process SAML authentication');
+        }
         
         // Create a properly typed User object
         const appUser: User = {
-          id: mockUser.id,
-          username: mockUser.login,
-          name: mockUser.name,
-          role: mockUser.type as 'admin' | 'user' | 'manager',
+          id: userData.id,
+          username: userData.login,
+          name: userData.name,
+          role: userData.type as 'admin' | 'user' | 'manager',
           password: '',
-          firstWeek: mockUser.first_week,
-          firstCustomWeekId: mockUser.first_custom_week_id,
-          login: mockUser.login,
-          type: mockUser.type,
-          email: mockUser.email,
-          job_position: mockUser.job_position,
-          description: mockUser.description,
-          department_id: mockUser.department_id,
-          departmentId: mockUser.department_id,
-          deletion_mark: mockUser.deletion_mark,
-          user_head_id: mockUser.user_head_id,
-          hidden: mockUser.hidden,
+          firstWeek: userData.first_week,
+          firstCustomWeekId: userData.first_custom_week_id,
+          login: userData.login,
+          type: userData.type,
+          email: userData.email,
+          job_position: userData.job_position,
+          description: userData.description,
+          department_id: userData.department_id,
+          departmentId: userData.department_id,
+          deletion_mark: userData.deletion_mark,
+          user_head_id: userData.user_head_id,
+          hidden: userData.hidden,
         };
         
         // Save to localStorage
