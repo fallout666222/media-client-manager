@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -192,43 +193,62 @@ export const Login = ({
       setAdfsLoading(true);
       setAdfsError(null);
 
-      // Import and use our SAML utilities
-      const { initiateSAMLAuth, validateSAMLConfig } = await import('@/utils/samlAuth');
+      // In a real implementation, this would redirect to the ADFS authentication endpoint
+      console.log('Initiating ADFS authentication');
       
-      // Get configuration from environment variables
+      // The ADFS authentication is typically initiated by redirecting to the ADFS server
+      // This configuration should be set in the .env file and the URL should be constructed 
+      // as per the ADFS requirements
+      
       const adfsUrl = import.meta.env.VITE_ADFS_URL || 'https://adfs.example.org/adfs';
       const clientId = import.meta.env.VITE_ADFS_CLIENT_ID || 'your-client-id';
-      const redirectUri = window.location.origin + '/auth/adfs-callback';
+      const redirectUri = encodeURIComponent(window.location.origin + '/auth/adfs-callback');
       
-      // Validate the SAML configuration
-      const configError = validateSAMLConfig({
-        adfsUrl,
-        clientId,
-        redirectUri,
-      });
-      
-      if (configError) {
-        throw new Error(configError);
+      // Check if ADFS URL is configured
+      if (!adfsUrl || adfsUrl === 'https://adfs.example.org/adfs') {
+        throw new Error('adfs_not_configured');
       }
       
-      // Initiate the SAML authentication flow
-      initiateSAMLAuth({
-        adfsUrl,
-        clientId,
-        redirectUri,
-      });
+      // Construct the authorization URL
+      const authUrl = `${adfsUrl}/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&resource=https://timesheet.app&scope=openid profile email`;
+      
+      // Before redirecting, check if the ADFS server is available
+      try {
+        // Modified: Removed the timeout property as it's not supported in the fetch API
+        const pingResponse = await fetch(`${adfsUrl}/ping`, { 
+          method: 'GET',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          cache: 'no-cache'
+        });
+        
+        // Redirect the user to the ADFS login page
+        window.location.href = authUrl;
+      } catch (connectionError) {
+        console.error('ADFS server connection error:', connectionError);
+        throw new Error('adfs_connection_error');
+      }
       
     } catch (error) {
       console.error('ADFS login error:', error);
       const errorMessage = error instanceof Error ? error.message : 'unknown_error';
       
       // Set appropriate error message based on error type
-      if (errorMessage.includes('not configured')) {
-        setAdfsError('ADFS не настроен. Пожалуйста, обратитесь к администратору системы.');
-      } else if (errorMessage.includes('connection')) {
-        setAdfsError('Не удалось подключиться к серверу ADFS. Проверьте сетевое подключение и доступность сервера.');
-      } else {
-        setAdfsError('Произошла ошибка при авторизации через ADFS. Пожалуйста, попробуйте позже или используйте другой метод входа.');
+      switch(errorMessage) {
+        case 'adfs_not_configured':
+          setAdfsError('ADFS не настроен. Пожалуйста, обратитесь к администратору системы.');
+          break;
+        case 'adfs_connection_error':
+          setAdfsError('Не удалось подключиться к серверу ADFS. Проверьте сетевое подключение и доступность сервера.');
+          break;
+        case 'user_not_found':
+          setAdfsError(`Пользователь "${username || 'Unknown'}" не найден в системе.`);
+          break;
+        case 'insufficient_permissions':
+          setAdfsError('Недостаточно прав для входа в систему. Обратитесь к администратору.');
+          break;
+        default:
+          setAdfsError('Произошла неизвестная ошибка при авторизации через ADFS. Пожалуйста, попробуйте позже или используйте другой метод входа.');
       }
       
       toast({
