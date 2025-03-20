@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import { parse, isBefore } from 'date-fns';
 import * as db from '@/integrations/supabase/database';
 import { StatusTimeline, WeekDetails } from "@/components/ProgressBar";
-import { handleQueryResult } from '@/integrations/supabase/client';
 
 interface UserProgressBarProps {
   userId: string;
@@ -43,17 +42,14 @@ export function UserProgressBar({
           });
         }
 
-        const weekStatusesResult = await db.getWeekStatusesChronological(userId);
-        const weekStatuses = handleQueryResult(weekStatusesResult);
-        
+        const { data: weekStatuses } = await db.getWeekStatusesChronological(userId);
         let formattedWeeks = [];
 
         if (weekStatuses && weekStatuses.length > 0) {
           const existingStatusMap = new Map();
           
           weekStatuses.forEach(statusData => {
-            // Check if statusData and statusData.week exist before accessing properties
-            if (statusData && statusData.week) {
+            if (statusData.week) {
               existingStatusMap.set(statusData.week.id, {
                 week: statusData.week.name,
                 status: (statusData.status?.name || 'unconfirmed') as 'accepted' | 'under revision' | 'under review' | 'Unconfirmed',

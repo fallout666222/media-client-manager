@@ -12,7 +12,6 @@ import {
   updateVisibleClientsOrder,
   updateVisibleTypesOrder
 } from '@/integrations/supabase/database';
-import { handleQueryResult } from '@/integrations/supabase/client';
 import { User } from '@/types/timesheet';
 
 interface UseTimeSheetPreferencesProps {
@@ -33,12 +32,12 @@ export const useTimeSheetPreferences = ({
       
       const { data: currentVisible } = await getUserVisibleClients(currentUser.id);
       
-      const clientMap = new Map(clientsData.map(c => [c.name, c.id as string])); // Cast id to string
+      const clientMap = new Map(clientsData.map(c => [c.name, c.id]));
       
       for (const clientName of clients) {
         const clientId = clientMap.get(clientName);
         
-        if (clientId && currentVisible && !currentVisible.some(v => v.client_id === clientId)) {
+        if (clientId && !currentVisible?.some(v => v.client_id === clientId)) {
           await addUserVisibleClient(currentUser.id, clientId);
         }
       }
@@ -78,12 +77,12 @@ export const useTimeSheetPreferences = ({
       
       const { data: currentVisible } = await getUserVisibleTypes(currentUser.id);
       
-      const typeMap = new Map(mediaTypesData.map(t => [t.name, t.id as string])); // Cast id to string
+      const typeMap = new Map(mediaTypesData.map(t => [t.name, t.id]));
       
       for (const typeName of types) {
         const typeId = typeMap.get(typeName);
         
-        if (typeId && currentVisible && !currentVisible.some(v => v.type_id === typeId)) {
+        if (typeId && !currentVisible?.some(v => v.type_id === typeId)) {
           await addUserVisibleType(currentUser.id, typeId);
         }
       }
