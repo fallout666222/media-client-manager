@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Label } from "@/components/ui/label";
 import { useToast } from '@/hooks/use-toast';
@@ -38,7 +37,6 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({
   const [selectedClientsToAdd, setSelectedClientsToAdd] = useState<string[]>([]);
   const { toast } = useToast();
   
-  // Filter out hidden clients for non-admin users
   const filteredAvailableClients = userRole === 'admin' 
     ? availableClients 
     : visibleClients.filter(client => !client.hidden).map(client => client.name);
@@ -73,11 +71,21 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({
 
   const handleSelectMultipleClients = () => {
     if (selectedClientsToAdd.length > 0) {
+      const hasSystemClients = selectedClientsToAdd.some(client => 
+        DEFAULT_SYSTEM_CLIENTS.includes(client)
+      );
+
       selectedClientsToAdd.forEach(client => {
         if (!selectedClients.includes(client)) {
           onSelectClient(client);
         }
       });
+
+      if (hasSystemClients) {
+        // Ensure Administrative is also selected
+        // The actual addition of Administrative media type is handled in the parent component
+      }
+
       setSelectedClientsToAdd([]);
       setClientSearchTerm('');
       toast({

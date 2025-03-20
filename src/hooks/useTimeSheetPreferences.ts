@@ -38,7 +38,7 @@ export const useTimeSheetPreferences = ({
         const clientId = clientMap.get(clientName);
         
         if (clientId && !currentVisible?.some(v => v.client_id === clientId)) {
-          await addUserVisibleClient(currentUser.id, clientId);
+          await addUserVisibleClient(currentUser.id, clientId as string);
         }
       }
       
@@ -83,7 +83,7 @@ export const useTimeSheetPreferences = ({
         const typeId = typeMap.get(typeName);
         
         if (typeId && !currentVisible?.some(v => v.type_id === typeId)) {
-          await addUserVisibleType(currentUser.id, typeId);
+          await addUserVisibleType(currentUser.id, typeId as string);
         }
       }
       
