@@ -12,7 +12,7 @@ console.log('Connecting to Supabase at:', SUPABASE_URL);
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+const options = {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
@@ -30,17 +30,20 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     params: {
       eventsPerSecond: 10
     }
-  },
-  // Оптимизации для высокой нагрузки
-  fetch: (url, options) => {
-    const fetchOptions = {
-      ...options,
-      // Добавляем timeout, чтобы избежать "зависших" запросов
-      signal: AbortSignal.timeout(30000), // 30 секунд timeout
-    };
-    return fetch(url, fetchOptions);
   }
-});
+};
+
+// Create the Supabase client with proper type safety
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, options);
+
+// Custom fetch function with timeout
+export const fetchWithTimeout = (url: string, options: RequestInit & { timeout?: number }) => {
+  const { timeout = 30000, ...fetchOptions } = options;
+  return fetch(url, {
+    ...fetchOptions,
+    signal: AbortSignal.timeout(timeout)
+  });
+};
 
 // Add a connection test function with better error handling
 export const testConnection = async () => {
@@ -54,7 +57,8 @@ export const testConnection = async () => {
         details: {
           code: error.code,
           hint: error.hint,
-          status: error.status
+          // Remove status property that doesn't exist on PostgrestError
+          details: error.details
         }
       };
     }
@@ -74,11 +78,11 @@ export const testConnection = async () => {
   }
 };
 
-// Performance monitoring functions
+// Performance monitoring functions - rewritten to use Supabase's public API
 export const monitorRequestPerformance = () => {
-  // Включить мониторинг времени выполнения запросов
+  // Create stats object to track performance
   if (typeof window !== 'undefined') {
-    // @ts-ignore - добавляем поле для отслеживания
+    // @ts-ignore - add field for tracking
     window._supabaseStats = {
       requests: 0,
       errors: 0,
@@ -87,22 +91,29 @@ export const monitorRequestPerformance = () => {
     };
   }
   
-  const originalFetch = supabase.rest.fetch.bind(supabase.rest);
+  // Create an interceptor for monitoring requests
+  // We'll use our own counter system since we can't access internal rest property
+  const originalFetch = window.fetch;
   
-  // Переопределяем метод fetch для измерения производительности
-  supabase.rest.fetch = async (url: string, options: any) => {
-    if (typeof window === 'undefined') return originalFetch(url, options);
+  window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    // Only intercept Supabase requests
+    const url = input.toString();
+    if (!url.includes(SUPABASE_URL)) {
+      return originalFetch(input, init);
+    }
+    
+    if (typeof window === 'undefined') return originalFetch(input, init);
     
     const startTime = performance.now();
     try {
-      // @ts-ignore - увеличиваем счетчик запросов
+      // @ts-ignore - increase request counter
       window._supabaseStats.requests++;
-      const response = await originalFetch(url, options);
+      const response = await originalFetch(input, init);
       
       const endTime = performance.now();
       const responseTime = endTime - startTime;
       
-      // @ts-ignore - обновляем статистику
+      // @ts-ignore - update stats
       window._supabaseStats.totalResponseTime += responseTime;
       // @ts-ignore
       window._supabaseStats.avgResponseTime = window._supabaseStats.totalResponseTime / window._supabaseStats.requests;
@@ -110,7 +121,7 @@ export const monitorRequestPerformance = () => {
       return response;
     } catch (error) {
       const endTime = performance.now();
-      // @ts-ignore - увеличиваем счетчик ошибок
+      // @ts-ignore - increase error counter
       window._supabaseStats.errors++;
       console.error(`Request to ${url} failed after ${endTime - startTime}ms`, error);
       throw error;
@@ -120,9 +131,31 @@ export const monitorRequestPerformance = () => {
   return supabase;
 };
 
-// Инициализация мониторинга производительности в production
+// Initialize performance monitoring in production
 if (import.meta.env.PROD) {
   monitorRequestPerformance();
+}
+
+/**
+ * Helper function to safely access properties of query results
+ * This helps prevent the "Property 'X' does not exist on type 'SelectQueryError'" errors
+ */
+export function safeAccess<T, K extends keyof T>(obj: T | null | undefined, key: K): T[K] | undefined {
+  if (!obj) return undefined;
+  if ('error' in obj && obj.error) return undefined;
+  return obj[key];
+}
+
+/**
+ * Helper function to handle Supabase query results safely
+ * Ensures we check for errors before accessing data properties
+ */
+export function handleQueryResult<T>(result: { data: T | null; error: Error | null }): T | null {
+  if (result.error) {
+    console.error('Supabase query error:', result.error);
+    return null;
+  }
+  return result.data;
 }
 
 /**

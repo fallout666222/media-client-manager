@@ -1,7 +1,7 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Client } from '@/types/timesheet';
 import * as db from '@/integrations/supabase/database';
+import { handleQueryResult } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface AppContextType {
@@ -84,20 +84,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       setLoading(true);
       
-      const { data: usersData, error: usersError } = await db.getUsers();
-      if (usersError) throw usersError;
+      const usersResult = await db.getUsers();
+      if (usersResult.error) throw usersResult.error;
+      const usersData = handleQueryResult(usersResult);
       setUsers(usersData || []);
       
-      const { data: departmentsData, error: departmentsError } = await db.getDepartments();
-      if (departmentsError) throw departmentsError;
+      const departmentsResult = await db.getDepartments();
+      if (departmentsResult.error) throw departmentsResult.error;
+      const departmentsData = handleQueryResult(departmentsResult);
       setDepartments(departmentsData || []);
       
-      const { data: clientsData, error: clientsError } = await db.getClients();
-      if (clientsError) throw clientsError;
-      setClients(clientsData || []);
+      const clientsResult = await db.getClients();
+      if (clientsResult.error) throw clientsResult.error;
+      const clientsData = handleQueryResult(clientsResult);
+      // Convert the clients data to the expected Client type format
+      const typedClients: Client[] = clientsData ? clientsData.map(client => ({
+        id: client.id,
+        name: client.name,
+        parent_id: client.parent_id,
+        parentId: client.parent_id,
+        hidden: client.hidden,
+        isDefault: false, // Set default value
+        client_id: client.client_id,
+        ts_code: client.ts_code,
+        description: client.description,
+        deletion_mark: client.deletion_mark,
+        created_at: client.created_at
+      })) : [];
+      setClients(typedClients);
       
-      const { data: weeksData, error: weeksError } = await db.getCustomWeeks();
-      if (weeksError) throw weeksError;
+      const weeksResult = await db.getCustomWeeks();
+      if (weeksResult.error) throw weeksResult.error;
+      const weeksData = handleQueryResult(weeksResult);
       setCustomWeeks(weeksData || []);
     } catch (error) {
       console.error('Error fetching initial data:', error);
@@ -114,12 +132,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const handleLogin = async (userData: any) => {
     try {
       console.log('Login received user data:', userData);
-      const { data, error } = await db.getUserById(userData.id || '');
+      const result = await db.getUserById(userData.id || '');
       
-      if (error) {
-        console.error('Error getting user details:', error);
-        throw error;
+      if (result.error) {
+        console.error('Error getting user details:', result.error);
+        throw result.error;
       }
+      
+      const data = handleQueryResult(result);
       
       if (data) {
         console.log('Setting user state with data:', data);

@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { handleQueryResult } from '@/integrations/supabase/client';
 
 interface Department {
   id: string;
@@ -46,29 +47,31 @@ const DepartmentManagement: React.FC<DepartmentManagementProps> = ({ departments
     
     try {
       const { createDepartment } = await import('@/integrations/supabase/database');
-      const { data, error } = await createDepartment({ 
+      const result = await createDepartment({ 
         name: departmentName,
         description: departmentDescription 
       });
       
-      if (error) throw error;
+      const data = handleQueryResult(result);
       
-      if (data) {
-        // Add to local state
-        onAddDepartment({
-          name: data.name,
-          description: data.description
-        });
-        
-        // Reset form
-        setDepartmentName('');
-        setDepartmentDescription('');
-        
-        toast({
-          title: "Success",
-          description: "Department added successfully",
-        });
+      if (!data) {
+        throw new Error('Failed to create department');
       }
+      
+      // Add to local state
+      onAddDepartment({
+        name: data.name,
+        description: data.description
+      });
+      
+      // Reset form
+      setDepartmentName('');
+      setDepartmentDescription('');
+      
+      toast({
+        title: "Success",
+        description: "Department added successfully",
+      });
     } catch (error) {
       console.error('Error adding department:', error);
       toast({
