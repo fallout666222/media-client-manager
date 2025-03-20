@@ -22,24 +22,108 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
       'apikey': SUPABASE_PUBLISHABLE_KEY,
       'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}`
     }
+  },
+  db: {
+    schema: 'public'
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
+  },
+  // Оптимизации для высокой нагрузки
+  fetch: (url, options) => {
+    const fetchOptions = {
+      ...options,
+      // Добавляем timeout, чтобы избежать "зависших" запросов
+      signal: AbortSignal.timeout(30000), // 30 секунд timeout
+    };
+    return fetch(url, fetchOptions);
   }
 });
 
-// Add a connection test function
+// Add a connection test function with better error handling
 export const testConnection = async () => {
   try {
     const { data, error } = await supabase.from('users').select('id').limit(1);
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase connection error details:', error);
+      return { 
+        success: false, 
+        error: error.message,
+        details: {
+          code: error.code,
+          hint: error.hint,
+          status: error.status
+        }
+      };
+    }
     console.log('Supabase connection successful!');
     return { success: true };
   } catch (error) {
     console.error('Supabase connection error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown connection error';
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : 'Unknown connection error'
+      error: errorMessage,
+      details: {
+        type: error instanceof Error ? error.name : 'Unknown',
+        stack: error instanceof Error ? error.stack : undefined
+      }
     };
   }
 };
+
+// Performance monitoring functions
+export const monitorRequestPerformance = () => {
+  // Включить мониторинг времени выполнения запросов
+  if (typeof window !== 'undefined') {
+    // @ts-ignore - добавляем поле для отслеживания
+    window._supabaseStats = {
+      requests: 0,
+      errors: 0,
+      avgResponseTime: 0,
+      totalResponseTime: 0
+    };
+  }
+  
+  const originalFetch = supabase.rest.fetch.bind(supabase.rest);
+  
+  // Переопределяем метод fetch для измерения производительности
+  supabase.rest.fetch = async (url: string, options: any) => {
+    if (typeof window === 'undefined') return originalFetch(url, options);
+    
+    const startTime = performance.now();
+    try {
+      // @ts-ignore - увеличиваем счетчик запросов
+      window._supabaseStats.requests++;
+      const response = await originalFetch(url, options);
+      
+      const endTime = performance.now();
+      const responseTime = endTime - startTime;
+      
+      // @ts-ignore - обновляем статистику
+      window._supabaseStats.totalResponseTime += responseTime;
+      // @ts-ignore
+      window._supabaseStats.avgResponseTime = window._supabaseStats.totalResponseTime / window._supabaseStats.requests;
+      
+      return response;
+    } catch (error) {
+      const endTime = performance.now();
+      // @ts-ignore - увеличиваем счетчик ошибок
+      window._supabaseStats.errors++;
+      console.error(`Request to ${url} failed after ${endTime - startTime}ms`, error);
+      throw error;
+    }
+  };
+  
+  return supabase;
+};
+
+// Инициализация мониторинга производительности в production
+if (import.meta.env.PROD) {
+  monitorRequestPerformance();
+}
 
 /**
  * DATABASE SWITCHING GUIDE:
