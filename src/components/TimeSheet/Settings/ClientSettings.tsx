@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Label } from "@/components/ui/label";
 import { useToast } from '@/hooks/use-toast';
 import { Client } from '@/types/timesheet';
@@ -72,33 +72,39 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({
     }
   };
 
-  const handleSelectMultipleClients = () => {
-    if (selectedClientsToAdd.length > 0) {
-      // Check if any of the selected clients are system clients
-      const systemClientsToAdd = selectedClientsToAdd.filter(client => 
-        DEFAULT_SYSTEM_CLIENTS.includes(client)
-      );
-      
-      // First add all selected clients
-      selectedClientsToAdd.forEach(client => {
-        if (!selectedClients.includes(client)) {
-          onSelectClient(client);
-        }
-      });
-      
-      // Then notify parent if a system client was added
-      if (systemClientsToAdd.length > 0 && onSelectSystemClient) {
-        console.log('System client selected:', systemClientsToAdd[0]);
-        onSelectSystemClient(systemClientsToAdd[0]);
-      }
-
-      setSelectedClientsToAdd([]);
-      setClientSearchTerm('');
-      toast({
-        title: "Clients Added",
-        description: `Added ${selectedClientsToAdd.length} clients to your visible clients`,
-      });
+  const handleSelectMultipleClients = async () => {
+    if (selectedClientsToAdd.length === 0) {
+      return;
     }
+    
+    console.log("Adding multiple clients:", selectedClientsToAdd);
+    
+    // Check if any of the selected clients are system clients
+    const systemClientsToAdd = selectedClientsToAdd.filter(client => 
+      DEFAULT_SYSTEM_CLIENTS.includes(client)
+    );
+    
+    // Process each client individually to ensure proper state updates
+    for (const client of selectedClientsToAdd) {
+      if (!selectedClients.includes(client)) {
+        await onSelectClient(client);
+        console.log(`Added client: ${client}`);
+      }
+    }
+    
+    // Then notify parent if a system client was added
+    if (systemClientsToAdd.length > 0 && onSelectSystemClient) {
+      console.log('System client selected:', systemClientsToAdd[0]);
+      onSelectSystemClient(systemClientsToAdd[0]);
+    }
+
+    setSelectedClientsToAdd([]);
+    setClientSearchTerm('');
+    
+    toast({
+      title: "Clients Added",
+      description: `Added ${selectedClientsToAdd.length} clients to your visible clients`,
+    });
   };
 
   const handleReorderClients = async (newOrder: string[]) => {

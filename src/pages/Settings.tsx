@@ -78,8 +78,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ currentUser }) => {
   };
 
   const handleRemoveClient = (client: string) => {
-    setSelectedClients(prev => prev.filter(c => c !== client));
-    handleSaveVisibleClients(selectedClients.filter(c => c !== client));
+    const updatedClients = selectedClients.filter(c => c !== client);
+    setSelectedClients(updatedClients);
+    handleSaveVisibleClients(updatedClients);
   };
 
   const handleAddMediaType = (type: string) => {
@@ -87,23 +88,27 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ currentUser }) => {
   };
 
   const handleRemoveMediaType = (type: string) => {
-    setSelectedMediaTypes(prev => prev.filter(t => t !== type));
-    handleSaveVisibleMediaTypes(selectedMediaTypes.filter(t => t !== type));
+    const updatedTypes = selectedMediaTypes.filter(t => t !== type);
+    setSelectedMediaTypes(updatedTypes);
+    handleSaveVisibleMediaTypes(updatedTypes);
   };
 
-  const handleSelectClient = (client: string) => {
+  const handleSelectClient = async (client: string) => {
     console.log("Selecting client:", client);
-    const newSelectedClients = [...selectedClients, client];
-    setSelectedClients(newSelectedClients);
-    handleSaveVisibleClients(newSelectedClients);
+    if (!selectedClients.includes(client)) {
+      const newSelectedClients = [...selectedClients, client];
+      setSelectedClients(newSelectedClients);
+      await handleSaveVisibleClients(newSelectedClients);
+    }
   };
 
-  const handleSelectMediaType = (type: string) => {
+  const handleSelectMediaType = async (type: string) => {
     console.log("Selecting media type:", type);
     if (!selectedMediaTypes.includes(type)) {
       const newSelectedMediaTypes = [...selectedMediaTypes, type];
       setSelectedMediaTypes(newSelectedMediaTypes);
-      handleSaveVisibleMediaTypes(newSelectedMediaTypes);
+      await handleSaveVisibleMediaTypes(newSelectedMediaTypes);
+      
       toast({
         title: "Media Type Added",
         description: `Added ${type} to your visible media types`,
@@ -113,14 +118,16 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ currentUser }) => {
     }
   };
 
-  const handleReorderClients = (newOrder: string[]) => {
+  const handleReorderClients = async (newOrder: string[]) => {
     console.log("Reordering clients:", newOrder);
     setSelectedClients(newOrder);
+    await handleSaveVisibleClients(newOrder);
   };
 
-  const handleReorderMediaTypes = (newOrder: string[]) => {
+  const handleReorderMediaTypes = async (newOrder: string[]) => {
     console.log("Reordering media types:", newOrder);
     setSelectedMediaTypes(newOrder);
+    await handleSaveVisibleMediaTypes(newOrder);
   };
 
   return (

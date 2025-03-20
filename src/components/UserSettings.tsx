@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -48,6 +48,12 @@ export const UserSettings: React.FC<UserSettingsProps> = (props) => {
       console.log("Administrative media type already exists");
     }
   };
+
+  // For debugging
+  useEffect(() => {
+    console.log("UserSettings - Current selected clients:", props.selectedClients);
+    console.log("UserSettings - Current selected media types:", props.selectedMediaTypes);
+  }, [props.selectedClients, props.selectedMediaTypes]);
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-32">Loading settings...</div>;
