@@ -52,7 +52,8 @@ export function UserProgressBar({
           const existingStatusMap = new Map();
           
           weekStatuses.forEach(statusData => {
-            if (statusData.week) {
+            // Check if statusData and statusData.week exist before accessing properties
+            if (statusData && statusData.week) {
               existingStatusMap.set(statusData.week.id, {
                 week: statusData.week.name,
                 status: (statusData.status?.name || 'unconfirmed') as 'accepted' | 'under revision' | 'under review' | 'Unconfirmed',

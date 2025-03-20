@@ -24,7 +24,7 @@ const options = {
     }
   },
   db: {
-    schema: 'public'
+    schema: 'public' as const // Fix for the db.schema type error
   },
   realtime: {
     params: {
@@ -57,7 +57,6 @@ export const testConnection = async () => {
         details: {
           code: error.code,
           hint: error.hint,
-          // Remove status property that doesn't exist on PostgrestError
           details: error.details
         }
       };
@@ -78,11 +77,11 @@ export const testConnection = async () => {
   }
 };
 
-// Performance monitoring functions - rewritten to use Supabase's public API
+// Performance monitoring for Supabase requests
 export const monitorRequestPerformance = () => {
   // Create stats object to track performance
   if (typeof window !== 'undefined') {
-    // @ts-ignore - add field for tracking
+    // Add field for tracking
     window._supabaseStats = {
       requests: 0,
       errors: 0,
@@ -106,22 +105,21 @@ export const monitorRequestPerformance = () => {
     
     const startTime = performance.now();
     try {
-      // @ts-ignore - increase request counter
+      // Increase request counter
       window._supabaseStats.requests++;
       const response = await originalFetch(input, init);
       
       const endTime = performance.now();
       const responseTime = endTime - startTime;
       
-      // @ts-ignore - update stats
+      // Update stats
       window._supabaseStats.totalResponseTime += responseTime;
-      // @ts-ignore
       window._supabaseStats.avgResponseTime = window._supabaseStats.totalResponseTime / window._supabaseStats.requests;
       
       return response;
     } catch (error) {
       const endTime = performance.now();
-      // @ts-ignore - increase error counter
+      // Increase error counter
       window._supabaseStats.errors++;
       console.error(`Request to ${url} failed after ${endTime - startTime}ms`, error);
       throw error;
@@ -140,7 +138,7 @@ if (import.meta.env.PROD) {
  * Helper function to safely access properties of query results
  * This helps prevent the "Property 'X' does not exist on type 'SelectQueryError'" errors
  */
-export function safeAccess<T, K extends keyof T>(obj: T | null | undefined, key: K): T[K] | undefined {
+export function safeAccess<T extends Record<string, any>, K extends keyof T>(obj: T | null | undefined, key: K): T[K] | undefined {
   if (!obj) return undefined;
   if ('error' in obj && obj.error) return undefined;
   return obj[key];
@@ -156,6 +154,18 @@ export function handleQueryResult<T>(result: { data: T | null; error: Error | nu
     return null;
   }
   return result.data;
+}
+
+// Add TypeScript declaration for _supabaseStats
+declare global {
+  interface Window {
+    _supabaseStats: {
+      requests: number;
+      errors: number;
+      avgResponseTime: number;
+      totalResponseTime: number;
+    };
+  }
 }
 
 /**
