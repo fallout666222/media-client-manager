@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -32,6 +31,12 @@ interface UserSettingsProps {
 
 export const UserSettings: React.FC<UserSettingsProps> = (props) => {
   const { theme, setTheme, isLoading } = useSettings();
+
+  const handleSystemClientSelected = (systemClientName: string) => {
+    if (!props.selectedMediaTypes.includes("Administrative")) {
+      props.onSelectMediaType("Administrative");
+    }
+  };
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-32">Loading settings...</div>;
@@ -86,7 +91,10 @@ export const UserSettings: React.FC<UserSettingsProps> = (props) => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Settings {...props} />
+            <Settings 
+              {...props} 
+              onSelectSystemClient={handleSystemClientSelected}
+            />
             {renderThemeSettings()}
           </CardContent>
         </Card>

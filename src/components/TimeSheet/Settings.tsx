@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,6 +65,7 @@ interface SettingsProps {
   onReorderClients?: (clients: string[]) => void;
   onReorderMediaTypes?: (types: string[]) => void;
   currentUserId?: string;
+  onSelectSystemClient?: (systemClientName: string) => void;
 }
 
 export const Settings = ({
@@ -86,6 +86,7 @@ export const Settings = ({
   onReorderClients,
   onReorderMediaTypes,
   currentUserId,
+  onSelectSystemClient,
 }: SettingsProps) => {
   const [newClient, setNewClient] = useState('');
   const [newMediaType, setNewMediaType] = useState('');
@@ -126,7 +127,6 @@ export const Settings = ({
     enabled: true,
   });
 
-  // Filter out hidden clients for non-admin users
   const filteredAvailableClients = isAdmin 
     ? availableClients 
     : visibleClients.filter(client => !client.hidden).map(client => client.name);
@@ -256,12 +256,10 @@ export const Settings = ({
       if (oldIndex !== -1 && newIndex !== -1) {
         const newOrder = arrayMove(selectedClients, oldIndex, newIndex);
         
-        // Update the order in the UI through parent component
         if (onReorderClients) {
           onReorderClients(newOrder);
         }
         
-        // Update order in the database directly
         if (currentUserId) {
           try {
             await db.updateVisibleClientsOrder(currentUserId, newOrder);
@@ -289,12 +287,10 @@ export const Settings = ({
       if (oldIndex !== -1 && newIndex !== -1) {
         const newOrder = arrayMove(selectedMediaTypes, oldIndex, newIndex);
         
-        // Update the order in the UI through parent component
         if (onReorderMediaTypes) {
           onReorderMediaTypes(newOrder);
         }
         
-        // Update order in the database directly
         if (currentUserId) {
           try {
             await db.updateVisibleTypesOrder(currentUserId, newOrder);

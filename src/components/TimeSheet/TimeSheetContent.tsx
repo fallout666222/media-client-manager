@@ -148,6 +148,15 @@ export const TimeSheetContent = ({
     return orderedMediaTypes.filter(type => uniqueMediaTypes.includes(type));
   }, [selectedMediaTypes, mediaTypesWithEntries]);
 
+  const handleSystemClientAdded = (systemClientName: string) => {
+    if (!selectedMediaTypes.includes("Administrative")) {
+      onSelectMediaType("Administrative");
+      if (onSaveVisibleMediaTypes) {
+        onSaveVisibleMediaTypes([...selectedMediaTypes, "Administrative"]);
+      }
+    }
+  };
+
   if (showSettings) {
     return (
       <Settings
@@ -177,11 +186,8 @@ export const TimeSheetContent = ({
         onSelectClient={(client) => {
           onSelectClient(client);
           
-          if (DEFAULT_SYSTEM_CLIENTS.includes(client) && !selectedMediaTypes.includes("Administrative")) {
-            onSelectMediaType("Administrative");
-            if (onSaveVisibleMediaTypes) {
-              onSaveVisibleMediaTypes([...selectedMediaTypes, "Administrative"]);
-            }
+          if (DEFAULT_SYSTEM_CLIENTS.includes(client)) {
+            handleSystemClientAdded(client);
           }
           
           if (onSaveVisibleClients) {
@@ -212,6 +218,7 @@ export const TimeSheetContent = ({
           }
         }}
         currentUserId={currentUserId}
+        onSelectSystemClient={handleSystemClientAdded}
       />
     );
   }

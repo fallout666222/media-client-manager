@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Label } from "@/components/ui/label";
 import { useToast } from '@/hooks/use-toast';
@@ -20,6 +21,7 @@ interface ClientSettingsProps {
   onReorderClients?: (clients: string[]) => void;
   visibleClients?: Client[];
   currentUserId?: string;
+  onSelectSystemClient?: (systemClientName: string) => void; // Add this prop
 }
 
 export const ClientSettings: React.FC<ClientSettingsProps> = ({
@@ -32,6 +34,7 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({
   onReorderClients,
   visibleClients = [],
   currentUserId,
+  onSelectSystemClient, // Add this prop
 }) => {
   const [clientSearchTerm, setClientSearchTerm] = useState('');
   const [selectedClientsToAdd, setSelectedClientsToAdd] = useState<string[]>([]);
@@ -71,19 +74,22 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({
 
   const handleSelectMultipleClients = () => {
     if (selectedClientsToAdd.length > 0) {
-      const hasSystemClients = selectedClientsToAdd.some(client => 
+      const systemClientsToAdd = selectedClientsToAdd.filter(client => 
         DEFAULT_SYSTEM_CLIENTS.includes(client)
       );
-
+      
+      // First add all selected clients
       selectedClientsToAdd.forEach(client => {
         if (!selectedClients.includes(client)) {
           onSelectClient(client);
         }
       });
-
-      if (hasSystemClients) {
-        // Ensure Administrative is also selected
-        // The actual addition of Administrative media type is handled in the parent component
+      
+      // Then check if we need to add Administrative media type
+      if (systemClientsToAdd.length > 0 && onSelectSystemClient) {
+        // Let the parent component know that a system client was added
+        // so it can add the Administrative media type
+        onSelectSystemClient(systemClientsToAdd[0]);
       }
 
       setSelectedClientsToAdd([]);
