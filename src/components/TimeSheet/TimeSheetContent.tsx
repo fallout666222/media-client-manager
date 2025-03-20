@@ -161,6 +161,30 @@ export const TimeSheetContent = ({
     }
   };
 
+  const handleMultipleClientsSelect = (clientsToAdd: string[]) => {
+    console.log("Handling multiple clients selection in TimeSheetContent:", clientsToAdd);
+    const newClientsSet = new Set([...selectedClients]);
+    let systemClientFound = false;
+    
+    clientsToAdd.forEach(client => {
+      if (!newClientsSet.has(client)) {
+        newClientsSet.add(client);
+        
+        if (!systemClientFound && DEFAULT_SYSTEM_CLIENTS.includes(client)) {
+          systemClientFound = true;
+          handleSystemClientAdded(client);
+        }
+      }
+    });
+    
+    const newClients = Array.from(newClientsSet);
+    
+    if (onSaveVisibleClients) {
+      console.log("Saving all visible clients:", newClients);
+      onSaveVisibleClients(newClients);
+    }
+  };
+
   if (showSettings) {
     return (
       <Settings
@@ -198,6 +222,7 @@ export const TimeSheetContent = ({
             onSaveVisibleClients([...selectedClients, client]);
           }
         }}
+        onSelectMultipleClients={handleMultipleClientsSelect}
         onSelectMediaType={(type) => {
           onSelectMediaType(type);
           if (onSaveVisibleMediaTypes) {

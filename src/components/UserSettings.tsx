@@ -29,6 +29,7 @@ interface UserSettingsProps {
   onReorderMediaTypes?: (types: string[]) => void;
   visibleClients?: any[];
   currentUserId?: string;
+  onSelectMultipleClients?: (clients: string[]) => void;
 }
 
 export const UserSettings: React.FC<UserSettingsProps> = (props) => {
@@ -46,6 +47,20 @@ export const UserSettings: React.FC<UserSettingsProps> = (props) => {
       });
     } else {
       console.log("Administrative media type already exists");
+    }
+  };
+
+  const handleSelectMultipleClients = (clients: string[]) => {
+    console.log("Handling multiple clients in UserSettings:", clients);
+    if (props.onSelectMultipleClients) {
+      props.onSelectMultipleClients(clients);
+    } else {
+      // Fallback to adding clients one by one
+      for (const client of clients) {
+        if (!props.selectedClients.includes(client)) {
+          props.onSelectClient(client);
+        }
+      }
     }
   };
 
@@ -111,6 +126,7 @@ export const UserSettings: React.FC<UserSettingsProps> = (props) => {
             <Settings 
               {...props} 
               onSelectSystemClient={handleSystemClientSelected}
+              onSelectMultipleClients={handleSelectMultipleClients}
             />
             {renderThemeSettings()}
           </CardContent>

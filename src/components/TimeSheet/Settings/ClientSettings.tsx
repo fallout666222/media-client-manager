@@ -18,6 +18,7 @@ interface ClientSettingsProps {
   availableClients: string[];
   selectedClients: string[];
   onSelectClient: (client: string) => void;
+  onSelectMultipleClients?: (clients: string[]) => void;
   onReorderClients?: (clients: string[]) => void;
   visibleClients?: Client[];
   currentUserId?: string;
@@ -31,6 +32,7 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({
   availableClients,
   selectedClients,
   onSelectClient,
+  onSelectMultipleClients,
   onReorderClients,
   visibleClients = [],
   currentUserId,
@@ -84,7 +86,27 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({
       DEFAULT_SYSTEM_CLIENTS.includes(client)
     );
     
-    // Process each client individually to ensure proper state updates
+    // Use the new batch selection handler if available
+    if (onSelectMultipleClients) {
+      await onSelectMultipleClients([...selectedClientsToAdd]);
+      
+      // Then notify parent if a system client was added
+      if (systemClientsToAdd.length > 0 && onSelectSystemClient) {
+        console.log('System client selected:', systemClientsToAdd[0]);
+        onSelectSystemClient(systemClientsToAdd[0]);
+      }
+      
+      setSelectedClientsToAdd([]);
+      setClientSearchTerm('');
+      
+      toast({
+        title: "Clients Added",
+        description: `Added ${selectedClientsToAdd.length} clients to your visible clients`,
+      });
+      return;
+    }
+    
+    // Fallback to individual selection if batch selection isn't available
     for (const client of selectedClientsToAdd) {
       if (!selectedClients.includes(client)) {
         await onSelectClient(client);

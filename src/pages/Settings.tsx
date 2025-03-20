@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -102,6 +101,26 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ currentUser }) => {
     }
   };
 
+  const handleSelectMultipleClients = async (clients: string[]) => {
+    console.log("Selecting multiple clients:", clients);
+    if (!clients.length) return;
+    
+    // Create a new array with all unique clients
+    const newSelectedClients = [...new Set([...selectedClients, ...clients])];
+    console.log("New selected clients:", newSelectedClients);
+    
+    // Update state with the new clients
+    setSelectedClients(newSelectedClients);
+    
+    // Save the updated clients list to the database
+    await handleSaveVisibleClients(newSelectedClients);
+    
+    toast({
+      title: "Clients Updated",
+      description: `Added ${clients.length} clients to your visible clients`,
+    });
+  };
+
   const handleSelectMediaType = async (type: string) => {
     console.log("Selecting media type:", type);
     if (!selectedMediaTypes.includes(type)) {
@@ -158,6 +177,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ currentUser }) => {
         selectedClients={selectedClients}
         selectedMediaTypes={selectedMediaTypes}
         onSelectClient={handleSelectClient}
+        onSelectMultipleClients={handleSelectMultipleClients}
         onSelectMediaType={handleSelectMediaType}
         onReorderClients={handleReorderClients}
         onReorderMediaTypes={handleReorderMediaTypes}

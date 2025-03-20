@@ -23,6 +23,7 @@ interface SettingsProps {
   onReorderMediaTypes?: (types: string[]) => void;
   currentUserId?: string;
   onSelectSystemClient?: (systemClientName: string) => void;
+  onSelectMultipleClients?: (clients: string[]) => void;
 }
 
 export const Settings = ({
@@ -44,6 +45,7 @@ export const Settings = ({
   onReorderMediaTypes,
   currentUserId,
   onSelectSystemClient,
+  onSelectMultipleClients,
 }: SettingsProps) => {
   return (
     <div className="space-y-8">
@@ -55,6 +57,7 @@ export const Settings = ({
         availableClients={availableClients}
         selectedClients={selectedClients}
         onSelectClient={onSelectClient}
+        onSelectMultipleClients={onSelectMultipleClients}
         onReorderClients={onReorderClients}
         visibleClients={visibleClients}
         currentUserId={currentUserId}
