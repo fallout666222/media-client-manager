@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -7,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Moon, Sun } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Settings } from '@/components/TimeSheet/Settings';
+import { useToast } from '@/hooks/use-toast';
 
 interface UserSettingsProps {
   userId?: string;
@@ -31,10 +33,19 @@ interface UserSettingsProps {
 
 export const UserSettings: React.FC<UserSettingsProps> = (props) => {
   const { theme, setTheme, isLoading } = useSettings();
+  const { toast } = useToast();
 
   const handleSystemClientSelected = (systemClientName: string) => {
+    console.log("System client selected in UserSettings:", systemClientName);
     if (!props.selectedMediaTypes.includes("Administrative")) {
+      console.log("Adding Administrative media type");
       props.onSelectMediaType("Administrative");
+      toast({
+        title: "Media Type Added",
+        description: "Administrative media type was automatically added as you selected a system client.",
+      });
+    } else {
+      console.log("Administrative media type already exists");
     }
   };
 

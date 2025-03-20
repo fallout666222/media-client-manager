@@ -21,7 +21,7 @@ interface ClientSettingsProps {
   onReorderClients?: (clients: string[]) => void;
   visibleClients?: Client[];
   currentUserId?: string;
-  onSelectSystemClient?: (systemClientName: string) => void; // Add this prop
+  onSelectSystemClient?: (systemClientName: string) => void;
 }
 
 export const ClientSettings: React.FC<ClientSettingsProps> = ({
@@ -34,7 +34,7 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({
   onReorderClients,
   visibleClients = [],
   currentUserId,
-  onSelectSystemClient, // Add this prop
+  onSelectSystemClient,
 }) => {
   const [clientSearchTerm, setClientSearchTerm] = useState('');
   const [selectedClientsToAdd, setSelectedClientsToAdd] = useState<string[]>([]);
@@ -74,6 +74,7 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({
 
   const handleSelectMultipleClients = () => {
     if (selectedClientsToAdd.length > 0) {
+      // Check if any of the selected clients are system clients
       const systemClientsToAdd = selectedClientsToAdd.filter(client => 
         DEFAULT_SYSTEM_CLIENTS.includes(client)
       );
@@ -85,10 +86,9 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({
         }
       });
       
-      // Then check if we need to add Administrative media type
+      // Then notify parent if a system client was added
       if (systemClientsToAdd.length > 0 && onSelectSystemClient) {
-        // Let the parent component know that a system client was added
-        // so it can add the Administrative media type
+        console.log('System client selected:', systemClientsToAdd[0]);
         onSelectSystemClient(systemClientsToAdd[0]);
       }
 

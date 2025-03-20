@@ -94,7 +94,7 @@ export const TimeSheetContent = ({
     
     return Array.from(result);
   }, [timeEntries]);
-  
+
   const visibleClientObjects = useMemo(() => {
     if (userRole === 'admin' || adminOverride) {
       return clientObjects;
@@ -149,11 +149,15 @@ export const TimeSheetContent = ({
   }, [selectedMediaTypes, mediaTypesWithEntries]);
 
   const handleSystemClientAdded = (systemClientName: string) => {
+    console.log("System client added in TimeSheetContent:", systemClientName);
     if (!selectedMediaTypes.includes("Administrative")) {
+      console.log("Adding Administrative media type from TimeSheetContent");
       onSelectMediaType("Administrative");
       if (onSaveVisibleMediaTypes) {
         onSaveVisibleMediaTypes([...selectedMediaTypes, "Administrative"]);
       }
+    } else {
+      console.log("Administrative already in selected media types");
     }
   };
 

@@ -8,6 +8,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import * as db from '@/integrations/supabase/database';
 import { Client } from '@/types/timesheet';
 import { useTimeSheetPreferences } from '@/hooks/useTimeSheetPreferences';
+import { useToast } from '@/hooks/use-toast';
 
 interface SettingsPageProps {
   currentUser: any;
@@ -21,6 +22,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ currentUser }) => {
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [selectedMediaTypes, setSelectedMediaTypes] = useState<string[]>([]);
   const [visibleClients, setVisibleClients] = useState<Client[]>([]);
+  const { toast } = useToast();
   
   const { handleSaveVisibleClients, handleSaveVisibleMediaTypes } = useTimeSheetPreferences({
     currentUser
@@ -52,6 +54,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ currentUser }) => {
           if (userVisibleClients) {
             const visibleClientNames = userVisibleClients.map(vc => vc.client?.name || '').filter(name => name);
             setSelectedClients(visibleClientNames);
+            console.log("Loaded visible clients:", visibleClientNames);
           }
 
           // Fetch user's visible media types
@@ -59,6 +62,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ currentUser }) => {
           if (userVisibleTypes) {
             const visibleTypeNames = userVisibleTypes.map(vt => vt.type?.name || '').filter(name => name);
             setSelectedMediaTypes(visibleTypeNames);
+            console.log("Loaded visible media types:", visibleTypeNames);
           }
         }
       } catch (error) {
@@ -88,22 +92,34 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ currentUser }) => {
   };
 
   const handleSelectClient = (client: string) => {
+    console.log("Selecting client:", client);
     const newSelectedClients = [...selectedClients, client];
     setSelectedClients(newSelectedClients);
     handleSaveVisibleClients(newSelectedClients);
   };
 
   const handleSelectMediaType = (type: string) => {
-    const newSelectedMediaTypes = [...selectedMediaTypes, type];
-    setSelectedMediaTypes(newSelectedMediaTypes);
-    handleSaveVisibleMediaTypes(newSelectedMediaTypes);
+    console.log("Selecting media type:", type);
+    if (!selectedMediaTypes.includes(type)) {
+      const newSelectedMediaTypes = [...selectedMediaTypes, type];
+      setSelectedMediaTypes(newSelectedMediaTypes);
+      handleSaveVisibleMediaTypes(newSelectedMediaTypes);
+      toast({
+        title: "Media Type Added",
+        description: `Added ${type} to your visible media types`,
+      });
+    } else {
+      console.log(`${type} already in selected media types`);
+    }
   };
 
   const handleReorderClients = (newOrder: string[]) => {
+    console.log("Reordering clients:", newOrder);
     setSelectedClients(newOrder);
   };
 
   const handleReorderMediaTypes = (newOrder: string[]) => {
+    console.log("Reordering media types:", newOrder);
     setSelectedMediaTypes(newOrder);
   };
 
