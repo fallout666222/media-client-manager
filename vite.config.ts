@@ -34,8 +34,22 @@ export default defineConfig(({ mode }) => ({
             '@radix-ui/react-dropdown-menu',
             '@tanstack/react-query'
           ],
+          // Change the ui chunk to include specific UI component files instead of the whole directory
           ui: [
-            '@/components/ui',
+            '@/components/ui/button',
+            '@/components/ui/toast',
+            '@/components/ui/toaster',
+            '@/components/ui/calendar',
+            '@/components/ui/dropdown-menu',
+            '@/components/ui/input',
+            '@/components/ui/card',
+            '@/components/ui/avatar',
+            '@/components/ui/alert',
+            '@/components/ui/alert-dialog',
+            '@/components/ui/badge',
+            '@/components/ui/breadcrumb',
+            '@/components/ui/accordion',
+            '@/components/ui/aspect-ratio'
           ],
           timesheet: [
             '@/components/TimeSheet'
