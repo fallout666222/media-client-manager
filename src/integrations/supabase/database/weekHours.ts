@@ -1,5 +1,7 @@
 
 import { supabase } from '../client';
+import { getClients } from './client';
+import { getMediaTypes } from './mediaType';
 
 export const getWeekHours = async (userId: string, weekId: string) => {
   return await supabase.from('week_hours').select(`
@@ -51,13 +53,10 @@ export const updateWeekHours = async (
   }
 };
 
-// Update this function to handle zero hours by deleting records
+// Update this function to use static imports instead of dynamic imports
 export const updateHours = async (userId: string, weekId: string, clientName: string, mediaTypeName: string, hours: number) => {
   try {
-    // Get the client and media type IDs from their names
-    const { getClients } = await import('./client');
-    const { getMediaTypes } = await import('./mediaType');
-    
+    // Get client and media type data using static imports
     const { data: clientsData } = await getClients();
     const { data: mediaTypesData } = await getMediaTypes();
     
