@@ -279,7 +279,7 @@ export default function PlanningManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {versions.map(version => (
+                  {versions.map((version) => (
                     <TableRow 
                       key={version.id}
                       className={selectedVersionId === version.id ? 'bg-muted/50' : ''}
