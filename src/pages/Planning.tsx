@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { usePlanning } from '@/hooks/usePlanning';
 import { useApp } from '@/contexts/AppContext';
 import { useClients } from '@/hooks/useClients';
@@ -22,6 +22,7 @@ import {
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { MonthData } from '@/types/planning';
 
 const Planning = () => {
   const { user } = useApp();
@@ -38,6 +39,18 @@ const Planning = () => {
   } = usePlanning(user?.id || '');
 
   const clientHours = processClientHours(planningHours, clients);
+  const [columnTotals, setColumnTotals] = useState<MonthData>({
+    Jan: 0, Feb: 0, Mar: 0, Q1: 0,
+    Apr: 0, May: 0, Jun: 0, Q2: 0,
+    Jul: 0, Aug: 0, Sep: 0, Q3: 0,
+    Oct: 0, Nov: 0, Dec: 0, Q4: 0,
+    FY: 0
+  });
+
+  // Recalculate column totals whenever client hours change
+  useEffect(() => {
+    calculateColumnTotals();
+  }, [clientHours]);
 
   const handleHoursChange = (clientId: string, month: string, hours: number) => {
     updateHours(clientId, month, hours);
@@ -79,10 +92,8 @@ const Planning = () => {
       });
     });
 
-    return totals;
+    setColumnTotals(totals);
   };
-
-  const columnTotals = calculateColumnTotals();
 
   // Check if a specific quarter is locked in the selected version
   const isQuarterLocked = (quarterName: string) => {

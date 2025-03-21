@@ -122,9 +122,9 @@ export const usePlanning = (userId: string) => {
       m.FY = m.Q1 + m.Q2 + m.Q3 + m.Q4;
     });
     
-    // Convert map to array and filter out clients with no hours
-    return Array.from(clientHoursMap.values())
-      .filter(clientHour => clientHour.months.FY > 0);
+    // Convert map to array and don't filter out clients without hours
+    // This ensures all clients are shown regardless of hours
+    return Array.from(clientHoursMap.values());
   };
 
   const updateHours = async (clientId: string, month: string, hours: number) => {
@@ -132,7 +132,8 @@ export const usePlanning = (userId: string) => {
     
     try {
       await updatePlanningHours(selectedVersionId, userId, clientId, month, hours);
-      refetchHours();
+      // Force refetch to get updated data
+      await refetchHours();
       toast({
         title: "Success",
         description: "Hours updated successfully",
