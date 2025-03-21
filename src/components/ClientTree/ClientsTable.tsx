@@ -1,8 +1,8 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { X, Lock } from "lucide-react";
+import { X, Lock, ChevronUp, ChevronDown } from "lucide-react";
 import { Client } from '@/types/timesheet';
 import { ClientSelector } from "@/components/ClientSelector";
 import {
@@ -16,28 +16,51 @@ import {
 } from "@/components/ui/table";
 import { useUpdateClient, useDeleteClient, useCheckCircularReference } from '@/hooks/useClientOperations';
 import { useToast } from "@/hooks/use-toast";
+import { DEFAULT_SYSTEM_CLIENTS } from './constants';
+
+interface SortConfig {
+  key: 'name' | 'parentName' | 'hidden';
+  direction: 'asc' | 'desc';
+}
 
 interface ClientsTableProps {
   clients: Client[];
   paginatedClients: Client[];
+  onSort: (config: SortConfig) => void;
+  sortConfig: SortConfig | null;
 }
 
-export const ClientsTable: React.FC<ClientsTableProps> = ({ clients, paginatedClients }) => {
+export const ClientsTable: React.FC<ClientsTableProps> = ({ 
+  clients, 
+  paginatedClients,
+  onSort,
+  sortConfig 
+}) => {
   const updateClientMutation = useUpdateClient();
   const deleteClientMutation = useDeleteClient();
   const wouldCreateCircularReference = useCheckCircularReference();
   const { toast } = useToast();
   
-  const DEFAULT_SYSTEM_CLIENTS = [
-    "Administrative",
-    "Education/Training",
-    "General Research",
-    "Network Requests",
-    "New Business", 
-    "Sick Leave",
-    "VACATION"
-  ];
+  const handleSort = (key: SortConfig['key']) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    
+    if (sortConfig && sortConfig.key === key) {
+      direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
+    }
+    
+    onSort({ key, direction });
+  };
 
+  const renderSortIcon = (key: SortConfig['key']) => {
+    if (!sortConfig || sortConfig.key !== key) {
+      return <div className="w-4 h-4 inline-block ml-1" />;
+    }
+    
+    return sortConfig.direction === 'asc' 
+      ? <ChevronUp className="w-4 h-4 inline-block ml-1" /> 
+      : <ChevronDown className="w-4 h-4 inline-block ml-1" />;
+  };
+  
   const handleToggleHidden = (id: string, currentValue: boolean) => {
     const client = clients.find(c => c.id === id);
     
@@ -121,9 +144,24 @@ export const ClientsTable: React.FC<ClientsTableProps> = ({ clients, paginatedCl
       <TableCaption>Manage your client hierarchy and visibility</TableCaption>
       <TableHeader>
         <TableRow>
-          <TableHead>Client Name</TableHead>
-          <TableHead>Parent Client</TableHead>
-          <TableHead>Hide from Users</TableHead>
+          <TableHead 
+            className="cursor-pointer"
+            onClick={() => handleSort('name')}
+          >
+            Client Name {renderSortIcon('name')}
+          </TableHead>
+          <TableHead 
+            className="cursor-pointer"
+            onClick={() => handleSort('parentName')}
+          >
+            Parent Client {renderSortIcon('parentName')}
+          </TableHead>
+          <TableHead 
+            className="cursor-pointer"
+            onClick={() => handleSort('hidden')}
+          >
+            Hide from Users {renderSortIcon('hidden')}
+          </TableHead>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
