@@ -1,4 +1,3 @@
-
 import { Routes, Route, Navigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -18,6 +17,9 @@ import UserHeadView from "@/pages/UserHeadView";
 import Planning from "@/pages/Planning";
 import { AdfsCallback } from "@/pages/AuthCallbacks";
 import { useApp } from "@/contexts/AppContext";
+import { Auth } from '@supabase/auth-ui-react';
+import { ThemeSupa } from '@supabase/auth-ui-shared';
+import { useSupabaseClient, useSession } from '@supabase/auth-helpers-react';
 
 export function AppRoutes() {
   const { 
@@ -36,9 +38,23 @@ export function AppRoutes() {
     handleUpdateUserDepartment,
     handleToggleUserHidden
   } = useApp();
+  
+  const session = useSession();
+  const supabase = useSupabaseClient();
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  }
+
+  if (!session) {
+    return (
+      <Auth
+        supabaseClient={supabase}
+        appearance={{ theme: ThemeSupa }}
+        providers={['google', 'github']}
+        redirectTo={`${window.location.origin}/account`}
+      />
+    );
   }
 
   return (
