@@ -15,6 +15,7 @@ import ClientTree from "@/pages/ClientTree";
 import MediaTypeManagement from "@/pages/MediaTypeManagement";
 import SettingsPage from "@/pages/Settings";
 import UserHeadView from "@/pages/UserHeadView";
+import Planning from "@/pages/Planning";
 import { AdfsCallback } from "@/pages/AuthCallbacks";
 import { useApp } from "@/contexts/AppContext";
 
@@ -127,6 +128,11 @@ export function AppRoutes() {
       <Route 
         path="/client-tree" 
         element={user?.role === 'admin' ? <ClientTree /> : <Navigate to="/" replace />} 
+      />
+
+      <Route 
+        path="/planning" 
+        element={user ? <Planning /> : <Navigate to="/login" replace />} 
       />
 
       <Route 
