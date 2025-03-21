@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,13 +53,11 @@ const DepartmentManagement: React.FC<DepartmentManagementProps> = ({ departments
       if (error) throw error;
       
       if (data) {
-        // Add to local state
         onAddDepartment({
           name: data.name,
           description: data.description
         });
         
-        // Reset form
         setDepartmentName('');
         setDepartmentDescription('');
         
@@ -86,7 +83,6 @@ const DepartmentManagement: React.FC<DepartmentManagementProps> = ({ departments
       
       if (error) throw error;
       
-      // Remove from local state
       onDeleteDepartment(id);
       
       toast({
