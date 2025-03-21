@@ -49,7 +49,10 @@ export default defineConfig(({ mode }) => ({
             '@/components/ui/badge',
             '@/components/ui/breadcrumb',
             '@/components/ui/accordion',
-            '@/components/ui/aspect-ratio'
+            '@/components/ui/aspect-ratio',
+            '@/components/ui/checkbox',
+            '@/components/ui/table',
+            '@/components/ui/tabs'
           ],
           // Specify individual TimeSheet component files instead of the entire directory
           timesheet: [
@@ -63,6 +66,13 @@ export default defineConfig(({ mode }) => ({
             '@/components/TimeSheet/TimeSheetMediaTypesList',
             '@/components/TimeSheet/TimeSheetFilters',
             '@/components/TimeSheet/UnsubmittedWeeksAlert'
+          ],
+          // Add a planning chunk
+          planning: [
+            '@/components/Planning/PlanningGrid',
+            '@/hooks/usePlanning',
+            '@/pages/Planning',
+            '@/pages/PlanningManagement'
           ]
         }
       }

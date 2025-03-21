@@ -122,6 +122,91 @@ export type Database = {
         }
         Relationships: []
       }
+      planning_hours: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          hours: number
+          id: string
+          month: string
+          user_id: string
+          version_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          hours?: number
+          id?: string
+          month: string
+          user_id: string
+          version_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          hours?: number
+          id?: string
+          month?: string
+          user_id?: string
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planning_hours_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planning_hours_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planning_hours_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "planning_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planning_versions: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          q1_locked: boolean | null
+          q2_locked: boolean | null
+          q3_locked: boolean | null
+          q4_locked: boolean | null
+          year: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          q1_locked?: boolean | null
+          q2_locked?: boolean | null
+          q3_locked?: boolean | null
+          q4_locked?: boolean | null
+          year: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          q1_locked?: boolean | null
+          q2_locked?: boolean | null
+          q3_locked?: boolean | null
+          q4_locked?: boolean | null
+          year?: string
+        }
+        Relationships: []
+      }
       user_managers: {
         Row: {
           created_at: string | null
@@ -488,7 +573,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      fill_actual_hours: {
+        Args: {
+          p_version_id: string
+          p_year: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
