@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from "react";
 import { User, CustomWeek, WeekPercentage } from "@/types/timesheet";
 import {
@@ -13,9 +14,10 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Search } from "lucide-react";
 import { getUsers, getCustomWeeks, getWeekPercentages, updateWeekPercentage } from "@/integrations/supabase/database";
 import { getYear, parse } from "date-fns";
+import { TeamMemberSelector } from "@/components/TeamMemberSelector";
 
 const DEFAULT_WEEKS: CustomWeek[] = [
   { id: "1", name: "Week 1", startDate: "2025-01-01", endDate: "2025-01-06", hours: 48 },
@@ -35,6 +37,7 @@ const UserWeekPercentage = () => {
   const [customWeeks, setCustomWeeks] = useState<CustomWeek[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastModifiedWeek, setLastModifiedWeek] = useState<string | null>(null);
+  const [userSearchQuery, setUserSearchQuery] = useState("");
   
   const [selectedYear, setSelectedYear] = useState<string>(() => {
     return localStorage.getItem('userWeekPercentage_selectedYear') || "all";
@@ -222,6 +225,12 @@ const UserWeekPercentage = () => {
   };
 
   const selectedUserData = users.find((user) => user.id === selectedUser);
+
+  const handleUserSelect = (user: User) => {
+    if (user && user.id) {
+      setSelectedUser(user.id);
+    }
+  };
   
   const getFilteredWeeks = () => {
     const weeksToFilter = customWeeks.length > 0 ? customWeeks : DEFAULT_WEEKS;
@@ -265,21 +274,17 @@ const UserWeekPercentage = () => {
         <div className="flex flex-col md:flex-row gap-4 items-start md:items-end">
           <div className="w-full md:w-auto">
             <label className="block text-sm font-medium mb-2">Select a user:</label>
-            <Select
-              value={selectedUser}
-              onValueChange={setSelectedUser}
-            >
-              <SelectTrigger className="w-full md:w-[300px]">
-                <SelectValue placeholder="Select a user" />
-              </SelectTrigger>
-              <SelectContent>
-                {users.map((user) => (
-                  <SelectItem key={user.id} value={user.id || ""}>
-                    {user.login || user.username} ({user.type || user.role})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <TeamMemberSelector
+              currentUser={{} as User}
+              users={users}
+              onUserSelect={handleUserSelect}
+              selectedUser={selectedUserData}
+              searchValue={userSearchQuery}
+              onSearchChange={setUserSearchQuery}
+              autoOpenOnFocus={true}
+              className="w-full md:w-[300px]"
+              placeholder="Search and select a user..."
+            />
           </div>
           
           {selectedUser && availableYears.length > 0 && (
