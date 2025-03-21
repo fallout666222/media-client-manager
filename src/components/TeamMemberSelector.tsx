@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 interface TeamMemberSelectorProps {
   currentUser: User;
   users: User[];
-  onUserSelect: (user: User) => void;
+  onUserSelect: (user: User | null) => void;
   selectedUser?: User | null;
   searchValue?: string;
   onSearchChange?: (value: string) => void;
@@ -94,7 +94,7 @@ export function TeamMemberSelector({
     setOpen(false);
   };
 
-  // Clear search input
+  // Clear search input and selection
   const clearSearch = () => {
     if (onSearchChange) {
       onSearchChange('');
@@ -104,18 +104,41 @@ export function TeamMemberSelector({
     setOpen(false);
   };
 
+  // Clear selection (set to null)
+  const clearSelection = () => {
+    onUserSelect(null);
+    clearSearch();
+  };
+
   return (
     <div className={`relative ${className}`}>
       <div className="relative">
         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder={placeholder}
-          value={searchTerm}
-          onChange={(e) => handleSearchChange(e.target.value)}
-          onFocus={() => autoOpenOnFocus && setOpen(true)}
-          className="pl-8 pr-8"
-        />
-        {searchTerm && (
+        {selectedUser ? (
+          <div className="flex items-center justify-between border border-input px-3 py-2 rounded-md">
+            <div className="pl-6">
+              {selectedUser.login || selectedUser.username} 
+              {selectedUser.name ? ` - ${selectedUser.name}` : ''}
+              {selectedUser.type ? ` (${selectedUser.type})` : ''}
+            </div>
+            <button
+              onClick={clearSelection}
+              type="button"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
+          <Input
+            placeholder={placeholder}
+            value={searchTerm}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            onFocus={() => autoOpenOnFocus && setOpen(true)}
+            className="pl-8 pr-8"
+          />
+        )}
+        {!selectedUser && searchTerm && (
           <button 
             className="absolute right-2 top-2.5"
             onClick={clearSearch}
@@ -126,7 +149,7 @@ export function TeamMemberSelector({
         )}
       </div>
       
-      {open && (
+      {open && !selectedUser && (
         <div className="absolute z-50 mt-1 w-full bg-white border border-input rounded-md shadow-lg">
           {filteredTeamMembers.length > 0 ? (
             <ul className="py-1 max-h-60 overflow-auto">
@@ -139,7 +162,11 @@ export function TeamMemberSelector({
                   )}
                   onClick={() => handleSelect(user)}
                 >
-                  <span className="flex-1">{user.login || user.username} {user.name ? `- ${user.name}` : ''}</span>
+                  <span className="flex-1">
+                    {user.login || user.username} 
+                    {user.name ? ` - ${user.name}` : ''}
+                    {user.type ? ` (${user.type})` : ''}
+                  </span>
                   {user.id === currentUser.id && (
                     <span className="text-xs text-muted-foreground ml-2">(myself)</span>
                   )}
