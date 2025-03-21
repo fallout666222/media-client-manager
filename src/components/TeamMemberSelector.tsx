@@ -115,19 +115,30 @@ export function TeamMemberSelector({
     clearSearch();
   };
 
+  // Toggle dropdown when clicking on selected user field
+  const toggleDropdown = () => {
+    setOpen(!open);
+  };
+
   return (
     <div className={`relative ${className}`} ref={containerRef}>
       <div className="relative">
         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
         {selectedUser ? (
-          <div className="flex items-center justify-between border border-input px-3 py-2 rounded-md">
+          <div 
+            className="flex items-center justify-between border border-input px-3 py-2 rounded-md cursor-pointer hover:bg-accent/50"
+            onClick={toggleDropdown}
+          >
             <div className="pl-6">
               {selectedUser.login || selectedUser.username} 
               {selectedUser.name ? ` - ${selectedUser.name}` : ''}
               {selectedUser.type ? ` (${selectedUser.type})` : ''}
             </div>
             <button
-              onClick={clearSelection}
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent triggering the parent div's onClick
+                clearSelection();
+              }}
               type="button"
               className="text-muted-foreground hover:text-foreground"
               aria-label="Clear selection"
@@ -156,7 +167,7 @@ export function TeamMemberSelector({
         )}
       </div>
       
-      {open && !selectedUser && (
+      {open && (
         <div className="absolute z-50 mt-1 w-full bg-popover border border-input rounded-md shadow-lg">
           {filteredTeamMembers.length > 0 ? (
             <ul className="py-1 max-h-60 overflow-auto">
