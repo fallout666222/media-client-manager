@@ -15,11 +15,11 @@ export const HoursInput = ({
   isFiscalYearTotal = false, 
   onChange 
 }: HoursInputProps) => {
-  const [inputValue, setInputValue] = useState(value.toString());
+  const [inputValue, setInputValue] = useState(value === 0 ? '' : value.toString());
 
   // Update local state when prop value changes
   useEffect(() => {
-    setInputValue(value.toString());
+    setInputValue(value === 0 ? '' : value.toString());
   }, [value]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,7 +37,7 @@ export const HoursInput = ({
     // Handle empty or invalid input
     if (isNaN(numValue)) {
       numValue = 0;
-      setInputValue('0');
+      setInputValue('');
     }
     
     // Only call onChange if this is an editable field

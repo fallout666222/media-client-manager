@@ -148,7 +148,7 @@ export const usePlanning = (userId: string) => {
       }
     });
     
-    // Calculate quarter and yearly totals
+    // Calculate quarter and yearly totals for each client
     clientHoursMap.forEach(clientHour => {
       const m = clientHour.months;
       
