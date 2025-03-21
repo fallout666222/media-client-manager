@@ -10,7 +10,7 @@ import {
   fillActualHours
 } from '@/integrations/supabase/database';
 
-interface PlanningVersion {
+export interface PlanningVersion {
   id: string;
   name: string;
   year: string;
@@ -38,7 +38,7 @@ export const usePlanning = () => {
         });
         return [];
       }
-      return data || [];
+      return data as PlanningVersion[] || [];
     }
   });
   
@@ -57,7 +57,7 @@ export const usePlanning = () => {
         });
         return null;
       }
-      return data;
+      return data as PlanningVersion | null;
     },
     enabled: !!selectedVersionId
   });
@@ -83,7 +83,7 @@ export const usePlanning = () => {
       
       await refetchVersions();
       
-      return data;
+      return data as PlanningVersion;
     } catch (error) {
       console.error('Error creating planning version:', error);
       toast({
@@ -121,7 +121,7 @@ export const usePlanning = () => {
       
       await refetchSelectedVersion();
       
-      return data;
+      return data as PlanningVersion;
     } catch (error) {
       console.error('Error updating quarter locks:', error);
       toast({
@@ -158,7 +158,7 @@ export const usePlanning = () => {
   };
   
   return {
-    versions,
+    versions: versions as PlanningVersion[],
     versionsLoading,
     selectedVersion,
     versionLoading,

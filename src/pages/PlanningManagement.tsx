@@ -73,6 +73,9 @@ export default function PlanningManagement() {
     refetchVersions
   } = usePlanning();
   
+  // Explicitly cast versions as PlanningVersion[]
+  const typedVersions = versions as PlanningVersion[];
+  
   const [newVersionName, setNewVersionName] = useState('');
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [isCreatingVersion, setIsCreatingVersion] = useState(false);
@@ -279,7 +282,7 @@ export default function PlanningManagement() {
           <CardContent>
             {versionsLoading ? (
               <div className="text-center py-4">Loading versions...</div>
-            ) : versions.length === 0 ? (
+            ) : typedVersions.length === 0 ? (
               <div className="text-center py-4">No planning versions available</div>
             ) : (
               <Table>
@@ -291,7 +294,7 @@ export default function PlanningManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {versions.map((version: PlanningVersion) => (
+                  {typedVersions.map((version) => (
                     <TableRow 
                       key={version.id}
                       className={selectedVersionId === version.id ? 'bg-muted/50' : ''}
