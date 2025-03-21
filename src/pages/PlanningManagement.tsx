@@ -43,6 +43,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
 import { getCustomWeeks } from '@/integrations/supabase/database';
 import { useApp } from '@/contexts/AppContext';
+import { CustomWeek } from '@/types/timesheet';
 
 export default function PlanningManagement() {
   const { user } = useApp();
@@ -74,7 +75,7 @@ export default function PlanningManagement() {
   const [showFillActualDialog, setShowFillActualDialog] = useState(false);
   
   // Get available years from custom weeks
-  const { data: customWeeks = [] } = useQuery({
+  const { data: customWeeksData } = useQuery({
     queryKey: ['custom-weeks'],
     queryFn: async () => {
       const { data } = await getCustomWeeks();
@@ -82,11 +83,14 @@ export default function PlanningManagement() {
     }
   });
   
+  const customWeeks = customWeeksData || [];
+  
   // Extract unique years from custom weeks
   const years = [...new Set(customWeeks.map(week => {
+    if (!week.period_from) return '';
     const date = new Date(week.period_from);
     return date.getFullYear().toString();
-  }))].sort();
+  })).filter(Boolean)].sort();
   
   // Update local lock state when selected version changes
   React.useEffect(() => {

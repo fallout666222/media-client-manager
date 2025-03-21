@@ -170,7 +170,7 @@ export function PlanningGrid({
       toast({
         title: "Quarter Locked",
         description: `This quarter is locked and cannot be edited.`,
-        variant: "warning"
+        variant: "destructive"
       });
       return;
     }

@@ -14,7 +14,7 @@ import {
 import { PlanningGrid } from '@/components/Planning/PlanningGrid';
 import { usePlanning } from '@/hooks/usePlanning';
 import { useQuery } from '@tanstack/react-query';
-import { getVisibleClients } from '@/integrations/supabase/database';
+import { getUserVisibleClients } from '@/integrations/supabase/database';
 import { useApp } from '@/contexts/AppContext';
 
 export default function Planning() {
@@ -32,7 +32,7 @@ export default function Planning() {
     queryKey: ['visible-clients', user?.id],
     queryFn: async () => {
       if (!user?.id) return { data: [] };
-      return await getVisibleClients(user.id);
+      return await getUserVisibleClients(user.id);
     },
     enabled: !!user?.id
   });

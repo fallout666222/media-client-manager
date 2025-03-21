@@ -3,7 +3,7 @@ import { UserIcon, LogOut, BarChart2, Users, Settings, Calendar, FolderTree, Lin
 import { Link, useNavigate } from "react-router-dom";
 import { User } from "@/types/timesheet";
 import { Button } from "@/components/ui/button";
-import NavButton from "@/components/Navigation/NavButton";
+import { NavButton } from "@/components/Navigation/NavButton";
 import { useSettings } from "@/contexts/SettingsContext";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 
@@ -15,7 +15,7 @@ interface AppHeaderProps {
 
 export function AppHeader({ user, isUserHead, onLogout }: AppHeaderProps) {
   const navigate = useNavigate();
-  const { darkTheme, language } = useSettings();
+  const { theme } = useSettings();
 
   const handleLogout = () => {
     onLogout();

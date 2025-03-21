@@ -1,24 +1,27 @@
 
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { LucideIcon } from "lucide-react";
 
 interface NavButtonProps {
   to: string;
-  children: React.ReactNode;
+  icon: LucideIcon;
+  label: string;
 }
 
-export function NavButton({ to, children }: NavButtonProps) {
+export function NavButton({ to, icon: Icon, label }: NavButtonProps) {
   const location = useLocation();
   const isActive = location.pathname === to;
   
   return (
     <Link to={to}>
       <Button 
-        variant={isActive ? "active" : "outline"} 
+        variant={isActive ? "default" : "outline"} 
         size="sm" 
         className="flex items-center gap-2"
       >
-        {children}
+        <Icon className="h-4 w-4" />
+        <span>{label}</span>
       </Button>
     </Link>
   );
