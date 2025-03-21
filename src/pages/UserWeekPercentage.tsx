@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from "react";
 import { User, CustomWeek, WeekPercentage } from "@/types/timesheet";
 import {
@@ -14,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { getUsers, getCustomWeeks, getWeekPercentages, updateWeekPercentage } from "@/integrations/supabase/database";
 import { getYear, parse } from "date-fns";
 import { TeamMemberSelector } from "@/components/TeamMemberSelector";
@@ -226,9 +225,10 @@ const UserWeekPercentage = () => {
 
   const selectedUserData = users.find((user) => user.id === selectedUser);
 
-  const handleUserSelect = (user: User) => {
+  const handleUserSelect = (user: User | null) => {
     if (user && user.id) {
       setSelectedUser(user.id);
+      setWeekPercentages([]);
     }
   };
   

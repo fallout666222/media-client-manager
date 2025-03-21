@@ -1,22 +1,9 @@
 
 import { useEffect, useState, useRef } from "react";
-import { Check, ChevronsUpDown, Search, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { User } from "@/types/timesheet";
 import { Input } from "@/components/ui/input";
+import { User } from "@/types/timesheet";
 
 interface TeamMemberSelectorProps {
   currentUser: User;
@@ -168,15 +155,14 @@ export function TeamMemberSelector({
       </div>
       
       {open && !selectedUser && (
-        <div className="absolute z-50 mt-1 w-full bg-white border border-input rounded-md shadow-lg">
+        <div className="absolute z-50 mt-1 w-full bg-popover border border-input rounded-md shadow-lg">
           {filteredTeamMembers.length > 0 ? (
             <ul className="py-1 max-h-60 overflow-auto">
               {filteredTeamMembers.map((user) => (
                 <li 
                   key={user.id}
                   className={cn(
-                    "px-3 py-2 flex items-center hover:bg-accent hover:text-accent-foreground cursor-pointer",
-                    selectedUser?.id === user.id && "bg-accent/50"
+                    "px-3 py-2 flex items-center hover:bg-accent hover:text-accent-foreground cursor-pointer"
                   )}
                   onClick={() => handleSelect(user)}
                 >
