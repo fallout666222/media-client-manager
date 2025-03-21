@@ -1,6 +1,5 @@
 
 import { supabase } from '../client';
-import { PlanningVersion } from '@/types/planning';
 
 export const getPlanningVersions = async () => {
   return await supabase
@@ -59,41 +58,4 @@ export const updatePlanningHours = async (
       .select()
       .single();
   }
-};
-
-// New function to create a planning version
-export const createPlanningVersion = async (name: string, year: string) => {
-  return await supabase
-    .from('planning_versions')
-    .insert({
-      name,
-      year,
-      q1_locked: false,
-      q2_locked: false,
-      q3_locked: false,
-      q4_locked: false
-    })
-    .select()
-    .single();
-};
-
-// New function to update a planning version's lock status
-export const updatePlanningVersionLocks = async (
-  versionId: string, 
-  updates: Partial<PlanningVersion>
-) => {
-  return await supabase
-    .from('planning_versions')
-    .update(updates)
-    .eq('id', versionId)
-    .select()
-    .single();
-};
-
-// Function to fill planning with actual hours data (from week_hours)
-export const fillActualHours = async (versionId: string, year: string) => {
-  return await supabase.rpc('fill_actual_hours', {
-    p_version_id: versionId,
-    p_year: year
-  });
 };
