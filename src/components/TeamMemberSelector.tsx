@@ -130,6 +130,7 @@ export function TeamMemberSelector({
               onClick={clearSelection}
               type="button"
               className="text-muted-foreground hover:text-foreground"
+              aria-label="Clear selection"
             >
               <X className="h-4 w-4" />
             </button>
@@ -148,6 +149,7 @@ export function TeamMemberSelector({
             className="absolute right-2 top-2.5"
             onClick={clearSearch}
             type="button"
+            aria-label="Clear search"
           >
             <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
           </button>

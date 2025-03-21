@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from "react";
 import { User, CustomWeek, WeekPercentage } from "@/types/timesheet";
 import {
@@ -27,9 +28,7 @@ const DEFAULT_WEEKS: CustomWeek[] = [
 ];
 
 const UserWeekPercentage = () => {
-  const [selectedUser, setSelectedUser] = useState<string>(() => {
-    return localStorage.getItem('userWeekPercentage_selectedUser') || "";
-  });
+  const [selectedUser, setSelectedUser] = useState<string>("");
   
   const [weekPercentages, setWeekPercentages] = useState<WeekPercentageEntry[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -229,6 +228,10 @@ const UserWeekPercentage = () => {
     if (user && user.id) {
       setSelectedUser(user.id);
       setWeekPercentages([]);
+    } else {
+      // Clear selection when user is null
+      setSelectedUser("");
+      setWeekPercentages([]);
     }
   };
   
@@ -278,7 +281,7 @@ const UserWeekPercentage = () => {
               currentUser={{} as User}
               users={users}
               onUserSelect={handleUserSelect}
-              selectedUser={selectedUserData}
+              selectedUser={selectedUserData || null}
               searchValue={userSearchQuery}
               onSearchChange={setUserSearchQuery}
               autoOpenOnFocus={true}
