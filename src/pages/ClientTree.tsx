@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -42,14 +41,14 @@ const ClientTree: React.FC = () => {
       );
     }
 
-    // Apply sorting with system defaults always at the top
+    // Apply sorting with system defaults always at the END (changed from top to end)
     return [...result].sort((a, b) => {
-      // First sort by system default status
+      // First sort by system default status (reversed priority)
       const aIsDefault = DEFAULT_SYSTEM_CLIENTS.includes(a.name);
       const bIsDefault = DEFAULT_SYSTEM_CLIENTS.includes(b.name);
       
-      if (aIsDefault && !bIsDefault) return -1;
-      if (!aIsDefault && bIsDefault) return 1;
+      if (aIsDefault && !bIsDefault) return 1; // Changed from -1 to 1
+      if (!aIsDefault && bIsDefault) return -1; // Changed from 1 to -1
       
       // Then sort by the selected column
       if (sortConfig.key === 'name') {
