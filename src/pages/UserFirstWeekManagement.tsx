@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { User, CustomWeek } from "@/types/timesheet";
@@ -22,6 +21,7 @@ import { format, parse } from "date-fns";
 import { Calendar, CheckCircle, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { getCustomWeeks, updateUser, getUsers } from "@/integrations/supabase/database";
+import SearchBar from "@/components/SearchBar";
 
 const UserFirstWeekManagement = () => {
   const { toast } = useToast();
@@ -29,6 +29,7 @@ const UserFirstWeekManagement = () => {
   const [customWeeks, setCustomWeeks] = useState<CustomWeek[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   
   useEffect(() => {
     fetchData();
@@ -133,6 +134,17 @@ const UserFirstWeekManagement = () => {
     return matchingWeek ? matchingWeek.id : "";
   };
 
+  const filteredUsers = users.filter(user => {
+    const searchTerm = searchQuery.toLowerCase();
+    return (
+      (user.username || '').toLowerCase().includes(searchTerm) ||
+      (user.login || '').toLowerCase().includes(searchTerm) ||
+      (user.name || '').toLowerCase().includes(searchTerm) ||
+      (user.role || '').toLowerCase().includes(searchTerm) ||
+      (user.type || '').toLowerCase().includes(searchTerm)
+    );
+  });
+
   if (loading) {
     return (
       <div className="container mx-auto py-10 pt-16 text-center">
@@ -156,9 +168,22 @@ const UserFirstWeekManagement = () => {
         </Link>
       </div>
       
-      {users.length === 0 ? (
+      <div className="mb-6">
+        <SearchBar 
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="Search users by name, login, or role..."
+          className="max-w-md"
+        />
+      </div>
+      
+      {filteredUsers.length === 0 ? (
         <div className="text-center py-8">
-          <p>No users found. Please add users to the system.</p>
+          {users.length === 0 ? (
+            <p>No users found. Please add users to the system.</p>
+          ) : (
+            <p>No users match your search criteria.</p>
+          )}
         </div>
       ) : (
         <div className="rounded-md border">
@@ -173,7 +198,7 @@ const UserFirstWeekManagement = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((user) => {
+              {filteredUsers.map((user) => {
                 const userId = user.id || '';
                 const currentWeekId = getCurrentWeekId(user);
                 const selectedWeekId = selectedWeeks[userId] || "";
