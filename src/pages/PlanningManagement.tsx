@@ -86,11 +86,11 @@ export default function PlanningManagement() {
   const customWeeks = customWeeksData || [];
   
   // Extract unique years from custom weeks
-  const years = [...new Set(customWeeks.map(week => {
+  const years = [...Array.from(new Set(customWeeks.map(week => {
     if (!week.period_from) return '';
     const date = new Date(week.period_from);
     return date.getFullYear().toString();
-  })).filter(Boolean)].sort();
+  }))).filter(Boolean)].sort();
   
   // Update local lock state when selected version changes
   React.useEffect(() => {
