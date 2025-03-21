@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, X, ArrowLeft, Lock, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import SearchBar from "@/components/SearchBar";
+import { ClientSelector } from "@/components/ClientSelector";
 import {
   Select,
   SelectContent,
@@ -44,6 +45,7 @@ const ClientTree: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [parentSearchValue, setParentSearchValue] = useState('');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -334,6 +336,10 @@ const ClientTree: React.FC = () => {
     setCurrentPage(newPage);
   };
 
+  const handleParentSelect = (client: Client | null) => {
+    setNewClientParent(client?.id || null);
+  };
+
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery]);
@@ -368,17 +374,17 @@ const ClientTree: React.FC = () => {
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Parent Client</label>
-            <Select value={newClientParent || "none"} onValueChange={(value) => setNewClientParent(value === "none" ? null : value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select parent client (optional)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                {clients.map((client) => (
-                  <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <ClientSelector
+              clients={clients}
+              selectedClient={clients.find(c => c.id === newClientParent) || null}
+              onClientSelect={handleParentSelect}
+              searchValue={parentSearchValue}
+              onSearchChange={setParentSearchValue}
+              placeholder="Select parent client (optional)"
+              showNoResultsMessage={true}
+              clearSearchOnSelect={true}
+              autoOpenOnFocus={true}
+            />
           </div>
           <Button 
             onClick={handleAddClient} 
@@ -434,77 +440,70 @@ const ClientTree: React.FC = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedClients.map((client) => (
-              <TableRow key={client.id} className={client.isDefault ? "bg-muted/30" : ""}>
-                <TableCell className="font-medium">
-                  {client.name}
-                  {client.isDefault && (
-                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                      System Default
-                    </span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Select 
-                    value={client.parentId || "none"} 
-                    onValueChange={(value) => handleUpdateParent(client.id, value === "none" ? null : value)}
-                    disabled={client.isDefault || updateClientMutation.isPending}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="None" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      {clients
-                        .filter(c => c.id !== client.id)
-                        .map((parentClient) => (
-                          <SelectItem key={parentClient.id} value={parentClient.id}>
-                            {parentClient.name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center">
-                    <Checkbox 
-                      id={`hide-${client.id}`}
-                      checked={client.hidden}
-                      onCheckedChange={() => handleToggleHidden(client.id, client.hidden)}
+            {paginatedClients.map((client) => {
+              const parentSearchState = `search-${client.id}`;
+              return (
+                <TableRow key={client.id} className={client.isDefault ? "bg-muted/30" : ""}>
+                  <TableCell className="font-medium">
+                    {client.name}
+                    {client.isDefault && (
+                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                        System Default
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <ClientSelector
+                      clients={clients.filter(c => c.id !== client.id)}
+                      selectedClient={clients.find(c => c.id === client.parentId) || null}
+                      onClientSelect={(selectedClient) => handleUpdateParent(client.id, selectedClient?.id || null)}
                       disabled={client.isDefault || updateClientMutation.isPending}
+                      placeholder="None"
+                      showNoResultsMessage={true}
+                      clearSearchOnSelect={true}
                     />
-                    <label
-                      htmlFor={`hide-${client.id}`}
-                      className="ml-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Hide
-                    </label>
-                  </div>
-                </TableCell>
-                <TableCell className="text-right">
-                  {client.isDefault ? (
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      disabled
-                      className="text-muted-foreground"
-                    >
-                      <Lock className="h-4 w-4" />
-                    </Button>
-                  ) : (
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleDeleteClient(client.id)}
-                      disabled={deleteClientMutation.isPending}
-                      className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center">
+                      <Checkbox 
+                        id={`hide-${client.id}`}
+                        checked={client.hidden}
+                        onCheckedChange={() => handleToggleHidden(client.id, client.hidden)}
+                        disabled={client.isDefault || updateClientMutation.isPending}
+                      />
+                      <label
+                        htmlFor={`hide-${client.id}`}
+                        className="ml-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        Hide
+                      </label>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {client.isDefault ? (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        disabled
+                        className="text-muted-foreground"
+                      >
+                        <Lock className="h-4 w-4" />
+                      </Button>
+                    ) : (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleDeleteClient(client.id)}
+                        disabled={deleteClientMutation.isPending}
+                        className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
 
