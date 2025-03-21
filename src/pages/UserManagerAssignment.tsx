@@ -23,6 +23,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getUsers, getDepartments, updateUser } from "@/integrations/supabase/database";
 import SearchBar from "@/components/SearchBar";
+import { TeamMemberSelector } from "@/components/TeamMemberSelector";
 
 interface UserManagerAssignmentProps {
   onUpdateUserManager: (username: string, managerId: string | undefined) => void;
@@ -43,6 +44,7 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [userHeadSearchTerm, setUserHeadSearchTerm] = useState("");
 
   useEffect(() => {
     fetchData();
@@ -105,7 +107,7 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
     }
   };
 
-  const handleUserHeadChange = async (user: User, userHeadId: string | undefined) => {
+  const handleUserHeadChange = async (user: User, selectedUserHead: User | null) => {
     if (!user.id) {
       toast({
         title: "Error",
@@ -116,9 +118,10 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
     }
     
     try {
+      const userHeadId = selectedUserHead?.id;
       console.log('Updating user head, user_head_id value:', userHeadId);
       
-      const updatedValue = userHeadId === undefined || userHeadId === "none" ? null : userHeadId;
+      const updatedValue = userHeadId === undefined ? null : userHeadId;
       
       await updateUser(user.id, { user_head_id: updatedValue });
       
@@ -339,26 +342,18 @@ const UserManagerAssignment: React.FC<UserManagerAssignmentProps> = ({
                   </Select>
                 </TableCell>
                 <TableCell>
-                  <Select
-                    value={user.user_head_id || "none"}
-                    onValueChange={(value) => {
-                      handleUserHeadChange(user, value === "none" ? undefined : value);
-                    }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select a user head" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No User Head</SelectItem>
-                      {users
-                        .filter((head) => head.id !== user.id || user.user_head_id === user.id)
-                        .map((head) => (
-                          <SelectItem key={head.id} value={head.id}>
-                            {head.login || head.username} ({head.type || head.role})
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                  <TeamMemberSelector
+                    currentUser={user}
+                    users={users.filter((head) => head.id !== user.id || user.user_head_id === user.id)}
+                    onUserSelect={(selectedUser) => handleUserHeadChange(user, selectedUser)}
+                    selectedUser={users.find(u => u.id === user.user_head_id) || null}
+                    searchValue={userHeadSearchTerm}
+                    onSearchChange={setUserHeadSearchTerm}
+                    autoOpenOnFocus={true}
+                    clearSearchOnSelect={true}
+                    placeholder="Search for user head..."
+                    className="w-full"
+                  />
                 </TableCell>
                 <TableCell className="text-center">
                   <div className="flex items-center justify-center">
