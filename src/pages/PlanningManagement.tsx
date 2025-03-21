@@ -45,6 +45,18 @@ import { getCustomWeeks } from '@/integrations/supabase/database';
 import { useApp } from '@/contexts/AppContext';
 import { CustomWeek } from '@/types/timesheet';
 
+// Define PlanningVersion interface to match what's returned by usePlanning hook
+interface PlanningVersion {
+  id: string;
+  name: string;
+  year: string;
+  q1_locked: boolean;
+  q2_locked: boolean;
+  q3_locked: boolean;
+  q4_locked: boolean;
+  created_at?: string;
+}
+
 export default function PlanningManagement() {
   const { user } = useApp();
   const { toast } = useToast();
@@ -279,7 +291,7 @@ export default function PlanningManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {versions.map((version) => (
+                  {versions.map((version: PlanningVersion) => (
                     <TableRow 
                       key={version.id}
                       className={selectedVersionId === version.id ? 'bg-muted/50' : ''}
