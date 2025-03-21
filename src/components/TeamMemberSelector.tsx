@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Check, ChevronsUpDown, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,7 @@ export function TeamMemberSelector({
 }: TeamMemberSelectorProps) {
   const [open, setOpen] = useState(false);
   const [internalSearchValue, setInternalSearchValue] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
   
   // Use either the external search value or the internal one
   const searchTerm = searchValue !== undefined ? searchValue : internalSearchValue;
@@ -64,6 +65,23 @@ export function TeamMemberSelector({
       (user.type || '').toLowerCase().includes(search)
     );
   });
+
+  // Add click outside handler
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [open]);
 
   // Handle search input change
   const handleSearchChange = (value: string) => {
@@ -111,7 +129,7 @@ export function TeamMemberSelector({
   };
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative ${className}`} ref={containerRef}>
       <div className="relative">
         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
         {selectedUser ? (
