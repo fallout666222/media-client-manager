@@ -51,8 +51,18 @@ export default defineConfig(({ mode }) => ({
             '@/components/ui/accordion',
             '@/components/ui/aspect-ratio'
           ],
+          // Specify individual TimeSheet component files instead of the entire directory
           timesheet: [
-            '@/components/TimeSheet'
+            '@/components/TimeSheet/TimeSheetWrapper',
+            '@/components/TimeSheet/TimeSheetProvider',
+            '@/components/TimeSheet/TimeSheetHeader',
+            '@/components/TimeSheet/TimeSheetControls',
+            '@/components/TimeSheet/TimeSheetGrid',
+            '@/components/TimeSheet/TimeSheetContent',
+            '@/components/TimeSheet/TimeSheetContext/TimeSheetContext',
+            '@/components/TimeSheet/TimeSheetMediaTypesList',
+            '@/components/TimeSheet/TimeSheetFilters',
+            '@/components/TimeSheet/UnsubmittedWeeksAlert'
           ]
         }
       }
