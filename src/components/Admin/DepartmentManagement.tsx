@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +24,7 @@ interface Department {
 interface DepartmentManagementProps {
   departments: Department[];
   onAddDepartment: (department: Omit<Department, "id">) => void;
-  onDeleteDepartment: (id: string) => void;
+  onDeleteDepartment: (id: string) => void; // Keeping the prop to maintain interface compatibility
 }
 
 const DepartmentManagement: React.FC<DepartmentManagementProps> = ({ departments, onAddDepartment, onDeleteDepartment }) => {
@@ -76,28 +77,7 @@ const DepartmentManagement: React.FC<DepartmentManagementProps> = ({ departments
     }
   };
 
-  const handleDeleteDepartment = async (id: string) => {
-    try {
-      const { deleteDepartment } = await import('@/integrations/supabase/database');
-      const { error } = await deleteDepartment(id);
-      
-      if (error) throw error;
-      
-      onDeleteDepartment(id);
-      
-      toast({
-        title: "Success",
-        description: "Department deleted successfully",
-      });
-    } catch (error) {
-      console.error('Error deleting department:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete department",
-        variant: "destructive",
-      });
-    }
-  };
+  // Removing the handleDeleteDepartment function as we no longer want this functionality
 
   return (
     <div className="space-y-4">
@@ -130,7 +110,7 @@ const DepartmentManagement: React.FC<DepartmentManagementProps> = ({ departments
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Description</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            {/* Removed the Actions column header */}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -138,11 +118,7 @@ const DepartmentManagement: React.FC<DepartmentManagementProps> = ({ departments
             <TableRow key={department.id}>
               <TableCell className="font-medium">{department.name}</TableCell>
               <TableCell>{department.description}</TableCell>
-              <TableCell className="text-right">
-                <Button variant="destructive" size="sm" onClick={() => handleDeleteDepartment(department.id)}>
-                  Delete
-                </Button>
-              </TableCell>
+              {/* Removed the delete button cell */}
             </TableRow>
           ))}
         </TableBody>
