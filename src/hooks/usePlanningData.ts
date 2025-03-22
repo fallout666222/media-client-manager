@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { 
   getPlanningVersions, 
@@ -52,7 +52,13 @@ export const usePlanningData = ({ currentUser }: UsePlanningDataProps) => {
   const [planningData, setPlanningData] = useState<ClientHours[]>([]);
   const [visibleClients, setVisibleClients] = useState<string[]>([]);
   const [allClients, setAllClients] = useState<Client[]>([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const { toast } = useToast();
+
+  // Function to reload planning data
+  const reloadPlanningData = useCallback(() => {
+    setRefreshTrigger(prev => prev + 1);
+  }, []);
 
   // Load planning versions
   useEffect(() => {
@@ -199,7 +205,7 @@ export const usePlanningData = ({ currentUser }: UsePlanningDataProps) => {
     };
     
     fetchPlanningData();
-  }, [currentUser.id, selectedVersionId, allClients, toast]);
+  }, [currentUser.id, selectedVersionId, allClients, toast, refreshTrigger]);
 
   return {
     versions,
@@ -209,6 +215,7 @@ export const usePlanningData = ({ currentUser }: UsePlanningDataProps) => {
     visibleClients,
     allClients,
     months: MONTHS,
-    quarters: QUARTERS
+    quarters: QUARTERS,
+    reloadPlanningData
   };
 };
