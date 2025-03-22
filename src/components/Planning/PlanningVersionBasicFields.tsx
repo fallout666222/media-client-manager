@@ -4,6 +4,7 @@ import {
   FormField, 
   FormItem, 
   FormLabel, 
+  FormControl,
   FormMessage 
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -32,11 +33,14 @@ export function PlanningVersionBasicFields({
         name="name"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Version Name</FormLabel>
-            <Input 
-              placeholder="e.g. Plan 2024 v1" 
-              {...field} 
-            />
+            <FormLabel htmlFor="version-name">Version Name</FormLabel>
+            <FormControl>
+              <Input 
+                id="version-name"
+                placeholder="e.g. Plan 2024 v1" 
+                {...field} 
+              />
+            </FormControl>
             <FormMessage />
           </FormItem>
         )}
@@ -47,23 +51,25 @@ export function PlanningVersionBasicFields({
         name="year"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Year</FormLabel>
-            <Select 
-              onValueChange={field.onChange} 
-              value={field.value || ""}
-              defaultValue={field.value || ""}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a year" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableYears.map(year => (
-                  <SelectItem key={year} value={year}>
-                    {year}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <FormLabel htmlFor="version-year">Year</FormLabel>
+            <FormControl>
+              <Select 
+                onValueChange={field.onChange} 
+                value={field.value || ""}
+                defaultValue={field.value || ""}
+              >
+                <SelectTrigger id="version-year" className="w-full">
+                  <SelectValue placeholder="Select a year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableYears.map(year => (
+                    <SelectItem key={year} value={year}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormControl>
             <FormMessage />
           </FormItem>
         )}

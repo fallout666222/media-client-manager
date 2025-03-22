@@ -1,6 +1,6 @@
 
 import React from "react";
-import { FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Control } from "react-hook-form";
 
@@ -25,11 +25,13 @@ export function QuarterLockCheckboxes({ control }: QuarterLockCheckboxesProps) {
           name={quarter.name as any}
           render={({ field }) => (
             <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-              <Checkbox
-                checked={field.value}
-                onCheckedChange={field.onChange}
-                id={quarter.name}
-              />
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                  id={quarter.name}
+                />
+              </FormControl>
               <div className="space-y-1 leading-none">
                 <FormLabel htmlFor={quarter.name}>{quarter.label}</FormLabel>
               </div>
