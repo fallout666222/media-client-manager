@@ -3,25 +3,11 @@ import React, { useEffect } from 'react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { 
-  Form, 
-  FormControl, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
+import { Form } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import { PlanningVersionBasicFields } from './PlanningVersionBasicFields';
+import { QuarterLockCheckboxes } from './QuarterLockCheckboxes';
+import { PlanningVersionSubmitButton } from './PlanningVersionSubmitButton';
 
 const formSchema = z.object({
   name: z.string().min(1, { message: "Version name is required" }),
@@ -86,121 +72,17 @@ export function PlanningVersionForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Version Name</FormLabel>
-              <Input 
-                placeholder="e.g. Plan 2024 v1" 
-                {...field} 
-              />
-              <FormMessage />
-            </FormItem>
-          )}
+        <PlanningVersionBasicFields 
+          control={form.control} 
+          availableYears={availableYears} 
         />
+        
+        <QuarterLockCheckboxes control={form.control} />
 
-        <FormField
-          control={form.control}
-          name="year"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Year</FormLabel>
-              <Select 
-                onValueChange={field.onChange} 
-                value={field.value || ""}
-                defaultValue={field.value || ""}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableYears.map(year => (
-                    <SelectItem key={year} value={year}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
+        <PlanningVersionSubmitButton 
+          isSubmitting={isSubmitting} 
+          isEditing={!!initialValues} 
         />
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <FormField
-            control={form.control}
-            name="q1_locked"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                  id="q1_locked"
-                />
-                <div className="space-y-1 leading-none">
-                  <FormLabel htmlFor="q1_locked">Lock Q1</FormLabel>
-                </div>
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="q2_locked"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                  id="q2_locked"
-                />
-                <div className="space-y-1 leading-none">
-                  <FormLabel htmlFor="q2_locked">Lock Q2</FormLabel>
-                </div>
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="q3_locked"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                  id="q3_locked"
-                />
-                <div className="space-y-1 leading-none">
-                  <FormLabel htmlFor="q3_locked">Lock Q3</FormLabel>
-                </div>
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="q4_locked"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                  id="q4_locked"
-                />
-                <div className="space-y-1 leading-none">
-                  <FormLabel htmlFor="q4_locked">Lock Q4</FormLabel>
-                </div>
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Saving..." : initialValues ? "Update Version" : "Create Version"}
-        </Button>
       </form>
     </Form>
   );
