@@ -126,31 +126,35 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
             <TableRow>
               <TableHead className="bg-gray-50 font-bold sticky left-0 z-10">Client</TableHead>
               
-              {/* Q1 */}
+              {/* Q1 Months */}
               <TableHead className="bg-gray-50 text-center">Jan</TableHead>
               <TableHead className="bg-gray-50 text-center">Feb</TableHead>
               <TableHead className="bg-gray-50 text-center">Mar</TableHead>
+              {/* Q1 Total */}
               <TableHead className="bg-gray-100 text-center font-bold">Q1</TableHead>
               
-              {/* Q2 */}
+              {/* Q2 Months */}
               <TableHead className="bg-gray-50 text-center">Apr</TableHead>
               <TableHead className="bg-gray-50 text-center">May</TableHead>
               <TableHead className="bg-gray-50 text-center">Jun</TableHead>
+              {/* Q2 Total */}
               <TableHead className="bg-gray-100 text-center font-bold">Q2</TableHead>
               
-              {/* Q3 */}
+              {/* Q3 Months */}
               <TableHead className="bg-gray-50 text-center">Jul</TableHead>
               <TableHead className="bg-gray-50 text-center">Aug</TableHead>
               <TableHead className="bg-gray-50 text-center">Sep</TableHead>
+              {/* Q3 Total */}
               <TableHead className="bg-gray-100 text-center font-bold">Q3</TableHead>
               
-              {/* Q4 */}
+              {/* Q4 Months */}
               <TableHead className="bg-gray-50 text-center">Oct</TableHead>
               <TableHead className="bg-gray-50 text-center">Nov</TableHead>
               <TableHead className="bg-gray-50 text-center">Dec</TableHead>
+              {/* Q4 Total */}
               <TableHead className="bg-gray-100 text-center font-bold">Q4</TableHead>
               
-              {/* Total */}
+              {/* Fiscal Year Total */}
               <TableHead className="bg-blue-100 text-center font-bold">FY</TableHead>
             </TableRow>
           </TableHeader>
