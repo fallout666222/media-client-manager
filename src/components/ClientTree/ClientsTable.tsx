@@ -1,21 +1,16 @@
-import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { X, Lock, ChevronUp, ChevronDown } from "lucide-react";
+
+import React from 'react';
 import { Client } from '@/types/timesheet';
-import { ClientSelector } from "@/components/ClientSelector";
+import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useUpdateClient, useDeleteClient, useCheckCircularReference } from '@/hooks/useClientOperations';
-import { useToast } from "@/hooks/use-toast";
-import { DEFAULT_SYSTEM_CLIENTS } from './constants';
+import { ArrowDown, ArrowUp } from "lucide-react";
 
 interface SortConfig {
   key: 'name' | 'parentName' | 'hidden';
@@ -26,212 +21,94 @@ interface ClientsTableProps {
   clients: Client[];
   paginatedClients: Client[];
   onSort: (config: SortConfig) => void;
-  sortConfig: SortConfig | null;
-  onDeleteClick: (clientId: string) => void;
+  sortConfig: SortConfig;
 }
 
-export const ClientsTable: React.FC<ClientsTableProps> = ({ 
-  clients, 
+export const ClientsTable: React.FC<ClientsTableProps> = ({
+  clients,
   paginatedClients,
   onSort,
   sortConfig,
-  onDeleteClick
 }) => {
-  const updateClientMutation = useUpdateClient();
-  const deleteClientMutation = useDeleteClient();
-  const wouldCreateCircularReference = useCheckCircularReference();
-  const { toast } = useToast();
-  
-  const handleSort = (key: SortConfig['key']) => {
-    let direction: 'asc' | 'desc' = 'asc';
-    
-    if (sortConfig && sortConfig.key === key) {
-      direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
-    }
-    
+  const handleSort = (key: 'name' | 'parentName' | 'hidden') => {
+    const direction = 
+      sortConfig.key === key && sortConfig.direction === 'asc' ? 'desc' : 'asc';
     onSort({ key, direction });
   };
 
-  const renderSortIcon = (key: SortConfig['key']) => {
-    if (!sortConfig || sortConfig.key !== key) {
-      return <div className="w-4 h-4 inline-block ml-1" />;
-    }
-    
-    return sortConfig.direction === 'asc' 
-      ? <ChevronUp className="w-4 h-4 inline-block ml-1" /> 
-      : <ChevronDown className="w-4 h-4 inline-block ml-1" />;
-  };
-  
-  const handleToggleHidden = (id: string, currentValue: boolean) => {
-    const client = clients.find(c => c.id === id);
-    
-    if (client && DEFAULT_SYSTEM_CLIENTS.includes(client.name)) {
-      toast({
-        title: "Error",
-        description: "System default clients cannot be hidden",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    updateClientMutation.mutate({
-      id,
-      data: { hidden: !currentValue }
-    });
+  const getSortIcon = (key: 'name' | 'parentName' | 'hidden') => {
+    if (sortConfig.key !== key) return null;
+    return sortConfig.direction === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />;
   };
 
-  const handleUpdateParent = (id: string, parentId: string | null) => {
-    const client = clients.find(c => c.id === id);
-    
-    if (client && DEFAULT_SYSTEM_CLIENTS.includes(client.name)) {
-      toast({
-        title: "Error",
-        description: "System default clients cannot be modified",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (parentId === id) {
-      toast({
-        title: "Error",
-        description: "A client cannot be its own parent",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (parentId && wouldCreateCircularReference(clients, id, parentId)) {
-      toast({
-        title: "Error",
-        description: "This would create a circular reference in the client hierarchy",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    updateClientMutation.mutate({
-      id,
-      data: { parent_id: parentId }
-    });
-  };
-
-  const handleDeleteClient = (id: string) => {
-    const client = clients.find(c => c.id === id);
-    
-    if (client && DEFAULT_SYSTEM_CLIENTS.includes(client.name)) {
-      toast({
-        title: "Cannot Delete",
-        description: "System default clients cannot be deleted",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (clients.some(c => c.parentId === id)) {
-      toast({
-        title: "Cannot Delete",
-        description: "This client has child clients. Please reassign or delete them first.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    deleteClientMutation.mutate(id);
+  const getParentName = (client: Client) => {
+    if (!client.parentId) return '';
+    const parent = clients.find(c => c.id === client.parentId);
+    return parent ? parent.name : '';
   };
 
   return (
-    <Table>
-      <TableCaption>Manage your client hierarchy and visibility</TableCaption>
-      <TableHeader>
-        <TableRow>
-          <TableHead 
-            className="cursor-pointer"
-            onClick={() => handleSort('name')}
-          >
-            Client Name {renderSortIcon('name')}
-          </TableHead>
-          <TableHead 
-            className="cursor-pointer"
-            onClick={() => handleSort('parentName')}
-          >
-            Parent Client {renderSortIcon('parentName')}
-          </TableHead>
-          <TableHead 
-            className="cursor-pointer"
-            onClick={() => handleSort('hidden')}
-          >
-            Hide from Users {renderSortIcon('hidden')}
-          </TableHead>
-          <TableHead className="text-right">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {paginatedClients.map((client) => {
-          const isDefault = DEFAULT_SYSTEM_CLIENTS.includes(client.name);
-          return (
-            <TableRow key={client.id} className={isDefault ? "bg-muted/30" : ""}>
-              <TableCell className="font-medium">
-                {client.name}
-                {isDefault && (
-                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                    System Default
-                  </span>
-                )}
-              </TableCell>
-              <TableCell>
-                <ClientSelector
-                  clients={clients.filter(c => c.id !== client.id)}
-                  selectedClient={clients.find(c => c.id === client.parentId) || null}
-                  onClientSelect={(selectedClient) => handleUpdateParent(client.id, selectedClient?.id || null)}
-                  disabled={isDefault || updateClientMutation.isPending}
-                  placeholder="None"
-                  showNoResultsMessage={true}
-                  clearSearchOnSelect={true}
-                />
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center">
-                  <Checkbox 
-                    id={`hide-${client.id}`}
-                    checked={client.hidden}
-                    onCheckedChange={() => handleToggleHidden(client.id, client.hidden)}
-                    disabled={isDefault || updateClientMutation.isPending}
-                  />
-                  <label
-                    htmlFor={`hide-${client.id}`}
-                    className="ml-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Hide
-                  </label>
-                </div>
-              </TableCell>
-              <TableCell className="text-right">
-                {isDefault ? (
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    disabled
-                    className="text-muted-foreground"
-                  >
-                    <Lock className="h-4 w-4" />
-                  </Button>
-                ) : (
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => onDeleteClick(client.id)}
-                    disabled={deleteClientMutation.isPending}
-                    className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
+    <div className="border rounded-md">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead 
+              className="w-[300px] cursor-pointer"
+              onClick={() => handleSort('name')}
+            >
+              <div className="flex items-center space-x-1">
+                <span>Client Name</span>
+                {getSortIcon('name')}
+              </div>
+            </TableHead>
+            <TableHead 
+              className="cursor-pointer"
+              onClick={() => handleSort('parentName')}
+            >
+              <div className="flex items-center space-x-1">
+                <span>Parent Client</span>
+                {getSortIcon('parentName')}
+              </div>
+            </TableHead>
+            <TableHead 
+              className="cursor-pointer"
+              onClick={() => handleSort('hidden')}
+            >
+              <div className="flex items-center space-x-1">
+                <span>Status</span>
+                {getSortIcon('hidden')}
+              </div>
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {paginatedClients.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={3} className="text-center py-4">
+                No clients found
               </TableCell>
             </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
+          ) : (
+            paginatedClients.map((client) => (
+              <TableRow key={client.id}>
+                <TableCell className="font-medium">{client.name}</TableCell>
+                <TableCell>{getParentName(client)}</TableCell>
+                <TableCell>
+                  {client.hidden ? (
+                    <Badge variant="outline" className="bg-red-50 text-red-700 hover:bg-red-50">
+                      Hidden
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="bg-green-50 text-green-700 hover:bg-green-50">
+                      Visible
+                    </Badge>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </div>
   );
 };
