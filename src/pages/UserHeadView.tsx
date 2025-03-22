@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -135,16 +134,21 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
         status.status?.name === 'under-review'
       );
       
+      // console.log("First under review week found:", firstUnderReview);
       setFirstUnderReviewWeek(firstUnderReview);
     } catch (error) {
+      // console.error('Error finding first under-review week:', error);
       setFirstUnderReviewWeek(null);
     }
   };
 
   const navigateToFirstUnderReviewWeek = () => {
     if (firstUnderReviewWeek && selectedTeamMember) {
+      // console.log("Navigating to first under review week:", firstUnderReviewWeek.week);
+      
       if (firstUnderReviewWeek.week && selectedTeamMember) {
         localStorage.setItem(`selectedWeek_${selectedTeamMember}`, firstUnderReviewWeek.week_id);
+        // console.log(`Saved selected week to localStorage: selectedWeek_${selectedTeamMember} = ${firstUnderReviewWeek.week_id}`);
         
         // Update the year filter to match the year of the found week
         if (firstUnderReviewWeek.week.period_from) {
@@ -153,8 +157,9 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
             const weekYear = getYear(weekDate);
             setFilterYear(weekYear);
             localStorage.setItem(`selectedYearFilter_${selectedTeamMember}`, weekYear.toString());
+            console.log(`Updated year filter to ${weekYear} for user ${selectedTeamMember}`);
           } catch (error) {
-            // Error silenced
+            console.error("Error updating year filter:", error);
           }
         }
         
@@ -194,6 +199,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
     if (!currentWeek || !currentWeek.week) return false;
     
     const currentWeekDate = new Date(currentWeek.week.period_from);
+    // console.log("Current week date:", format(currentWeekDate, 'yyyy-MM-dd'));
     
     const earlierWeeksUnderReview = weekStatuses.filter(status => {
       if (!status.week || !status.status) return false;
@@ -205,12 +211,14 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       const isUnderReview = status.status.name === 'under-review';
       
       if (isEarlier && isUnderReview) {
+        // console.log(`Earlier week ${status.week.name} is still under review`);
         return true;
       }
       
       return false;
     });
     
+    // console.log(`Found ${earlierWeeksUnderReview.length} earlier weeks under review`);
     return earlierWeeksUnderReview.length > 0;
   };
 
@@ -327,6 +335,7 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
 
   const handleTimeUpdate = async (userId: string, weekId: string, client: string, mediaType: string, hours: number) => {
     try {
+      // console.log(`Updating hours for user ${userId}, week ${weekId}, client ${client}, mediaType ${mediaType}, hours ${hours}`);
       await updateHours(userId, weekId, client, mediaType, hours);
       
       toast({
@@ -463,41 +472,40 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="col-span-1">
-              <div className="mb-4">
-                <h2 className="text-lg font-medium mb-4">My Team</h2>
-                <TeamMemberSelector 
-                  currentUser={currentUser}
-                  users={teamMembers}
-                  onUserSelect={handleTeamMemberSelect}
-                  selectedUser={selectedTeamMember ? users.find(u => u.id === selectedTeamMember) || null : null}
-                  searchValue={searchTerm}
-                  onSearchChange={handleSearchChange}
-                  autoOpenOnFocus={true}
-                  clearSearchOnSelect={true}
-                  showNoResultsMessage={true}
-                  className="w-full"
-                />
+          <div className="mb-8">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+              <h2 className="text-lg font-medium">My Team</h2>
+              
+              <TeamMemberSelector 
+                currentUser={currentUser}
+                users={teamMembers}
+                onUserSelect={handleTeamMemberSelect}
+                selectedUser={selectedTeamMember ? users.find(u => u.id === selectedTeamMember) || null : null}
+                searchValue={searchTerm}
+                onSearchChange={handleSearchChange}
+                autoOpenOnFocus={true}
+                clearSearchOnSelect={true}
+                showNoResultsMessage={true}
+                className="w-full md:w-[320px]"
+              />
+            </div>
+          </div>
+
+          <div>
+            {selectedTeamMember ? (
+              <>
+                <h2 className="text-lg font-medium mb-4">
+                  Timesheet for {users.find(u => u.id === selectedTeamMember)?.login}
+                </h2>
+                {renderTeamMemberTimesheet()}
+              </>
+            ) : (
+              <div className="p-4 border rounded-lg bg-gray-50">
+                <p className="text-center text-gray-500">
+                  Select a team member to view their timesheet
+                </p>
               </div>
-            </div>
-            
-            <div className="col-span-1 md:col-span-2">
-              {selectedTeamMember ? (
-                <>
-                  <h2 className="text-lg font-medium mb-4">
-                    Timesheet for {users.find(u => u.id === selectedTeamMember)?.login}
-                  </h2>
-                  {renderTeamMemberTimesheet()}
-                </>
-              ) : (
-                <div className="p-4 border rounded-lg bg-gray-50">
-                  <p className="text-center text-gray-500">
-                    Select a team member to view their timesheet
-                  </p>
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </>
       )}
