@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { differenceInDays, parse, format, getYear, isWithinInterval } from "date-fns";
+import { differenceInDays, parse, format, getYear, isWithinInterval, getMonth } from "date-fns";
 import {
   Table,
   TableBody,
@@ -171,6 +171,21 @@ const CustomWeeks = () => {
     }
   };
 
+  const areInSameMonth = (start: string, end: string): boolean => {
+    try {
+      const startDateObj = parse(start, "yyyy-MM-dd", new Date());
+      const endDateObj = parse(end, "yyyy-MM-dd", new Date());
+      
+      return (
+        getMonth(startDateObj) === getMonth(endDateObj) &&
+        getYear(startDateObj) === getYear(endDateObj)
+      );
+    } catch (error) {
+      console.error('Error checking if dates are in same month:', error);
+      return false;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -196,6 +211,15 @@ const CustomWeeks = () => {
       toast({
         title: "Error",
         description: "Hours must be greater than 0",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!areInSameMonth(startDate, endDate)) {
+      toast({
+        title: "Error",
+        description: "Start date and end date must be in the same month",
         variant: "destructive",
       });
       return;
