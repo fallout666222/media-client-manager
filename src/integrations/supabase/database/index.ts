@@ -21,3 +21,6 @@ export * from './weekHours';
 
 // Visible Entity operations (clients and media types visibility)
 export * from './visibleEntity';
+
+// Planning Hours operations
+export * from './planningHours';

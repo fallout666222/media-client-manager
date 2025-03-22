@@ -14,7 +14,8 @@ import {
   TreeDeciduous, 
   Film, 
   Settings,
-  UserCircle
+  UserCircle,
+  BarChart
 } from "lucide-react";
 
 interface AppHeaderProps {
@@ -31,6 +32,11 @@ export function AppHeader({ user, isUserHead, onLogout }: AppHeaderProps) {
       <span className="text-sm text-gray-600">
         Logged in as: {user.username} ({user.role})
       </span>
+      
+      <NavButton to="/planning">
+        <BarChart className="h-4 w-4" />
+        Planning
+      </NavButton>
       
       <NavButton to="/settings">
         <Settings className="h-4 w-4" />

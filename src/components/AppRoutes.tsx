@@ -15,6 +15,7 @@ import ClientTree from "@/pages/ClientTree";
 import MediaTypeManagement from "@/pages/MediaTypeManagement";
 import SettingsPage from "@/pages/Settings";
 import UserHeadView from "@/pages/UserHeadView";
+import Planning from "@/pages/Planning";
 import { AdfsCallback } from "@/pages/AuthCallbacks";
 import { useApp } from "@/contexts/AppContext";
 
@@ -77,6 +78,11 @@ export function AppRoutes() {
       />
 
       <Route path="/auth/adfs-callback" element={<AdfsCallback />} />
+
+      <Route 
+        path="/planning" 
+        element={user ? <Planning currentUser={user} clients={clients} /> : <Navigate to="/login" replace />} 
+      />
 
       <Route 
         path="/view-users" 
