@@ -21,7 +21,6 @@ import { Button } from '@/components/ui/button';
 import { usePlanningData, QUARTERS } from '@/hooks/usePlanningData';
 import { PlanningHoursCell } from '@/components/Planning/PlanningHoursCell';
 import { User, Client } from '@/types/timesheet';
-import { getUserVisibleClients } from '@/integrations/supabase/database';
 
 interface PlanningProps {
   currentUser: User;
@@ -42,6 +41,9 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
   const [filteredClients, setFilteredClients] = useState(planningData);
   
   useEffect(() => {
+    // Show clients that:
+    // 1. Either have hours recorded (planningData with non-zero hours)
+    // 2. Or are in the user's visible clients list
     const filtered = planningData.filter(client => {
       const hasHours = Object.values(client.months).some(hours => hours > 0);
       const isVisible = visibleClients.includes(client.clientName);

@@ -4,7 +4,8 @@ import { useToast } from '@/hooks/use-toast';
 import { 
   getPlanningVersions, 
   getPlanningHours, 
-  getUserVisibleClients 
+  getUserVisibleClients,
+  getClients
 } from '@/integrations/supabase/database';
 import { User, Client } from '@/types/timesheet';
 
@@ -50,6 +51,7 @@ export const usePlanningData = ({ currentUser }: UsePlanningDataProps) => {
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
   const [planningData, setPlanningData] = useState<ClientHours[]>([]);
   const [visibleClients, setVisibleClients] = useState<string[]>([]);
+  const [allClients, setAllClients] = useState<Client[]>([]);
   const { toast } = useToast();
 
   // Load planning versions
@@ -76,29 +78,44 @@ export const usePlanningData = ({ currentUser }: UsePlanningDataProps) => {
     fetchVersions();
   }, [toast]);
 
-  // Load user visible clients
+  // Load all clients and user visible clients
   useEffect(() => {
-    const fetchUserVisibleClients = async () => {
-      if (currentUser.id) {
-        try {
-          const { data: visibleClientsData } = await getUserVisibleClients(currentUser.id);
+    const fetchClientsData = async () => {
+      try {
+        // Get all clients
+        const { data: clientsData, error: clientsError } = await getClients();
+        if (clientsError) throw clientsError;
+        if (clientsData) {
+          setAllClients(clientsData);
+        }
+
+        // Get user visible clients
+        if (currentUser.id) {
+          const { data: visibleClientsData, error: visibleError } = await getUserVisibleClients(currentUser.id);
+          if (visibleError) throw visibleError;
+          
           if (visibleClientsData) {
             const clientNames = visibleClientsData.map(vc => vc.client.name);
             setVisibleClients(clientNames);
           }
-        } catch (error) {
-          console.error('Error fetching user visible clients:', error);
         }
+      } catch (error) {
+        console.error('Error fetching clients data:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load clients data',
+          variant: 'destructive'
+        });
       }
     };
     
-    fetchUserVisibleClients();
-  }, [currentUser.id]);
+    fetchClientsData();
+  }, [currentUser.id, toast]);
 
   // Load planning data
   useEffect(() => {
     const fetchPlanningData = async () => {
-      if (currentUser.id && selectedVersionId) {
+      if (currentUser.id && selectedVersionId && allClients.length > 0) {
         try {
           const { data, error } = await getPlanningHours(currentUser.id, selectedVersionId);
           if (error) throw error;
@@ -106,13 +123,31 @@ export const usePlanningData = ({ currentUser }: UsePlanningDataProps) => {
           // Process data
           const clientsMap = new Map<string, ClientHours>();
           
-          // Initialize with empty data for all months
+          // Pre-populate with all non-hidden clients from the database
+          allClients.filter(client => !client.hidden).forEach(client => {
+            // Initialize new client with zero values
+            const emptyMonths: Record<MonthName, number> = {} as Record<MonthName, number>;
+            MONTHS.forEach(month => { emptyMonths[month] = 0; });
+            
+            const emptyQuarters: Record<string, number> = {};
+            QUARTERS.forEach(q => { emptyQuarters[q.name] = 0; });
+            
+            clientsMap.set(client.id, {
+              clientId: client.id,
+              clientName: client.name,
+              months: emptyMonths,
+              quarters: emptyQuarters,
+              total: 0
+            });
+          });
+          
+          // Update with actual hours data
           data?.forEach(entry => {
             const clientId = entry.client_id;
             const clientName = entry.client?.name || 'Unknown Client';
             
             if (!clientsMap.has(clientId)) {
-              // Initialize new client with zero values
+              // Initialize new client with zero values if not already in the map
               const emptyMonths: Record<MonthName, number> = {} as Record<MonthName, number>;
               MONTHS.forEach(month => { emptyMonths[month] = 0; });
               
@@ -164,7 +199,7 @@ export const usePlanningData = ({ currentUser }: UsePlanningDataProps) => {
     };
     
     fetchPlanningData();
-  }, [currentUser.id, selectedVersionId, toast]);
+  }, [currentUser.id, selectedVersionId, allClients, toast]);
 
   return {
     versions,
@@ -172,6 +207,7 @@ export const usePlanningData = ({ currentUser }: UsePlanningDataProps) => {
     setSelectedVersionId,
     planningData,
     visibleClients,
+    allClients,
     months: MONTHS,
     quarters: QUARTERS
   };
