@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import { AppProvider } from "./contexts/AppContext";
 import { AppHeader } from "./components/Navigation/AppHeader";
-import { AppRoutes } from "./components/AppRoutes";
+import AppRoutes from "./components/AppRoutes";
 import { SettingsProvider } from "./contexts/SettingsContext";
 import { useApp } from "./contexts/AppContext";
 

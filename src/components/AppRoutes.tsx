@@ -1,3 +1,4 @@
+
 import { Routes, Route, Navigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -15,6 +16,7 @@ import MediaTypeManagement from "@/pages/MediaTypeManagement";
 import SettingsPage from "@/pages/Settings";
 import UserHeadView from "@/pages/UserHeadView";
 import Planning from "@/pages/Planning";
+import PlanningManagement from "@/pages/PlanningManagement";
 import { AdfsCallback } from "@/pages/AuthCallbacks";
 import { useApp } from "@/contexts/AppContext";
 
@@ -81,16 +83,25 @@ const AppRoutes = () => {
       <Route 
         path="/planning" 
         element={
-          <Planning 
-            currentUser={currentUser} 
-            clients={clients} 
-          />
+          user ? (
+            <Planning 
+              currentUser={user} 
+              clients={clients} 
+            />
+          ) : (
+            <Navigate to="/login" replace />
+          )
         } 
       />
+      
       <Route 
         path="/planning-management" 
         element={
-          <PlanningManagement />
+          user?.role === 'admin' ? (
+            <PlanningManagement />
+          ) : (
+            <Navigate to="/" replace />
+          )
         } 
       />
 
