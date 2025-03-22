@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Settings } from 'lucide-react';
@@ -20,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { usePlanningData, QUARTERS } from '@/hooks/usePlanningData';
 import { PlanningHoursCell } from '@/components/Planning/PlanningHoursCell';
 import { User, Client } from '@/types/timesheet';
+import { getUserVisibleClients } from '@/integrations/supabase/database';
 
 interface PlanningProps {
   currentUser: User;
