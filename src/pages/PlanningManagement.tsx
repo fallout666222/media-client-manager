@@ -30,6 +30,7 @@ const PlanningManagement = () => {
   const [planningVersions, setPlanningVersions] = useState<PlanningVersion[]>([]);
   const [customWeeks, setCustomWeeks] = useState<{id: string, name: string}[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -46,11 +47,17 @@ const PlanningManagement = () => {
         if (weeksError) throw weeksError;
         
         const years = [...new Set(weeksData?.map(week => {
-          const date = new Date(week.date);
+          const date = new Date(week.period_from);
           return date.getFullYear().toString();
         }) || [])];
         
-        setCustomWeeks(years.map(year => ({ id: year, name: year })));
+        // Explicitly cast the array elements to ensure they match the expected type
+        const yearsWithIds = years.map(year => ({ 
+          id: year as string, 
+          name: year as string 
+        }));
+        
+        setCustomWeeks(yearsWithIds);
       } catch (error) {
         console.error('Error fetching planning versions:', error);
         toast({
@@ -75,6 +82,7 @@ const PlanningManagement = () => {
     q4_locked: boolean;
   }) => {
     try {
+      setIsSubmitting(true);
       const { data: newVersion, error } = await createPlanningVersion(
         data.name,
         data.year,
@@ -99,6 +107,8 @@ const PlanningManagement = () => {
         description: "Failed to create planning version",
         variant: "destructive"
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -174,7 +184,8 @@ const PlanningManagement = () => {
         <CardContent>
           <PlanningVersionForm 
             onSubmit={handleAddVersion} 
-            years={customWeeks} 
+            availableYears={customWeeks.map(week => week.name)} 
+            isSubmitting={isSubmitting}
           />
         </CardContent>
       </Card>
