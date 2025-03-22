@@ -1,46 +1,25 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter } from "react-router-dom";
-import { AppProvider } from "./contexts/AppContext";
-import { AppHeader } from "./components/Navigation/AppHeader";
-import { AppRoutes } from "./components/AppRoutes";
-import { SettingsProvider } from "./contexts/SettingsContext";
-import { useApp } from "./contexts/AppContext";
+// Import necessary modules and components
+import React from 'react';
+import { BrowserRouter as Router } from 'react-router-dom';
+import { createClient } from '@supabase/supabase-js';
+import { SessionContextProvider } from '@supabase/auth-helpers-react';
+import { Auth } from '@supabase/auth-ui-react';
+import { ThemeSupa } from '@supabase/auth-ui-shared';
+import { AppRoutes } from './components/AppRoutes';
 
-// Initialize QueryClient
-const queryClient = new QueryClient();
+// Import the supabase client from our client file
+import { supabase } from './integrations/supabase/client';
 
-function AppContent() {
-  const { user, isUserHead, handleLogout } = useApp();
-
+function App() {
   return (
-    <SettingsProvider userId={user?.id}>
-      <AppHeader 
-        user={user} 
-        isUserHead={isUserHead}
-        onLogout={handleLogout} 
-      />
-      <AppRoutes />
-    </SettingsProvider>
-  );
-}
-
-export function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AppProvider>
-            <AppContent />
-          </AppProvider>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <SessionContextProvider supabaseClient={supabase}>
+      <Router>
+        <div className="container" style={{ padding: '50px 0 100px 0' }}>
+          <AppRoutes />
+        </div>
+      </Router>
+    </SessionContextProvider>
   );
 }
 

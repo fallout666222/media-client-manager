@@ -5,10 +5,33 @@ import { getPlanningVersions, getPlanningHours, updatePlanningHours } from '@/in
 import { useToast } from '@/hooks/use-toast';
 import { PlanningVersion, PlanningHours, ClientHours, MonthData } from '@/types/planning';
 import { Client } from '@/types/timesheet';
+import { useClients } from '@/hooks/useClients';
+import * as db from '@/integrations/supabase/database';
 
 export const usePlanning = (userId: string) => {
   const { toast } = useToast();
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
+  const { clients } = useClients();
+  const [visibleClients, setVisibleClients] = useState<Client[]>([]);
+  
+  // Fetch user's visible clients
+  useEffect(() => {
+    const fetchVisibleClients = async () => {
+      if (!userId) return;
+      
+      try {
+        const { data } = await db.getUserVisibleClients(userId);
+        if (data) {
+          const clientsWithData = data.map(item => item.client);
+          setVisibleClients(clientsWithData as Client[]);
+        }
+      } catch (error) {
+        console.error("Error fetching visible clients:", error);
+      }
+    };
+    
+    fetchVisibleClients();
+  }, [userId]);
   
   // Fetch planning versions
   const {
@@ -61,12 +84,29 @@ export const usePlanning = (userId: string) => {
     enabled: !!selectedVersionId
   });
 
-  const processClientHours = (hours: PlanningHours[], clients: Client[]): ClientHours[] => {
+  // Get unique client IDs that have hours in the current version
+  const clientIdsWithHours = planningHours
+    .map(hour => hour.client_id)
+    .filter((id, index, self) => self.indexOf(id) === index);
+
+  // Process client hours and apply visibility settings
+  const processClientHours = (hours: PlanningHours[], allClients: Client[]): ClientHours[] => {
+    // Create a Set of client IDs that should be visible based on:
+    // 1. Either they are in user's visible clients
+    // 2. Or they have hours in the current planning version
+    const visibleClientIds = new Set([
+      ...visibleClients.map(c => c.id), // Clients visible based on user settings
+      ...clientIdsWithHours // Clients with hours in current version
+    ]);
+    
+    // Filter all clients to only those that should be visible
+    const filteredClients = allClients.filter(client => visibleClientIds.has(client.id));
+    
     // Create a Map to store hours by client
     const clientHoursMap = new Map<string, ClientHours>();
     
-    // Initialize the map with all clients
-    clients.forEach(client => {
+    // Initialize the map with all visible clients
+    filteredClients.forEach(client => {
       clientHoursMap.set(client.id, {
         client,
         months: {
@@ -108,7 +148,7 @@ export const usePlanning = (userId: string) => {
       }
     });
     
-    // Calculate quarter and yearly totals
+    // Calculate quarter and yearly totals for each client
     clientHoursMap.forEach(clientHour => {
       const m = clientHour.months;
       
@@ -122,9 +162,9 @@ export const usePlanning = (userId: string) => {
       m.FY = m.Q1 + m.Q2 + m.Q3 + m.Q4;
     });
     
-    // Convert map to array and filter out clients with no hours
-    return Array.from(clientHoursMap.values())
-      .filter(clientHour => clientHour.months.FY > 0);
+    // Convert map to array and don't filter out clients without hours
+    // This ensures all visible clients are shown
+    return Array.from(clientHoursMap.values());
   };
 
   const updateHours = async (clientId: string, month: string, hours: number) => {
@@ -132,7 +172,8 @@ export const usePlanning = (userId: string) => {
     
     try {
       await updatePlanningHours(selectedVersionId, userId, clientId, month, hours);
-      refetchHours();
+      // Force refetch to get updated data
+      await refetchHours();
       toast({
         title: "Success",
         description: "Hours updated successfully",
