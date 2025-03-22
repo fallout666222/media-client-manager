@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -473,22 +474,21 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
       ) : (
         <>
           <div className="mb-8">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-              <h2 className="text-lg font-medium">My Team</h2>
-              
-              <TeamMemberSelector 
-                currentUser={currentUser}
-                users={teamMembers}
-                onUserSelect={handleTeamMemberSelect}
-                selectedUser={selectedTeamMember ? users.find(u => u.id === selectedTeamMember) || null : null}
-                searchValue={searchTerm}
-                onSearchChange={handleSearchChange}
-                autoOpenOnFocus={true}
-                clearSearchOnSelect={true}
-                showNoResultsMessage={true}
-                className="w-full md:w-[320px]"
-              />
-            </div>
+            <h2 className="text-lg font-medium mb-4">My Team</h2>
+            
+            {/* Team member selector moved right under the "My Team" text */}
+            <TeamMemberSelector 
+              currentUser={currentUser}
+              users={teamMembers}
+              onUserSelect={handleTeamMemberSelect}
+              selectedUser={selectedTeamMember ? users.find(u => u.id === selectedTeamMember) || null : null}
+              searchValue={searchTerm}
+              onSearchChange={handleSearchChange}
+              autoOpenOnFocus={true}
+              clearSearchOnSelect={true}
+              showNoResultsMessage={true}
+              className="w-full md:w-[320px] mb-4"
+            />
           </div>
 
           <div>
