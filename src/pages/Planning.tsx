@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Settings } from 'lucide-react';
 import { 
@@ -33,6 +33,7 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
     selectedVersionId, 
     setSelectedVersionId, 
     planningData, 
+    reloadPlanningData,
     visibleClients,
     months,
     quarters
@@ -74,6 +75,13 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
     
     return isQuarterLocked(quarter.name);
   };
+
+  const handleCellUpdate = useCallback(() => {
+    // Trigger reload of planning data
+    if (reloadPlanningData) {
+      reloadPlanningData();
+    }
+  }, [reloadPlanningData]);
 
   return (
     <div className="container mx-auto p-4 pt-16">
@@ -176,6 +184,7 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
                       month="Jan"
                       initialValue={client.months.Jan}
                       isLocked={isMonthLocked("Jan")}
+                      onUpdate={handleCellUpdate}
                     />
                   </TableCell>
                   <TableCell className="p-0">
@@ -186,6 +195,7 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
                       month="Feb"
                       initialValue={client.months.Feb}
                       isLocked={isMonthLocked("Feb")}
+                      onUpdate={handleCellUpdate}
                     />
                   </TableCell>
                   <TableCell className="p-0">
@@ -196,6 +206,7 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
                       month="Mar"
                       initialValue={client.months.Mar}
                       isLocked={isMonthLocked("Mar")}
+                      onUpdate={handleCellUpdate}
                     />
                   </TableCell>
                   {/* Q1 Total */}
@@ -212,6 +223,7 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
                       month="Apr"
                       initialValue={client.months.Apr}
                       isLocked={isMonthLocked("Apr")}
+                      onUpdate={handleCellUpdate}
                     />
                   </TableCell>
                   <TableCell className="p-0">
@@ -222,6 +234,7 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
                       month="May"
                       initialValue={client.months.May}
                       isLocked={isMonthLocked("May")}
+                      onUpdate={handleCellUpdate}
                     />
                   </TableCell>
                   <TableCell className="p-0">
@@ -232,6 +245,7 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
                       month="Jun"
                       initialValue={client.months.Jun}
                       isLocked={isMonthLocked("Jun")}
+                      onUpdate={handleCellUpdate}
                     />
                   </TableCell>
                   {/* Q2 Total */}
@@ -248,6 +262,7 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
                       month="Jul"
                       initialValue={client.months.Jul}
                       isLocked={isMonthLocked("Jul")}
+                      onUpdate={handleCellUpdate}
                     />
                   </TableCell>
                   <TableCell className="p-0">
@@ -258,6 +273,7 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
                       month="Aug"
                       initialValue={client.months.Aug}
                       isLocked={isMonthLocked("Aug")}
+                      onUpdate={handleCellUpdate}
                     />
                   </TableCell>
                   <TableCell className="p-0">
@@ -268,6 +284,7 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
                       month="Sep"
                       initialValue={client.months.Sep}
                       isLocked={isMonthLocked("Sep")}
+                      onUpdate={handleCellUpdate}
                     />
                   </TableCell>
                   {/* Q3 Total */}
@@ -284,6 +301,7 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
                       month="Oct"
                       initialValue={client.months.Oct}
                       isLocked={isMonthLocked("Oct")}
+                      onUpdate={handleCellUpdate}
                     />
                   </TableCell>
                   <TableCell className="p-0">
@@ -294,6 +312,7 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
                       month="Nov"
                       initialValue={client.months.Nov}
                       isLocked={isMonthLocked("Nov")}
+                      onUpdate={handleCellUpdate}
                     />
                   </TableCell>
                   <TableCell className="p-0">
@@ -304,6 +323,7 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
                       month="Dec"
                       initialValue={client.months.Dec}
                       isLocked={isMonthLocked("Dec")}
+                      onUpdate={handleCellUpdate}
                     />
                   </TableCell>
                   {/* Q4 Total */}
