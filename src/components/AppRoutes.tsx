@@ -6,20 +6,20 @@ import {
   useLocation,
   useNavigate,
 } from "react-router-dom";
-import { Index } from "@/pages/Index";
-import { TimeSheet } from "@/pages/TimeSheet";
-import { Settings } from "@/pages/Settings";
-import { Planning } from "@/pages/Planning";
-import { CustomWeeks } from "@/pages/CustomWeeks";
-import { ClientTree } from "@/pages/ClientTree";
-import { MediaTypeManagement } from "@/pages/MediaTypeManagement";
-import { UserFirstWeekManagement } from "@/pages/UserFirstWeekManagement";
-import { UserWeekPercentage } from "@/pages/UserWeekPercentage";
-import { UserManagerAssignment } from "@/pages/UserManagerAssignment";
-import { UserImpersonation } from "@/pages/UserImpersonation";
-import { UserHeadView } from "@/pages/UserHeadView";
-import { ManagerView } from "@/pages/ManagerView";
-import { AuthCallbacks } from "@/pages/AuthCallbacks";
+import Index from "@/pages/Index";
+import TimeSheet from "@/pages/TimeSheet";
+import Settings from "@/pages/Settings";
+import Planning from "@/pages/Planning";
+import CustomWeeks from "@/pages/CustomWeeks";
+import ClientTree from "@/pages/ClientTree";
+import MediaTypeManagement from "@/pages/MediaTypeManagement";
+import UserFirstWeekManagement from "@/pages/UserFirstWeekManagement";
+import UserWeekPercentage from "@/pages/UserWeekPercentage";
+import UserManagerAssignment from "@/pages/UserManagerAssignment";
+import UserImpersonation from "@/pages/UserImpersonation";
+import UserHeadView from "@/pages/UserHeadView";
+import ManagerView from "@/pages/ManagerView";
+import { AdfsCallback as AuthCallbacks } from "@/pages/AuthCallbacks";
 import { useApp } from "@/contexts/AppContext";
 import { useEffect, useState } from "react";
 import PlanningManagement from "@/pages/PlanningManagement";
