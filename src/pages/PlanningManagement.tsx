@@ -5,10 +5,6 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { getAllPlanningVersions, createPlanningVersion, updatePlanningVersion, deletePlanningVersion } from '@/integrations/supabase/database';
@@ -34,42 +30,43 @@ const PlanningManagement = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        const { data: versionsData, error: versionsError } = await getAllPlanningVersions();
-        
-        if (versionsError) throw versionsError;
-        setPlanningVersions(versionsData || []);
-        
-        const { data: weeksData, error: weeksError } = await db.getCustomWeeks();
-        if (weeksError) throw weeksError;
-        
-        const years = [...new Set(weeksData?.map(week => {
-          const date = new Date(week.period_from);
-          return date.getFullYear().toString();
-        }) || [])];
-        
-        // Explicitly cast the array elements to ensure they match the expected type
-        const yearsWithIds = years.map(year => ({ 
-          id: year as string, 
-          name: year as string 
-        }));
-        
-        setCustomWeeks(yearsWithIds);
-      } catch (error) {
-        console.error('Error fetching planning versions:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load planning versions",
-          variant: "destructive"
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  // Function to fetch all data
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      const { data: versionsData, error: versionsError } = await getAllPlanningVersions();
+      
+      if (versionsError) throw versionsError;
+      setPlanningVersions(versionsData || []);
+      
+      const { data: weeksData, error: weeksError } = await db.getCustomWeeks();
+      if (weeksError) throw weeksError;
+      
+      const years = [...new Set(weeksData?.map(week => {
+        const date = new Date(week.period_from);
+        return date.getFullYear().toString();
+      }) || [])];
+      
+      // Explicitly cast the array elements to ensure they match the expected type
+      const yearsWithIds = years.map(year => ({ 
+        id: year as string, 
+        name: year as string 
+      }));
+      
+      setCustomWeeks(yearsWithIds);
+    } catch (error) {
+      console.error('Error fetching planning versions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load planning versions",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchData();
   }, [toast]);
 
@@ -94,7 +91,8 @@ const PlanningManagement = () => {
       
       if (error) throw error;
       
-      setPlanningVersions(prev => [...prev, newVersion]);
+      // Refresh the versions list after adding a new one
+      await fetchData();
       
       toast({
         title: "Success",
