@@ -167,26 +167,149 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
                     {client.clientName}
                   </TableCell>
                   
-                  {/* Monthly entries */}
-                  {months.map((month) => (
-                    <TableCell key={month} className="p-0">
-                      <PlanningHoursCell
-                        userId={currentUser.id || ''}
-                        versionId={selectedVersionId || ''}
-                        clientId={client.clientId}
-                        month={month}
-                        initialValue={client.months[month]}
-                        isLocked={isMonthLocked(month)}
-                      />
-                    </TableCell>
-                  ))}
+                  {/* Render Q1 months */}
+                  <TableCell className="p-0">
+                    <PlanningHoursCell
+                      userId={currentUser.id || ''}
+                      versionId={selectedVersionId || ''}
+                      clientId={client.clientId}
+                      month="Jan"
+                      initialValue={client.months.Jan}
+                      isLocked={isMonthLocked("Jan")}
+                    />
+                  </TableCell>
+                  <TableCell className="p-0">
+                    <PlanningHoursCell
+                      userId={currentUser.id || ''}
+                      versionId={selectedVersionId || ''}
+                      clientId={client.clientId}
+                      month="Feb"
+                      initialValue={client.months.Feb}
+                      isLocked={isMonthLocked("Feb")}
+                    />
+                  </TableCell>
+                  <TableCell className="p-0">
+                    <PlanningHoursCell
+                      userId={currentUser.id || ''}
+                      versionId={selectedVersionId || ''}
+                      clientId={client.clientId}
+                      month="Mar"
+                      initialValue={client.months.Mar}
+                      isLocked={isMonthLocked("Mar")}
+                    />
+                  </TableCell>
+                  {/* Q1 Total */}
+                  <TableCell className="bg-gray-100 text-center font-medium">
+                    {client.quarters.Q1 > 0 ? client.quarters.Q1 : '-'}
+                  </TableCell>
                   
-                  {/* Quarter totals */}
-                  {quarters.map((quarter) => (
-                    <TableCell key={quarter.name} className="bg-gray-100 text-center font-medium">
-                      {client.quarters[quarter.name] > 0 ? client.quarters[quarter.name] : '-'}
-                    </TableCell>
-                  ))}
+                  {/* Render Q2 months */}
+                  <TableCell className="p-0">
+                    <PlanningHoursCell
+                      userId={currentUser.id || ''}
+                      versionId={selectedVersionId || ''}
+                      clientId={client.clientId}
+                      month="Apr"
+                      initialValue={client.months.Apr}
+                      isLocked={isMonthLocked("Apr")}
+                    />
+                  </TableCell>
+                  <TableCell className="p-0">
+                    <PlanningHoursCell
+                      userId={currentUser.id || ''}
+                      versionId={selectedVersionId || ''}
+                      clientId={client.clientId}
+                      month="May"
+                      initialValue={client.months.May}
+                      isLocked={isMonthLocked("May")}
+                    />
+                  </TableCell>
+                  <TableCell className="p-0">
+                    <PlanningHoursCell
+                      userId={currentUser.id || ''}
+                      versionId={selectedVersionId || ''}
+                      clientId={client.clientId}
+                      month="Jun"
+                      initialValue={client.months.Jun}
+                      isLocked={isMonthLocked("Jun")}
+                    />
+                  </TableCell>
+                  {/* Q2 Total */}
+                  <TableCell className="bg-gray-100 text-center font-medium">
+                    {client.quarters.Q2 > 0 ? client.quarters.Q2 : '-'}
+                  </TableCell>
+                  
+                  {/* Render Q3 months */}
+                  <TableCell className="p-0">
+                    <PlanningHoursCell
+                      userId={currentUser.id || ''}
+                      versionId={selectedVersionId || ''}
+                      clientId={client.clientId}
+                      month="Jul"
+                      initialValue={client.months.Jul}
+                      isLocked={isMonthLocked("Jul")}
+                    />
+                  </TableCell>
+                  <TableCell className="p-0">
+                    <PlanningHoursCell
+                      userId={currentUser.id || ''}
+                      versionId={selectedVersionId || ''}
+                      clientId={client.clientId}
+                      month="Aug"
+                      initialValue={client.months.Aug}
+                      isLocked={isMonthLocked("Aug")}
+                    />
+                  </TableCell>
+                  <TableCell className="p-0">
+                    <PlanningHoursCell
+                      userId={currentUser.id || ''}
+                      versionId={selectedVersionId || ''}
+                      clientId={client.clientId}
+                      month="Sep"
+                      initialValue={client.months.Sep}
+                      isLocked={isMonthLocked("Sep")}
+                    />
+                  </TableCell>
+                  {/* Q3 Total */}
+                  <TableCell className="bg-gray-100 text-center font-medium">
+                    {client.quarters.Q3 > 0 ? client.quarters.Q3 : '-'}
+                  </TableCell>
+                  
+                  {/* Render Q4 months */}
+                  <TableCell className="p-0">
+                    <PlanningHoursCell
+                      userId={currentUser.id || ''}
+                      versionId={selectedVersionId || ''}
+                      clientId={client.clientId}
+                      month="Oct"
+                      initialValue={client.months.Oct}
+                      isLocked={isMonthLocked("Oct")}
+                    />
+                  </TableCell>
+                  <TableCell className="p-0">
+                    <PlanningHoursCell
+                      userId={currentUser.id || ''}
+                      versionId={selectedVersionId || ''}
+                      clientId={client.clientId}
+                      month="Nov"
+                      initialValue={client.months.Nov}
+                      isLocked={isMonthLocked("Nov")}
+                    />
+                  </TableCell>
+                  <TableCell className="p-0">
+                    <PlanningHoursCell
+                      userId={currentUser.id || ''}
+                      versionId={selectedVersionId || ''}
+                      clientId={client.clientId}
+                      month="Dec"
+                      initialValue={client.months.Dec}
+                      isLocked={isMonthLocked("Dec")}
+                    />
+                  </TableCell>
+                  {/* Q4 Total */}
+                  <TableCell className="bg-gray-100 text-center font-medium">
+                    {client.quarters.Q4 > 0 ? client.quarters.Q4 : '-'}
+                  </TableCell>
                   
                   {/* Year total */}
                   <TableCell className="bg-blue-100 text-center font-bold">
