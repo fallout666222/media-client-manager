@@ -59,3 +59,53 @@ export const updatePlanningHours = async (
       .single();
   }
 };
+
+// Admin functions for planning version management
+export const createPlanningVersion = async (name: string, year: string) => {
+  return await supabase
+    .from('planning_versions')
+    .insert({
+      name,
+      year
+    })
+    .select()
+    .single();
+};
+
+export const updatePlanningVersion = async (
+  id: string,
+  data: { 
+    name?: string; 
+    year?: string;
+    q1_locked?: boolean;
+    q2_locked?: boolean;
+    q3_locked?: boolean;
+    q4_locked?: boolean;
+  }
+) => {
+  return await supabase
+    .from('planning_versions')
+    .update(data)
+    .eq('id', id)
+    .select()
+    .single();
+};
+
+export const deletePlanningVersion = async (id: string) => {
+  return await supabase
+    .from('planning_versions')
+    .delete()
+    .eq('id', id);
+};
+
+export const getYearsFromCustomWeeks = async () => {
+  const { data } = await supabase
+    .from('custom_weeks')
+    .select('period_from');
+  
+  if (!data) return [];
+  
+  // Extract unique years from custom weeks
+  const years = data.map(week => new Date(week.period_from).getFullYear().toString());
+  return [...new Set(years)].sort((a, b) => b.localeCompare(a)); // Descending order
+};
