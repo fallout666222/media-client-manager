@@ -92,14 +92,10 @@ export function PlanningVersionForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Version Name</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="e.g. Plan 2024 v1" 
-                  {...field} 
-                  onChange={(e) => field.onChange(e)}
-                  value={field.value}
-                />
-              </FormControl>
+              <Input 
+                placeholder="e.g. Plan 2024 v1" 
+                {...field} 
+              />
               <FormMessage />
             </FormItem>
           )}
@@ -116,11 +112,9 @@ export function PlanningVersionForm({
                 value={field.value || ""}
                 defaultValue={field.value || ""}
               >
-                <FormControl>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select a year" />
-                  </SelectTrigger>
-                </FormControl>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a year" />
+                </SelectTrigger>
                 <SelectContent>
                   {availableYears.map(year => (
                     <SelectItem key={year} value={year}>
@@ -140,13 +134,11 @@ export function PlanningVersionForm({
             name="q1_locked"
             render={({ field }) => (
               <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                <FormControl>
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={(checked) => field.onChange(checked)}
-                    id="q1_locked"
-                  />
-                </FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                  id="q1_locked"
+                />
                 <div className="space-y-1 leading-none">
                   <FormLabel htmlFor="q1_locked">Lock Q1</FormLabel>
                 </div>
@@ -159,13 +151,11 @@ export function PlanningVersionForm({
             name="q2_locked"
             render={({ field }) => (
               <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                <FormControl>
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={(checked) => field.onChange(checked)}
-                    id="q2_locked"
-                  />
-                </FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                  id="q2_locked"
+                />
                 <div className="space-y-1 leading-none">
                   <FormLabel htmlFor="q2_locked">Lock Q2</FormLabel>
                 </div>
@@ -178,13 +168,11 @@ export function PlanningVersionForm({
             name="q3_locked"
             render={({ field }) => (
               <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                <FormControl>
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={(checked) => field.onChange(checked)}
-                    id="q3_locked"
-                  />
-                </FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                  id="q3_locked"
+                />
                 <div className="space-y-1 leading-none">
                   <FormLabel htmlFor="q3_locked">Lock Q3</FormLabel>
                 </div>
@@ -197,13 +185,11 @@ export function PlanningVersionForm({
             name="q4_locked"
             render={({ field }) => (
               <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                <FormControl>
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={(checked) => field.onChange(checked)}
-                    id="q4_locked"
-                  />
-                </FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                  id="q4_locked"
+                />
                 <div className="space-y-1 leading-none">
                   <FormLabel htmlFor="q4_locked">Lock Q4</FormLabel>
                 </div>
