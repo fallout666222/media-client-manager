@@ -7,9 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { getAllPlanningVersions, createPlanningVersion, updatePlanningVersion, deletePlanningVersion, fillActualHours } from '@/integrations/supabase/database';
+import { getAllPlanningVersions, updatePlanningVersion, deletePlanningVersion, fillActualHours } from '@/integrations/supabase/database';
 import * as db from '@/integrations/supabase/database';
-import { PlanningVersionForm } from '@/components/Planning/PlanningVersionForm';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,7 +35,6 @@ const PlanningManagement = () => {
   const [planningVersions, setPlanningVersions] = useState<PlanningVersion[]>([]);
   const [customWeeks, setCustomWeeks] = useState<{id: string, name: string}[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [selectedVersion, setSelectedVersion] = useState<{id: string, year: string} | null>(null);
@@ -82,46 +80,6 @@ const PlanningManagement = () => {
   useEffect(() => {
     fetchData();
   }, [toast]);
-
-  const handleAddVersion = async (data: {
-    name: string;
-    year: string;
-    q1_locked: boolean;
-    q2_locked: boolean;
-    q3_locked: boolean; 
-    q4_locked: boolean;
-  }) => {
-    try {
-      setIsSubmitting(true);
-      const { data: newVersion, error } = await createPlanningVersion(
-        data.name,
-        data.year,
-        data.q1_locked,
-        data.q2_locked,
-        data.q3_locked,
-        data.q4_locked
-      );
-      
-      if (error) throw error;
-      
-      // Refresh the versions list after adding a new one
-      await fetchData();
-      
-      toast({
-        title: "Success",
-        description: "Planning version created successfully"
-      });
-    } catch (error) {
-      console.error('Error creating planning version:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create planning version",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const handleUpdateVersion = async (id: string, data: {
     name?: string;
@@ -200,19 +158,6 @@ const PlanningManagement = () => {
           </Button>
         </Link>
       </div>
-      
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle>Add New Planning Version</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <PlanningVersionForm 
-            onSubmit={handleAddVersion} 
-            availableYears={customWeeks.map(week => week.name)} 
-            isSubmitting={isSubmitting}
-          />
-        </CardContent>
-      </Card>
       
       <Card>
         <CardHeader>
