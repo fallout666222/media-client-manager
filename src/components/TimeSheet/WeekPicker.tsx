@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Select,
@@ -53,7 +54,7 @@ export const WeekPicker = ({
           const year = getYear(parse(week.startDate, 'yyyy-MM-dd', new Date())).toString();
           years.add(year);
         } catch (error) {
-          // console.error('Error parsing date:', week.startDate, error);
+          // Silent error - don't log
         }
       }
     });
@@ -64,7 +65,6 @@ export const WeekPicker = ({
   useEffect(() => {
     if (viewedUserId && filterYear !== null) {
       localStorage.setItem(`selectedYearFilter_${viewedUserId}`, filterYear.toString());
-      // console.log(`Saved year filter ${filterYear} to localStorage for user ${viewedUserId}`);
     } else if (viewedUserId && filterYear === null) {
       localStorage.removeItem(`selectedYearFilter_${viewedUserId}`);
     }
@@ -75,7 +75,6 @@ export const WeekPicker = ({
       const savedYearFilter = localStorage.getItem(`selectedYearFilter_${viewedUserId}`);
       if (savedYearFilter) {
         const yearValue = parseInt(savedYearFilter);
-        // console.log(`Loading year filter ${yearValue} from localStorage for user ${viewedUserId}`);
         setFilterYear(yearValue);
       }
     }
@@ -93,7 +92,6 @@ export const WeekPicker = ({
             endDate: week.period_to || week.endDate,
             hours: week.required_hours || week.hours
           }));
-          // console.log("Setting available weeks from props:", formattedWeeks.length);
           setAvailableWeeks(formattedWeeks);
           setLoading(false);
         } else {
@@ -106,16 +104,14 @@ export const WeekPicker = ({
               endDate: week.period_to,
               hours: week.required_hours
             }));
-            // console.log("Setting available weeks from API:", formattedWeeks.length);
             setAvailableWeeks(formattedWeeks);
             setLoading(false);
           } else {
-            // console.log("No weeks found from API");
             setLoading(false);
           }
         }
       } catch (error) {
-        // console.error('Error fetching custom weeks:', error);
+        console.error('Error fetching custom weeks:', error);
         setLoading(false);
       }
     };
@@ -211,12 +207,10 @@ export const WeekPicker = ({
     
     if (viewedUserId) {
       const savedWeekId = localStorage.getItem(`selectedWeek_${viewedUserId}`);
-      // console.log(`WeekPicker - Checking saved week for user ${viewedUserId}:`, savedWeekId);
       
       if (savedWeekId) {
         const savedWeek = filteredWeeks.find(week => week.id === savedWeekId);
         if (savedWeek) {
-          // console.log(`WeekPicker - Found saved week in localStorage: ${savedWeek.name}`);
           return savedWeek;
         }
       }
@@ -228,15 +222,13 @@ export const WeekPicker = ({
       try {
         const weekStartDate = parse(week.startDate, "yyyy-MM-dd", new Date());
         if (isSameDay(weekStartDate, currentDate)) {
-          // console.log(`WeekPicker - Found matching week for current date: ${week.name}`);
           return week;
         }
       } catch (error) {
-        // console.error('Error checking current week:', week.startDate, error);
+        // Silent error - don't log
       }
     }
     
-    // console.log(`WeekPicker - No matching week found, returning first week: ${filteredWeeks[0]?.name}`);
     return filteredWeeks[0];
   };
 
@@ -247,23 +239,19 @@ export const WeekPicker = ({
       try {
         return isSameDay(parse(week.startDate, "yyyy-MM-dd", new Date()), currentDate);
       } catch (error) {
-        // console.error('Error matching week to current date:', week.startDate, error);
+        // Silent error - don't log
         return false;
       }
     });
     
     if (matchingWeek) {
-      // console.log(`WeekPicker - Current date changed, updating selected week to ${matchingWeek.name} (${matchingWeek.id})`);
       setCurrentWeekId(matchingWeek.id);
       
       if (viewedUserId) {
         localStorage.setItem(`selectedWeek_${viewedUserId}`, matchingWeek.id);
-        // console.log(`WeekPicker - Saved week ${matchingWeek.id} to localStorage for user ${viewedUserId}`);
       }
       
       onWeekHoursChange(matchingWeek.hours);
-    } else {
-      // console.log(`WeekPicker - No matching week found for current date: ${format(currentDate, 'yyyy-MM-dd')}`);
     }
   }, [currentDate, filteredWeeks, viewedUserId, onWeekHoursChange]);
 
@@ -272,10 +260,7 @@ export const WeekPicker = ({
 
   useEffect(() => {
     if (currentWeek) {
-      // console.log(`WeekPicker: Current week updated to ${currentWeek.name} (${currentWeek.id})`);
-      
       if (!currentWeek.startDate) {
-        // console.error('Current week has no start date:', currentWeek);
         return;
       }
       
@@ -283,7 +268,6 @@ export const WeekPicker = ({
         const weekStartDate = parse(currentWeek.startDate, "yyyy-MM-dd", new Date());
         
         if (!isSameDay(weekStartDate, currentDate)) {
-          // console.log(`WeekPicker: Updating current date to ${format(weekStartDate, 'yyyy-MM-dd')}`);
           onWeekChange(weekStartDate);
         }
         
@@ -291,12 +275,11 @@ export const WeekPicker = ({
         
         if (viewedUserId) {
           localStorage.setItem(`selectedWeek_${viewedUserId}`, currentWeek.id);
-          // console.log(`WeekPicker: Saved week ${currentWeek.id} to localStorage for user ${viewedUserId}`);
         }
         
         setCurrentWeekId(currentWeek.id);
       } catch (error) {
-        // console.error('Error processing current week:', currentWeek.startDate, error);
+        // Silent error - don't log
       }
     }
   }, [currentWeek?.id, currentWeek, currentDate, onWeekChange, onWeekHoursChange, viewedUserId]);
@@ -304,17 +287,13 @@ export const WeekPicker = ({
   useEffect(() => {
     if (effectiveWeekId && viewedUserId) {
       localStorage.setItem(`selectedWeek_${viewedUserId}`, effectiveWeekId);
-      // console.log(`WeekPicker: Saved selected week ${effectiveWeekId} for user ${viewedUserId}`);
     }
   }, [effectiveWeekId, viewedUserId]);
 
   const handleCustomWeekSelect = (weekId: string) => {
     const selectedWeek = filteredWeeks.find(week => week.id === weekId);
     if (selectedWeek) {
-      // console.log(`WeekPicker: Selected week ${selectedWeek.name} (${selectedWeek.id})`);
-      
       if (!selectedWeek.startDate) {
-        // console.error('Selected week has no start date:', selectedWeek);
         return;
       }
       
@@ -324,13 +303,12 @@ export const WeekPicker = ({
         
         if (viewedUserId) {
           localStorage.setItem(`selectedWeek_${viewedUserId}`, weekId);
-          // console.log(`WeekPicker: Saved week ${weekId} to localStorage for user ${viewedUserId}`);
         }
         
         onWeekHoursChange(selectedWeek.hours);
         setCurrentWeekId(weekId);
       } catch (error) {
-        // console.error('Error handling week selection:', selectedWeek.startDate, error);
+        // Silent error - don't log
       }
     }
   };
@@ -363,7 +341,6 @@ export const WeekPicker = ({
         const newWeekYear = getYear(newWeekDate);
         
         if (newWeekYear !== filterYear) {
-          console.log(`Crossing year boundary: ${filterYear} -> ${newWeekYear}`);
           setFilterYear(newWeekYear);
           
           if (viewedUserId) {
@@ -427,7 +404,7 @@ export const WeekPicker = ({
       
       return `${week.name}: ${start} - ${end} (${effectiveHours}h)`;
     } catch (error) {
-      // console.error('Error formatting week label:', week, error);
+      // Silent error - don't log
       return `${week.name}: Date format error`;
     }
   };

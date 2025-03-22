@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -67,12 +66,10 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
   const handleTeamMemberSelect = (user: User) => {
     setSelectedTeamMember(user.id);
     
-    // Load the saved year filter from localStorage if it exists
     const savedYearFilter = localStorage.getItem(`selectedYearFilter_${user.id}`);
     if (savedYearFilter) {
       setFilterYear(parseInt(savedYearFilter));
     } else {
-      // Default to current year if no saved filter
       setFilterYear(new Date().getFullYear());
     }
     
@@ -93,7 +90,6 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
         });
       }
     } catch (error) {
-      // console.error('Error fetching first unconfirmed week:', error);
     }
   };
 
@@ -105,7 +101,6 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
         findFirstUnderReviewWeek(userId, data);
       }
     } catch (error) {
-      // console.error('Error fetching week statuses:', error);
     }
   };
 
@@ -135,32 +130,23 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
         status.status?.name === 'under-review'
       );
       
-      // console.log("First under review week found:", firstUnderReview);
       setFirstUnderReviewWeek(firstUnderReview);
     } catch (error) {
-      // console.error('Error finding first under-review week:', error);
-      setFirstUnderReviewWeek(null);
     }
   };
 
   const navigateToFirstUnderReviewWeek = () => {
     if (firstUnderReviewWeek && selectedTeamMember) {
-      // console.log("Navigating to first under review week:", firstUnderReviewWeek.week);
-      
       if (firstUnderReviewWeek.week && selectedTeamMember) {
         localStorage.setItem(`selectedWeek_${selectedTeamMember}`, firstUnderReviewWeek.week_id);
-        // console.log(`Saved selected week to localStorage: selectedWeek_${selectedTeamMember} = ${firstUnderReviewWeek.week_id}`);
         
-        // Update the year filter to match the year of the found week
         if (firstUnderReviewWeek.week.period_from) {
           try {
             const weekDate = new Date(firstUnderReviewWeek.week.period_from);
             const weekYear = getYear(weekDate);
             setFilterYear(weekYear);
             localStorage.setItem(`selectedYearFilter_${selectedTeamMember}`, weekYear.toString());
-            console.log(`Updated year filter to ${weekYear} for user ${selectedTeamMember}`);
           } catch (error) {
-            console.error("Error updating year filter:", error);
           }
         }
         
@@ -200,26 +186,22 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
     if (!currentWeek || !currentWeek.week) return false;
     
     const currentWeekDate = new Date(currentWeek.week.period_from);
-    // console.log("Current week date:", format(currentWeekDate, 'yyyy-MM-dd'));
     
     const earlierWeeksUnderReview = weekStatuses.filter(status => {
       if (!status.week || !status.status) return false;
       
       const weekDate = new Date(status.week.period_from);
       
-      // Only consider weeks with 'under-review' status, ignore 'needs-revision'
       const isEarlier = isBefore(weekDate, currentWeekDate);
       const isUnderReview = status.status.name === 'under-review';
       
       if (isEarlier && isUnderReview) {
-        // console.log(`Earlier week ${status.week.name} is still under review`);
         return true;
       }
       
       return false;
     });
     
-    // console.log(`Found ${earlierWeeksUnderReview.length} earlier weeks under review`);
     return earlierWeeksUnderReview.length > 0;
   };
 
@@ -246,7 +228,6 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
         setForceRefresh(prev => prev + 1);
       }
     } catch (error) {
-      // console.error('Error submitting timesheet:', error);
       toast({
         title: "Error",
         description: "Failed to submit timesheet",
@@ -293,7 +274,6 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
         setForceRefresh(prev => prev + 1);
       }
     } catch (error) {
-      // console.error('Error approving timesheet:', error);
       toast({
         title: "Error",
         description: "Failed to approve timesheet",
@@ -325,7 +305,6 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
         setForceRefresh(prev => prev + 1);
       }
     } catch (error) {
-      // console.error('Error rejecting timesheet:', error);
       toast({
         title: "Error",
         description: "Failed to reject timesheet",
@@ -336,7 +315,6 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
 
   const handleTimeUpdate = async (userId: string, weekId: string, client: string, mediaType: string, hours: number) => {
     try {
-      // console.log(`Updating hours for user ${userId}, week ${weekId}, client ${client}, mediaType ${mediaType}, hours ${hours}`);
       await updateHours(userId, weekId, client, mediaType, hours);
       
       toast({
@@ -344,7 +322,6 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
         description: "Time entry has been updated successfully",
       });
     } catch (error) {
-      // console.error('Error updating hours:', error);
       toast({
         title: "Error",
         description: "Failed to update time entry",
@@ -476,7 +453,6 @@ const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => 
           <div className="mb-8">
             <h2 className="text-lg font-medium mb-4">My Team</h2>
             
-            {/* Team member selector moved right under the "My Team" text */}
             <TeamMemberSelector 
               currentUser={currentUser}
               users={teamMembers}

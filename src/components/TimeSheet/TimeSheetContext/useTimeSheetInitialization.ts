@@ -40,11 +40,9 @@ export const useTimeSheetInitialization = ({
         
         if (propCustomWeeks && propCustomWeeks.length > 0) {
           weeksData = propCustomWeeks;
-          console.log(`Using ${weeksData.length} custom weeks from props`);
         } else {
           const { data } = await getCustomWeeks();
           weeksData = data || [];
-          console.log(`Fetched ${weeksData.length} custom weeks from database`);
         }
         
         setCustomWeeks(weeksData);
@@ -54,7 +52,6 @@ export const useTimeSheetInitialization = ({
         if (savedWeekId && weeksData.length > 0) {
           const savedWeek = weeksData.find((week: any) => week.id === savedWeekId);
           if (savedWeek) {
-            console.log(`Setting to saved week from localStorage: ${savedWeek.name}`);
             setCurrentDate(parse(savedWeek.period_from, 'yyyy-MM-dd', new Date()));
             setCurrentCustomWeek(savedWeek);
             setWeekHours(savedWeek.required_hours);
@@ -65,7 +62,6 @@ export const useTimeSheetInitialization = ({
         if (initialWeekId && weeksData.length > 0) {
           const initialWeek = weeksData.find((week: any) => week.id === initialWeekId);
           if (initialWeek) {
-            console.log(`Setting initial week to: ${initialWeek.name}`);
             setCurrentDate(parse(initialWeek.period_from, 'yyyy-MM-dd', new Date()));
             setCurrentCustomWeek(initialWeek);
             setWeekHours(initialWeek.required_hours);
@@ -96,14 +92,12 @@ export const useTimeSheetInitialization = ({
       );
       
       if (matchingWeek && (!currentCustomWeek || matchingWeek.id !== currentCustomWeek.id)) {
-        console.log(`Date changed to ${currentDateFormatted}, updating current week to: ${matchingWeek.name} (${matchingWeek.id})`);
         setCurrentCustomWeek(matchingWeek);
         setLocalCurrentCustomWeek(matchingWeek);
         setWeekHours(matchingWeek.required_hours);
         
         if (viewedUserId) {
           localStorage.setItem(`selectedWeek_${viewedUserId}`, matchingWeek.id);
-          console.log(`Saved week ${matchingWeek.id} to localStorage for user ${viewedUserId}`);
         }
       }
     }

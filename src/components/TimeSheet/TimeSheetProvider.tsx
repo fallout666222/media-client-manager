@@ -35,7 +35,6 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
     if (viewedUserId) {
       const savedYearFilter = localStorage.getItem(`selectedYearFilter_${viewedUserId}`);
       if (savedYearFilter) {
-        console.log(`Initializing year filter ${savedYearFilter} from localStorage for user ${viewedUserId}`);
         return parseInt(savedYearFilter);
       }
     }
@@ -177,14 +176,12 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
     
     const selectedWeek = customWeeks.find(week => week.id === weekId);
     if (selectedWeek) {
-      console.log(`Progress bar week selected: ${selectedWeek.name} (${selectedWeek.id})`);
       setCurrentDate(parse(selectedWeek.period_from, 'yyyy-MM-dd', new Date()));
       setCurrentCustomWeek(selectedWeek);
       setWeekHours(selectedWeek.required_hours);
       
       if (viewedUserId) {
         localStorage.setItem(`selectedWeek_${viewedUserId}`, selectedWeek.id);
-        console.log(`Saved selected week ${selectedWeek.id} to localStorage for user ${viewedUserId}`);
       }
     }
   };
