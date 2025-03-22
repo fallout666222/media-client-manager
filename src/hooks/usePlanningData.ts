@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -45,35 +46,21 @@ interface UsePlanningDataProps {
   currentUser: User;
 }
 
-const LOCAL_STORAGE_KEY = 'selectedPlanningVersionId';
-
 export const usePlanningData = ({ currentUser }: UsePlanningDataProps) => {
   const [versions, setVersions] = useState<PlanningVersion[]>([]);
-  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(
-    localStorage.getItem(LOCAL_STORAGE_KEY) || null
-  );
+  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
   const [planningData, setPlanningData] = useState<ClientHours[]>([]);
   const [visibleClients, setVisibleClients] = useState<string[]>([]);
   const [allClients, setAllClients] = useState<Client[]>([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (selectedVersionId) {
-      localStorage.setItem(LOCAL_STORAGE_KEY, selectedVersionId);
-    } else {
-      localStorage.removeItem(LOCAL_STORAGE_KEY);
-    }
-  }, [selectedVersionId]);
-
-  const handleSetSelectedVersionId = useCallback((versionId: string) => {
-    setSelectedVersionId(versionId);
-  }, []);
-
+  // Function to reload planning data
   const reloadPlanningData = useCallback(() => {
     setRefreshTrigger(prev => prev + 1);
   }, []);
 
+  // Load planning versions
   useEffect(() => {
     const fetchVersions = async () => {
       try {
@@ -82,15 +69,7 @@ export const usePlanningData = ({ currentUser }: UsePlanningDataProps) => {
         
         if (data && data.length > 0) {
           setVersions(data);
-          
-          if (!selectedVersionId) {
-            setSelectedVersionId(data[0].id);
-          } else {
-            const versionExists = data.some(version => version.id === selectedVersionId);
-            if (!versionExists && data.length > 0) {
-              setSelectedVersionId(data[0].id);
-            }
-          }
+          setSelectedVersionId(data[0].id); // Select first version by default
         }
       } catch (error) {
         console.error('Error loading planning versions:', error);
@@ -103,17 +82,20 @@ export const usePlanningData = ({ currentUser }: UsePlanningDataProps) => {
     };
     
     fetchVersions();
-  }, [toast, selectedVersionId]);
+  }, [toast]);
 
+  // Load all clients and user visible clients
   useEffect(() => {
     const fetchClientsData = async () => {
       try {
+        // Get all clients
         const { data: clientsData, error: clientsError } = await getClients();
         if (clientsError) throw clientsError;
         if (clientsData) {
           setAllClients(clientsData);
         }
 
+        // Get user visible clients
         if (currentUser.id) {
           const { data: visibleClientsData, error: visibleError } = await getUserVisibleClients(currentUser.id);
           if (visibleError) throw visibleError;
@@ -136,6 +118,7 @@ export const usePlanningData = ({ currentUser }: UsePlanningDataProps) => {
     fetchClientsData();
   }, [currentUser.id, toast]);
 
+  // Load planning data
   useEffect(() => {
     const fetchPlanningData = async () => {
       if (currentUser.id && selectedVersionId && allClients.length > 0) {
@@ -143,9 +126,12 @@ export const usePlanningData = ({ currentUser }: UsePlanningDataProps) => {
           const { data, error } = await getPlanningHours(currentUser.id, selectedVersionId);
           if (error) throw error;
           
+          // Process data
           const clientsMap = new Map<string, ClientHours>();
           
+          // Pre-populate with all non-hidden clients from the database
           allClients.filter(client => !client.hidden).forEach(client => {
+            // Initialize new client with zero values
             const emptyMonths: Record<MonthName, number> = {} as Record<MonthName, number>;
             MONTHS.forEach(month => { emptyMonths[month] = 0; });
             
@@ -161,11 +147,13 @@ export const usePlanningData = ({ currentUser }: UsePlanningDataProps) => {
             });
           });
           
+          // Update with actual hours data
           data?.forEach(entry => {
             const clientId = entry.client_id;
             const clientName = entry.client?.name || 'Unknown Client';
             
             if (!clientsMap.has(clientId)) {
+              // Initialize new client with zero values if not already in the map
               const emptyMonths: Record<MonthName, number> = {} as Record<MonthName, number>;
               MONTHS.forEach(month => { emptyMonths[month] = 0; });
               
@@ -181,6 +169,7 @@ export const usePlanningData = ({ currentUser }: UsePlanningDataProps) => {
               });
             }
             
+            // Update hours for this month
             const client = clientsMap.get(clientId)!;
             const month = entry.month as MonthName;
             if (MONTHS.includes(month)) {
@@ -188,6 +177,7 @@ export const usePlanningData = ({ currentUser }: UsePlanningDataProps) => {
             }
           });
           
+          // Calculate quarter totals and yearly total
           clientsMap.forEach(client => {
             QUARTERS.forEach(quarter => {
               client.quarters[quarter.name] = quarter.months.reduce(
@@ -198,6 +188,7 @@ export const usePlanningData = ({ currentUser }: UsePlanningDataProps) => {
             client.total = MONTHS.reduce((sum, month) => sum + client.months[month], 0);
           });
           
+          // Convert map to array and sort by client name
           const processedData = Array.from(clientsMap.values())
             .sort((a, b) => a.clientName.localeCompare(b.clientName));
           
@@ -219,7 +210,7 @@ export const usePlanningData = ({ currentUser }: UsePlanningDataProps) => {
   return {
     versions,
     selectedVersionId,
-    setSelectedVersionId: handleSetSelectedVersionId,
+    setSelectedVersionId,
     planningData,
     visibleClients,
     allClients,

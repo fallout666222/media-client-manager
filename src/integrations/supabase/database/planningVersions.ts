@@ -51,10 +51,3 @@ export const deletePlanningVersion = async (id: string) => {
     .delete()
     .eq('id', id);
 };
-
-export const fillActualHours = async (versionId: string, year: string) => {
-  return await supabase.rpc('fill_actual_hours', {
-    p_version_id: versionId,
-    p_year: year
-  });
-};

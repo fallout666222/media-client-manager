@@ -7,19 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { getAllPlanningVersions, createPlanningVersion, updatePlanningVersion, deletePlanningVersion, fillActualHours } from '@/integrations/supabase/database';
+import { getAllPlanningVersions, createPlanningVersion, updatePlanningVersion, deletePlanningVersion } from '@/integrations/supabase/database';
 import * as db from '@/integrations/supabase/database';
 import { PlanningVersionForm } from '@/components/Planning/PlanningVersionForm';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 interface PlanningVersion {
   id: string;
@@ -37,9 +27,6 @@ const PlanningManagement = () => {
   const [customWeeks, setCustomWeeks] = useState<{id: string, name: string}[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
-  const [selectedVersion, setSelectedVersion] = useState<{id: string, year: string} | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -154,39 +141,26 @@ const PlanningManagement = () => {
     }
   };
 
-  const handleFillActualHours = async () => {
-    if (!selectedVersion) return;
-    
+  const handleDeleteVersion = async (id: string) => {
     try {
-      setIsProcessing(true);
-      const { error } = await fillActualHours(selectedVersion.id, selectedVersion.year);
+      const { error } = await deletePlanningVersion(id);
       
       if (error) throw error;
       
+      setPlanningVersions(prev => prev.filter(version => version.id !== id));
+      
       toast({
         title: "Success",
-        description: "Actual hours have been filled successfully"
+        description: "Planning version deleted successfully"
       });
     } catch (error) {
-      console.error('Error filling actual hours:', error);
+      console.error('Error deleting planning version:', error);
       toast({
         title: "Error",
-        description: "Failed to fill actual hours",
+        description: "Failed to delete planning version",
         variant: "destructive"
       });
-    } finally {
-      setIsProcessing(false);
-      setIsConfirmDialogOpen(false);
-      setSelectedVersion(null);
     }
-  };
-
-  const openConfirmDialog = (version: PlanningVersion) => {
-    setSelectedVersion({
-      id: version.id,
-      year: version.year
-    });
-    setIsConfirmDialogOpen(true);
   };
 
   return (
@@ -276,12 +250,11 @@ const PlanningManagement = () => {
                     </TableCell>
                     <TableCell>
                       <Button 
-                        variant="secondary" 
+                        variant="destructive" 
                         size="sm" 
-                        onClick={() => openConfirmDialog(version)}
-                        disabled={isProcessing}
+                        onClick={() => handleDeleteVersion(version.id)}
                       >
-                        Fill Actual Hours
+                        Delete
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -291,24 +264,6 @@ const PlanningManagement = () => {
           )}
         </CardContent>
       </Card>
-
-      <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Fill Actual Hours</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will replace planning hours with actual hours from timesheets for all locked quarters.
-              Are you sure you want to continue?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setSelectedVersion(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleFillActualHours} disabled={isProcessing}>
-              {isProcessing ? "Processing..." : "Continue"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };

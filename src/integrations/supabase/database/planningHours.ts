@@ -1,9 +1,10 @@
+
 import { supabase } from '../client';
 
 export const getPlanningVersions = async () => {
   return await supabase.from('planning_versions')
     .select('*')
-    .order('created_at', { ascending: false });
+    .order('name', { ascending: false });
 };
 
 export const getPlanningHours = async (userId: string, versionId: string) => {
