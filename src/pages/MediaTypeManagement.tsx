@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import * as db from '@/integrations/supabase/database';
+import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 interface MediaType {
   id: string;
@@ -22,12 +24,8 @@ interface MediaType {
   description?: string;
 }
 
-interface MediaTypeManagementProps {
-  mediaTypes: MediaType[];
-  onAddMediaType: (mediaType: Omit<MediaType, "id">) => void;
-}
-
-const MediaTypeManagement: React.FC<MediaTypeManagementProps> = ({ mediaTypes, onAddMediaType }) => {
+const MediaTypeManagement: React.FC = () => {
+  const [mediaTypes, setMediaTypes] = useState<MediaType[]>([]);
   const [mediaTypeName, setMediaTypeName] = useState('');
   const [mediaTypeDescription, setMediaTypeDescription] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -37,7 +35,9 @@ const MediaTypeManagement: React.FC<MediaTypeManagementProps> = ({ mediaTypes, o
     const fetchMediaTypes = async () => {
       try {
         const { data } = await db.getMediaTypes();
-        // We don't need to do anything with the data here since the parent component handles it
+        if (data) {
+          setMediaTypes(data);
+        }
       } catch (error) {
         console.error('Error fetching media types:', error);
       }
@@ -69,11 +69,8 @@ const MediaTypeManagement: React.FC<MediaTypeManagementProps> = ({ mediaTypes, o
       if (error) throw error;
       
       if (data) {
-        // Call the parent's callback
-        onAddMediaType({
-          name: data.name,
-          description: data.description
-        });
+        // Update the local state with the new media type
+        setMediaTypes(prevMediaTypes => [...prevMediaTypes, data]);
         
         setMediaTypeName('');
         setMediaTypeDescription('');
@@ -96,49 +93,60 @@ const MediaTypeManagement: React.FC<MediaTypeManagementProps> = ({ mediaTypes, o
   };
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-medium">Manage Media Types</h2>
-      <form onSubmit={handleAddMediaType} className="grid gap-4">
-        <div className="grid gap-2">
-          <Label htmlFor="mediaTypeName">Media Type Name</Label>
-          <Input
-            type="text"
-            id="mediaTypeName"
-            value={mediaTypeName}
-            onChange={(e) => setMediaTypeName(e.target.value)}
-            placeholder="Enter media type name"
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="mediaTypeDescription">Description</Label>
-          <Textarea
-            id="mediaTypeDescription"
-            value={mediaTypeDescription}
-            onChange={(e) => setMediaTypeDescription(e.target.value)}
-            placeholder="Enter media type description"
-          />
-        </div>
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? "Adding..." : "Add Media Type"}
-        </Button>
-      </form>
-      <Table>
-        <TableCaption>A list of your media types.</TableCaption>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Description</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {mediaTypes.map((mediaType) => (
-            <TableRow key={mediaType.id}>
-              <TableCell className="font-medium">{mediaType.name}</TableCell>
-              <TableCell>{mediaType.description}</TableCell>
+    <div className="container mx-auto p-4 pt-16">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Media Type Management</h1>
+        <Link to="/">
+          <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Button>
+        </Link>
+      </div>
+      <div className="space-y-4">
+        <h2 className="text-lg font-medium">Manage Media Types</h2>
+        <form onSubmit={handleAddMediaType} className="grid gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="mediaTypeName">Media Type Name</Label>
+            <Input
+              type="text"
+              id="mediaTypeName"
+              value={mediaTypeName}
+              onChange={(e) => setMediaTypeName(e.target.value)}
+              placeholder="Enter media type name"
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="mediaTypeDescription">Description</Label>
+            <Textarea
+              id="mediaTypeDescription"
+              value={mediaTypeDescription}
+              onChange={(e) => setMediaTypeDescription(e.target.value)}
+              placeholder="Enter media type description"
+            />
+          </div>
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? "Adding..." : "Add Media Type"}
+          </Button>
+        </form>
+        <Table>
+          <TableCaption>A list of your media types.</TableCaption>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Description</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {mediaTypes.map((mediaType) => (
+              <TableRow key={mediaType.id}>
+                <TableCell className="font-medium">{mediaType.name}</TableCell>
+                <TableCell>{mediaType.description}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 };
