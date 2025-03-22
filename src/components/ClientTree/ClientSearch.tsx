@@ -44,13 +44,30 @@ export const ClientSearch: React.FC<ClientSearchProps> = ({
 
   return (
     <div className="flex flex-col gap-4 mb-4">
-      <div className="flex items-center justify-between">
-        <div className="w-1/3">
-          <SearchBar
-            value={searchQuery}
-            onChange={onSearchChange}
-            placeholder="Search clients by name..."
-          />
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4 flex-1">
+          <div className="w-1/2">
+            <SearchBar
+              value={searchQuery}
+              onChange={onSearchChange}
+              placeholder="Search clients by name..."
+            />
+          </div>
+          <div className="w-1/2">
+            <SearchBar
+              value={parentSearchQuery}
+              onChange={onParentSearchChange}
+              placeholder="Filter by parent client..."
+            />
+          </div>
+          {parentSearchQuery && (
+            <button 
+              onClick={() => onParentSearchChange('')}
+              className="text-sm text-blue-500 hover:text-blue-700"
+            >
+              Clear parent filter
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Items per page:</span>
@@ -70,23 +87,6 @@ export const ClientSearch: React.FC<ClientSearchProps> = ({
             </SelectContent>
           </Select>
         </div>
-      </div>
-      <div className="flex items-center gap-4">
-        <div className="w-1/3">
-          <SearchBar
-            value={parentSearchQuery}
-            onChange={onParentSearchChange}
-            placeholder="Filter by parent client..."
-          />
-        </div>
-        {parentSearchQuery && (
-          <button 
-            onClick={() => onParentSearchChange('')}
-            className="text-sm text-blue-500 hover:text-blue-700"
-          >
-            Clear parent filter
-          </button>
-        )}
       </div>
     </div>
   );
