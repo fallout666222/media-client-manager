@@ -39,6 +39,8 @@ export function PlanningVersionBasicFields({
                 id="version-name"
                 placeholder="e.g. Plan 2024 v1" 
                 {...field} 
+                value={field.value || ""}
+                onChange={(e) => field.onChange(e.target.value)}
               />
             </FormControl>
             <FormMessage />
@@ -52,24 +54,22 @@ export function PlanningVersionBasicFields({
         render={({ field }) => (
           <FormItem>
             <FormLabel htmlFor="version-year">Year</FormLabel>
-            <FormControl>
-              <Select 
-                onValueChange={field.onChange} 
-                value={field.value || ""}
-                defaultValue={field.value || ""}
-              >
-                <SelectTrigger id="version-year" className="w-full">
-                  <SelectValue placeholder="Select a year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableYears.map(year => (
-                    <SelectItem key={year} value={year}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FormControl>
+            <Select 
+              onValueChange={field.onChange} 
+              value={field.value || ""}
+              defaultValue={field.value || ""}
+            >
+              <SelectTrigger id="version-year" className="w-full">
+                <SelectValue placeholder="Select a year" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableYears.map(year => (
+                  <SelectItem key={year} value={year}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <FormMessage />
           </FormItem>
         )}

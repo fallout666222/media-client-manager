@@ -35,19 +35,22 @@ export function PlanningVersionForm({
 }: PlanningVersionFormProps) {
   const { toast } = useToast();
   
-  const defaultValues: FormValues = initialValues || {
-    name: "",
-    year: "",
-    q1_locked: false,
-    q2_locked: false,
-    q3_locked: false,
-    q4_locked: false,
+  const defaultValues: FormValues = {
+    name: initialValues?.name || "",
+    year: initialValues?.year || "",
+    q1_locked: initialValues?.q1_locked || false,
+    q2_locked: initialValues?.q2_locked || false,
+    q3_locked: initialValues?.q3_locked || false,
+    q4_locked: initialValues?.q4_locked || false,
   };
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues,
   });
+
+  console.log("Form values:", form.getValues());
+  console.log("Form state:", form.formState);
 
   // Reset form when isSubmitting changes from true to false (submission completed)
   useEffect(() => {
@@ -57,10 +60,12 @@ export function PlanningVersionForm({
   }, [isSubmitting, form, initialValues, defaultValues]);
 
   const handleSubmit = async (values: FormValues) => {
+    console.log("Submitting form with values:", values);
     try {
       await onSubmit(values);
       // Form will be reset in the useEffect when isSubmitting changes
     } catch (error) {
+      console.error("Form submission error:", error);
       toast({
         title: "Error",
         description: "Failed to save the planning version",

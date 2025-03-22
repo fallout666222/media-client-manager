@@ -25,13 +25,13 @@ export function QuarterLockCheckboxes({ control }: QuarterLockCheckboxesProps) {
           name={quarter.name as any}
           render={({ field }) => (
             <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                  id={quarter.name}
-                />
-              </FormControl>
+              <Checkbox
+                checked={!!field.value}
+                onCheckedChange={(checked) => {
+                  field.onChange(checked);
+                }}
+                id={quarter.name}
+              />
               <div className="space-y-1 leading-none">
                 <FormLabel htmlFor={quarter.name}>{quarter.label}</FormLabel>
               </div>
