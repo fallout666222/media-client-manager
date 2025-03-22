@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -63,17 +63,12 @@ export function PlanningVersionForm({
     defaultValues,
   });
 
-  // Reset form when isSubmitting changes from true to false (submission completed)
-  useEffect(() => {
-    if (!isSubmitting && !initialValues) {
-      form.reset(defaultValues);
-    }
-  }, [isSubmitting, form, initialValues, defaultValues]);
-
   const handleSubmit = async (values: FormValues) => {
     try {
       await onSubmit(values);
-      // Form will be reset in the useEffect when isSubmitting changes
+      if (!initialValues) {
+        form.reset(defaultValues);
+      }
     } catch (error) {
       toast({
         title: "Error",
@@ -108,7 +103,6 @@ export function PlanningVersionForm({
               <FormLabel>Year</FormLabel>
               <Select 
                 onValueChange={field.onChange} 
-                value={field.value}
                 defaultValue={field.value}
               >
                 <FormControl>
