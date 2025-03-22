@@ -93,7 +93,12 @@ export function PlanningVersionForm({
             <FormItem>
               <FormLabel>Version Name</FormLabel>
               <FormControl>
-                <Input placeholder="e.g. Plan 2024 v1" {...field} />
+                <Input 
+                  placeholder="e.g. Plan 2024 v1" 
+                  {...field} 
+                  onChange={(e) => field.onChange(e)}
+                  value={field.value}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -108,11 +113,11 @@ export function PlanningVersionForm({
               <FormLabel>Year</FormLabel>
               <Select 
                 onValueChange={field.onChange} 
-                value={field.value}
-                defaultValue={field.value}
+                value={field.value || ""}
+                defaultValue={field.value || ""}
               >
                 <FormControl>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select a year" />
                   </SelectTrigger>
                 </FormControl>
@@ -138,11 +143,12 @@ export function PlanningVersionForm({
                 <FormControl>
                   <Checkbox
                     checked={field.value}
-                    onCheckedChange={field.onChange}
+                    onCheckedChange={(checked) => field.onChange(checked)}
+                    id="q1_locked"
                   />
                 </FormControl>
                 <div className="space-y-1 leading-none">
-                  <FormLabel>Lock Q1</FormLabel>
+                  <FormLabel htmlFor="q1_locked">Lock Q1</FormLabel>
                 </div>
               </FormItem>
             )}
@@ -156,11 +162,12 @@ export function PlanningVersionForm({
                 <FormControl>
                   <Checkbox
                     checked={field.value}
-                    onCheckedChange={field.onChange}
+                    onCheckedChange={(checked) => field.onChange(checked)}
+                    id="q2_locked"
                   />
                 </FormControl>
                 <div className="space-y-1 leading-none">
-                  <FormLabel>Lock Q2</FormLabel>
+                  <FormLabel htmlFor="q2_locked">Lock Q2</FormLabel>
                 </div>
               </FormItem>
             )}
@@ -174,11 +181,12 @@ export function PlanningVersionForm({
                 <FormControl>
                   <Checkbox
                     checked={field.value}
-                    onCheckedChange={field.onChange}
+                    onCheckedChange={(checked) => field.onChange(checked)}
+                    id="q3_locked"
                   />
                 </FormControl>
                 <div className="space-y-1 leading-none">
-                  <FormLabel>Lock Q3</FormLabel>
+                  <FormLabel htmlFor="q3_locked">Lock Q3</FormLabel>
                 </div>
               </FormItem>
             )}
@@ -192,11 +200,12 @@ export function PlanningVersionForm({
                 <FormControl>
                   <Checkbox
                     checked={field.value}
-                    onCheckedChange={field.onChange}
+                    onCheckedChange={(checked) => field.onChange(checked)}
+                    id="q4_locked"
                   />
                 </FormControl>
                 <div className="space-y-1 leading-none">
-                  <FormLabel>Lock Q4</FormLabel>
+                  <FormLabel htmlFor="q4_locked">Lock Q4</FormLabel>
                 </div>
               </FormItem>
             )}
