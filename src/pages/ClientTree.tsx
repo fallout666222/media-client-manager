@@ -10,16 +10,6 @@ import { Pagination } from '@/components/ClientTree/Pagination';
 import { ClientSearch } from '@/components/ClientTree/ClientSearch';
 import { ITEMS_PER_PAGE_OPTIONS, DEFAULT_SYSTEM_CLIENTS } from '@/components/ClientTree/constants';
 import { Client } from '@/types/timesheet';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 interface SortConfig {
   key: 'name' | 'parentName' | 'hidden';
@@ -32,8 +22,6 @@ const ClientTree: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'asc' });
-  const [clientToDelete, setClientToDelete] = useState<string | null>(null);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const { clients, isLoading } = useClients();
 
   // Apply filters and sorting
@@ -110,17 +98,6 @@ const ClientTree: React.FC = () => {
     setSortConfig(config);
   };
 
-  const openDeleteDialog = (clientId: string) => {
-    setClientToDelete(clientId);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const handleDeleteConfirm = () => {
-    // Close dialog and pass the clientId to the ClientsTable delete function
-    setIsDeleteDialogOpen(false);
-    // We don't call any delete function here, as the actual deletion is handled by the ClientsTable component
-  };
-
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, parentSearchQuery]);
@@ -160,7 +137,6 @@ const ClientTree: React.FC = () => {
           paginatedClients={paginatedClients}
           onSort={handleSort}
           sortConfig={sortConfig}
-          onDeleteClick={openDeleteDialog}
         />
 
         <Pagination 
@@ -172,21 +148,6 @@ const ClientTree: React.FC = () => {
           itemsPerPage={itemsPerPage}
         />
       </div>
-
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this client? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setClientToDelete(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };
