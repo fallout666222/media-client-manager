@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -28,13 +27,15 @@ interface ClientsTableProps {
   paginatedClients: Client[];
   onSort: (config: SortConfig) => void;
   sortConfig: SortConfig | null;
+  onDeleteClick: (clientId: string) => void;
 }
 
 export const ClientsTable: React.FC<ClientsTableProps> = ({ 
   clients, 
   paginatedClients,
   onSort,
-  sortConfig 
+  sortConfig,
+  onDeleteClick
 }) => {
   const updateClientMutation = useUpdateClient();
   const deleteClientMutation = useDeleteClient();
@@ -219,7 +220,7 @@ export const ClientsTable: React.FC<ClientsTableProps> = ({
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => handleDeleteClient(client.id)}
+                    onClick={() => onDeleteClick(client.id)}
                     disabled={deleteClientMutation.isPending}
                     className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
                   >

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +17,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -32,6 +41,8 @@ const CustomWeeks = () => {
   const [weeks, setWeeks] = useState<CustomWeek[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState<string>("all");
+  const [weekToDelete, setWeekToDelete] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -48,7 +59,6 @@ const CustomWeeks = () => {
       }
       
       if (data) {
-        // Transform data to match the CustomWeek interface
         const formattedWeeks = data.map(week => ({
           id: week.id,
           name: week.name,
@@ -71,7 +81,6 @@ const CustomWeeks = () => {
     }
   };
 
-  // Extract unique years from weeks
   const availableYears = useMemo(() => {
     if (weeks.length === 0) return [];
     
@@ -92,7 +101,7 @@ const CustomWeeks = () => {
       const startDateObj = parse(start, "yyyy-MM-dd", new Date());
       const endDateObj = parse(end, "yyyy-MM-dd", new Date());
       const days = differenceInDays(endDateObj, startDateObj) + 1;
-      return days * 8; // 8 hours per day by default
+      return days * 8;
     } catch {
       return 0;
     }
@@ -117,9 +126,20 @@ const CustomWeeks = () => {
     setHours(isNaN(value) ? 0 : value);
   };
 
+  const openDeleteDialog = (id: string) => {
+    setWeekToDelete(id);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (weekToDelete) {
+      handleDelete(weekToDelete);
+      setIsDeleteDialogOpen(false);
+      setWeekToDelete(null);
+    }
+  };
+
   const handleDelete = async (id: string) => {
-    // Note: For now, we're just removing from the UI
-    // A proper delete API would be needed in the database.ts file
     setWeeks(prev => prev.filter(week => week.id !== id));
     toast({
       title: "Success",
@@ -127,7 +147,6 @@ const CustomWeeks = () => {
     });
   };
 
-  // Check if a new week overlaps with existing weeks
   const checkForOverlaps = (start: string, end: string): boolean => {
     try {
       const newStartDate = parse(start, "yyyy-MM-dd", new Date());
@@ -137,11 +156,6 @@ const CustomWeeks = () => {
         const existingStartDate = parse(week.startDate, "yyyy-MM-dd", new Date());
         const existingEndDate = parse(week.endDate, "yyyy-MM-dd", new Date());
         
-        // Check if the new date range overlaps with an existing one
-        // Overlap occurs if: 
-        // - New start date is within existing range, OR
-        // - New end date is within existing range, OR
-        // - New range fully contains the existing range
         return (
           isWithinInterval(newStartDate, { start: existingStartDate, end: existingEndDate }) ||
           isWithinInterval(newEndDate, { start: existingStartDate, end: existingEndDate }) ||
@@ -187,7 +201,6 @@ const CustomWeeks = () => {
       return;
     }
     
-    // Check for date overlaps
     if (checkForOverlaps(startDate, endDate)) {
       toast({
         title: "Error",
@@ -239,7 +252,6 @@ const CustomWeeks = () => {
     }
   };
 
-  // Filter weeks by selected year
   const filteredWeeks = useMemo(() => {
     if (selectedYear === "all") {
       return weeks;
@@ -381,7 +393,7 @@ const CustomWeeks = () => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleDelete(week.id)}
+                          onClick={() => openDeleteDialog(week.id)}
                           className="text-destructive hover:text-destructive/90"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -395,6 +407,21 @@ const CustomWeeks = () => {
           </>
         )}
       </div>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this custom week? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setWeekToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
