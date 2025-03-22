@@ -25,7 +25,15 @@ import { useEffect, useState } from "react";
 import PlanningManagement from "@/pages/PlanningManagement";
 
 export const AppRoutes = () => {
-  const { user, isUserHead } = useApp();
+  const { 
+    user, 
+    isUserHead, 
+    users, 
+    clients, 
+    handleUpdateUserManager, 
+    handleUpdateUserDepartment, 
+    handleToggleUserHidden 
+  } = useApp();
   const location = useLocation();
   const navigate = useNavigate();
   const [previousLocation, setPreviousLocation] = useState<string | null>(null);
@@ -42,12 +50,40 @@ export const AppRoutes = () => {
     }
   }, [user, location]);
 
+  // If user is not available, only render auth routes
+  if (!user) {
+    return (
+      <Routes>
+        <Route path="/auth/vk" element={<AuthCallbacks />} />
+        <Route path="/auth/google" element={<AuthCallbacks />} />
+        <Route path="*" element={<Navigate to="/auth/vk" />} />
+      </Routes>
+    );
+  }
+
   return (
     <Routes>
       <Route path="/" element={<Index />} />
-      <Route path="/timesheet" element={<TimeSheet />} />
-      <Route path="/timesheet/:weekId" element={<TimeSheet />} />
-      <Route path="/settings" element={<Settings />} />
+      <Route path="/timesheet" element={
+        <TimeSheet 
+          userRole={user.role || 'user'} 
+          firstWeek={user.firstWeek || ''} 
+          currentUser={user} 
+          users={users} 
+          clients={clients} 
+        />
+      } />
+      <Route path="/timesheet/:weekId" element={
+        <TimeSheet 
+          userRole={user.role || 'user'} 
+          firstWeek={user.firstWeek || ''} 
+          currentUser={user} 
+          users={users} 
+          clients={clients} 
+          initialWeekId={location.pathname.split('/').pop() || null}
+        />
+      } />
+      <Route path="/settings" element={<Settings currentUser={user} />} />
       <Route path="/planning" element={<Planning />} />
       <Route path="/planning-management" element={user?.type === 'Administrator' ? <PlanningManagement /> : <Navigate to="/" />} />
       <Route path="/custom-weeks" element={user?.type === 'Administrator' ? <CustomWeeks /> : <Navigate to="/" />} />
@@ -55,10 +91,16 @@ export const AppRoutes = () => {
       <Route path="/media-type-management" element={user?.type === 'Administrator' ? <MediaTypeManagement /> : <Navigate to="/" />} />
       <Route path="/user-first-week-management" element={user?.type === 'Administrator' ? <UserFirstWeekManagement /> : <Navigate to="/" />} />
       <Route path="/user-week-percentage" element={user?.type === 'Administrator' ? <UserWeekPercentage /> : <Navigate to="/" />} />
-      <Route path="/user-manager-assignment" element={user?.type === 'Administrator' ? <UserManagerAssignment /> : <Navigate to="/" />} />
-      <Route path="/user-impersonation" element={user?.type === 'Administrator' ? <UserImpersonation /> : <Navigate to="/" />} />
-      <Route path="/user-head-view" element={isUserHead ? <UserHeadView /> : <Navigate to="/" />} />
-      <Route path="/manager-view" element={<ManagerView />} />
+      <Route path="/user-manager-assignment" element={user?.type === 'Administrator' ? 
+        <UserManagerAssignment 
+          onUpdateUserManager={handleUpdateUserManager} 
+          onUpdateUserDepartment={handleUpdateUserDepartment} 
+          onToggleUserHidden={handleToggleUserHidden}
+        /> : <Navigate to="/" />} 
+      />
+      <Route path="/user-impersonation" element={user?.type === 'Administrator' ? <UserImpersonation clients={clients} /> : <Navigate to="/" />} />
+      <Route path="/user-head-view" element={isUserHead ? <UserHeadView currentUser={user} clients={clients} /> : <Navigate to="/" />} />
+      <Route path="/manager-view" element={<ManagerView currentUser={user} users={users} clients={clients} />} />
       <Route path="/auth/vk" element={<AuthCallbacks />} />
       <Route path="/auth/google" element={<AuthCallbacks />} />
       <Route path="*" element={<Navigate to="/" />} />
