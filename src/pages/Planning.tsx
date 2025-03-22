@@ -193,6 +193,7 @@ const Planning = () => {
                       isFiscalYearTotal={column.isFiscalYear}
                       onChange={column.isQuarter || column.isFiscalYear ? undefined : 
                         (value) => handleHoursChange(clientHour.client.id, column.id, value)}
+                      isLocked={column.isQuarter || column.isFiscalYear ? false : isMonthLocked(column.id)}
                     />
                   </TableCell>
                 ))}

@@ -6,13 +6,15 @@ interface HoursInputProps {
   value: number;
   isQuarterTotal?: boolean;
   isFiscalYearTotal?: boolean;
+  isLocked?: boolean;
   onChange?: (value: number) => void;
 }
 
 export const HoursInput = ({ 
   value, 
   isQuarterTotal = false, 
-  isFiscalYearTotal = false, 
+  isFiscalYearTotal = false,
+  isLocked = false, 
   onChange 
 }: HoursInputProps) => {
   const [inputValue, setInputValue] = useState(value === 0 ? '' : value.toString());
@@ -41,7 +43,7 @@ export const HoursInput = ({
     }
     
     // Only call onChange if this is an editable field
-    if (!isQuarterTotal && !isFiscalYearTotal && onChange) {
+    if (!isQuarterTotal && !isFiscalYearTotal && !isLocked && onChange) {
       onChange(numValue);
     }
   };
@@ -54,9 +56,10 @@ export const HoursInput = ({
       onBlur={handleBlur}
       className={`text-center h-8 ${
         isQuarterTotal ? 'bg-blue-50 font-medium' : 
-        isFiscalYearTotal ? 'bg-green-50 font-bold' : ''
+        isFiscalYearTotal ? 'bg-green-50 font-bold' : 
+        isLocked ? 'bg-gray-100' : ''
       }`}
-      readOnly={isQuarterTotal || isFiscalYearTotal}
+      readOnly={isQuarterTotal || isFiscalYearTotal || isLocked}
     />
   );
 };
