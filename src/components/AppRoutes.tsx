@@ -1,4 +1,3 @@
-
 import { Routes, Route, Navigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -19,7 +18,7 @@ import Planning from "@/pages/Planning";
 import { AdfsCallback } from "@/pages/AuthCallbacks";
 import { useApp } from "@/contexts/AppContext";
 
-export function AppRoutes() {
+const AppRoutes = () => {
   const { 
     user, 
     loading, 
@@ -81,7 +80,18 @@ export function AppRoutes() {
 
       <Route 
         path="/planning" 
-        element={user ? <Planning currentUser={user} clients={clients} /> : <Navigate to="/login" replace />} 
+        element={
+          <Planning 
+            currentUser={currentUser} 
+            clients={clients} 
+          />
+        } 
+      />
+      <Route 
+        path="/planning-management" 
+        element={
+          <PlanningManagement />
+        } 
       />
 
       <Route 
@@ -183,4 +193,6 @@ export function AppRoutes() {
       />
     </Routes>
   );
-}
+};
+
+export default AppRoutes;

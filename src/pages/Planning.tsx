@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Settings } from 'lucide-react';
 import { 
   Table, 
   TableBody, 
@@ -37,12 +37,9 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
     quarters
   } = usePlanningData({ currentUser });
   
-  // Filter clients to show according to visibility rules and existing data
   const [filteredClients, setFilteredClients] = useState(planningData);
   
   useEffect(() => {
-    // If a client has hours recorded for any month, include it
-    // Otherwise, only include it if it's in the user's visible clients
     const filtered = planningData.filter(client => {
       const hasHours = Object.values(client.months).some(hours => hours > 0);
       const isVisible = visibleClients.includes(client.clientName);
@@ -53,10 +50,8 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
     setFilteredClients(filtered);
   }, [planningData, visibleClients]);
   
-  // Find selected version
   const selectedVersion = versions.find(v => v.id === selectedVersionId);
   
-  // Determine which quarters are locked
   const isQuarterLocked = (quarter: string) => {
     if (!selectedVersion) return false;
     
@@ -69,7 +64,6 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
     }
   };
   
-  // Determine if a specific month is locked
   const isMonthLocked = (month: string) => {
     const quarter = QUARTERS.find(q => q.months.includes(month as any));
     if (!quarter) return false;
@@ -81,12 +75,22 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
     <div className="container mx-auto p-4 pt-16">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Planning</h1>
-        <Link to="/">
-          <Button variant="outline" size="sm" className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Dashboard
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          {currentUser.type === 'admin' && (
+            <Link to="/planning-management">
+              <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                Manage Versions
+              </Button>
+            </Link>
+          )}
+          <Link to="/">
+            <Button variant="outline" size="sm" className="flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Dashboard
+            </Button>
+          </Link>
+        </div>
       </div>
       
       <div className="mb-6">

@@ -24,3 +24,6 @@ export * from './visibleEntity';
 
 // Planning Hours operations
 export * from './planningHours';
+
+// Planning Versions operations
+export * from './planningVersions';
