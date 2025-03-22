@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { getAllPlanningVersions, createPlanningVersion, updatePlanningVersion, deletePlanningVersion } from '@/integrations/supabase/database';
+import { getAllPlanningVersions, createPlanningVersion, updatePlanningVersion, deletePlanningVersion, fillActualHours } from '@/integrations/supabase/database';
 import * as db from '@/integrations/supabase/database';
 import { PlanningVersionForm } from '@/components/Planning/PlanningVersionForm';
 
@@ -27,6 +27,7 @@ const PlanningManagement = () => {
   const [customWeeks, setCustomWeeks] = useState<{id: string, name: string}[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -163,6 +164,29 @@ const PlanningManagement = () => {
     }
   };
 
+  const handleFillActualHours = async (versionId: string, year: string) => {
+    try {
+      setIsProcessing(true);
+      const { error } = await fillActualHours(versionId, year);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Actual hours have been filled successfully"
+      });
+    } catch (error) {
+      console.error('Error filling actual hours:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fill actual hours",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return (
     <div className="container mx-auto p-4 pt-16">
       <div className="flex items-center justify-between mb-6">
@@ -248,7 +272,15 @@ const PlanningManagement = () => {
                         }}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="space-x-2">
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        onClick={() => handleFillActualHours(version.id, version.year)}
+                        disabled={isProcessing}
+                      >
+                        {isProcessing ? "Processing..." : "Fill Actual Hours"}
+                      </Button>
                       <Button 
                         variant="destructive" 
                         size="sm" 
