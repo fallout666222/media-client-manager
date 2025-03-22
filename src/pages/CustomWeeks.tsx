@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,8 +17,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft } from "lucide-react";
+import { Trash2, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { CustomWeek } from "@/types/timesheet";
 import { getCustomWeeks, createCustomWeek } from "@/integrations/supabase/database";
@@ -32,6 +41,8 @@ const CustomWeeks = () => {
   const [weeks, setWeeks] = useState<CustomWeek[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState<string>("all");
+  const [weekToDelete, setWeekToDelete] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -113,6 +124,27 @@ const CustomWeeks = () => {
   const handleHoursChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
     setHours(isNaN(value) ? 0 : value);
+  };
+
+  const openDeleteDialog = (id: string) => {
+    setWeekToDelete(id);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (weekToDelete) {
+      handleDelete(weekToDelete);
+      setIsDeleteDialogOpen(false);
+      setWeekToDelete(null);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setWeeks(prev => prev.filter(week => week.id !== id));
+    toast({
+      title: "Success",
+      description: "Custom week deleted from UI (database deletion not implemented yet)",
+    });
   };
 
   const checkForOverlaps = (start: string, end: string): boolean => {
@@ -358,12 +390,13 @@ const CustomWeeks = () => {
                   <TableHead>Start Date</TableHead>
                   <TableHead>End Date</TableHead>
                   <TableHead>Hours</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredWeeks.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center">
+                    <TableCell colSpan={5} className="text-center">
                       {selectedYear !== "all" 
                         ? `No custom weeks found for year ${selectedYear}` 
                         : "No custom weeks found"}
@@ -380,6 +413,16 @@ const CustomWeeks = () => {
                         {format(parse(week.endDate, "yyyy-MM-dd", new Date()), "MMM dd, yyyy")}
                       </TableCell>
                       <TableCell>{week.hours}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openDeleteDialog(week.id)}
+                          className="text-destructive hover:text-destructive/90"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -388,6 +431,21 @@ const CustomWeeks = () => {
           </>
         )}
       </div>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this custom week? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setWeekToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
