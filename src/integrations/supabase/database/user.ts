@@ -30,7 +30,6 @@ export const updateUser = async (id: string, user: any) => {
 
 export const authenticateUser = async (login: string, password: string) => {
   try {
-    console.log(`Authenticating user: ${login}`);
     return await supabase.from('users').select('*').eq('login', login).eq('password', password).single();
   } catch (error) {
     console.error('Authentication error:', error);
@@ -63,12 +62,10 @@ export const getUserFirstUnconfirmedWeek = async (userId: string) => {
     .or('name.eq.unconfirmed,name.eq.needs-revision');
   
   if (!statusNames || statusNames.length === 0) {
-    console.log('No unconfirmed or needs-revision status names found');
     return null;
   }
   
   const statusIds = statusNames.map(status => status.id);
-  console.log('Status IDs to search for:', statusIds);
   
   // Find the first week with these statuses
   const { data: weekStatuses, error } = await supabase
@@ -89,25 +86,9 @@ export const getUserFirstUnconfirmedWeek = async (userId: string) => {
     return null;
   }
   
-  console.log('Found week statuses:', weekStatuses);
-  
   if (weekStatuses && weekStatuses.length > 0 && weekStatuses[0].week) {
     return weekStatuses[0].week;
   }
   
-  console.log('No weeks with unconfirmed/needs-revision status found for user:', userId);
   return null;
-};
-
-// User Manager relations
-export const getUserManagers = async () => {
-  return await supabase.from('user_managers').select(`
-    *,
-    user:users!user_id(id, name),
-    manager:users!manager_id(id, name)
-  `);
-};
-
-export const assignManagerToUser = async (userId: string, managerId: string) => {
-  return await supabase.from('user_managers').insert({ user_id: userId, manager_id: managerId }).select().single();
 };
