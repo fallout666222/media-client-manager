@@ -1,10 +1,33 @@
-export * from './clients';
-export * from './mediaTypes';
-export * from './timesheet';
-export * from './users';
-export * from './customWeeks';
 
-// Make sure these exports are included
-export * from './planningHours';
-export * from './planningVersions';
+// Export all database functions from entity modules
+
+// Client operations
+export * from './client';
+
+// User operations
+export * from './user';
+
+// Department operations
+export * from './department';
+
+// Media Type operations
+export * from './mediaType';
+
+// Week operations
+export * from './week';
+
+// Week Hours operations
+export * from './weekHours';
+
+// Visible Entity operations (clients and media types visibility)
 export * from './visibleEntity';
+
+// Planning Hours operations
+export * from './planningHours';
+
+// Planning Versions operations
+export * from './planningVersions';
+
+// Make sure these additional exports are included
+export * from './customWeeks';
+export * from './timesheet';
