@@ -1,7 +1,8 @@
 
-import React from 'react';
+import React, { useState } from 'react';
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Lock, ChevronUp, ChevronDown } from "lucide-react";
+import { X, Lock, ChevronUp, ChevronDown } from "lucide-react";
 import { Client } from '@/types/timesheet';
 import { ClientSelector } from "@/components/ClientSelector";
 import {
@@ -13,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useUpdateClient, useCheckCircularReference } from '@/hooks/useClientOperations';
+import { useUpdateClient, useDeleteClient, useCheckCircularReference } from '@/hooks/useClientOperations';
 import { useToast } from "@/hooks/use-toast";
 import { DEFAULT_SYSTEM_CLIENTS } from './constants';
 
@@ -33,9 +34,10 @@ export const ClientsTable: React.FC<ClientsTableProps> = ({
   clients, 
   paginatedClients,
   onSort,
-  sortConfig
+  sortConfig 
 }) => {
   const updateClientMutation = useUpdateClient();
+  const deleteClientMutation = useDeleteClient();
   const wouldCreateCircularReference = useCheckCircularReference();
   const { toast } = useToast();
   
@@ -113,6 +115,30 @@ export const ClientsTable: React.FC<ClientsTableProps> = ({
     });
   };
 
+  const handleDeleteClient = (id: string) => {
+    const client = clients.find(c => c.id === id);
+    
+    if (client && DEFAULT_SYSTEM_CLIENTS.includes(client.name)) {
+      toast({
+        title: "Cannot Delete",
+        description: "System default clients cannot be deleted",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (clients.some(c => c.parentId === id)) {
+      toast({
+        title: "Cannot Delete",
+        description: "This client has child clients. Please reassign or delete them first.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    deleteClientMutation.mutate(id);
+  };
+
   return (
     <Table>
       <TableCaption>Manage your client hierarchy and visibility</TableCaption>
@@ -136,6 +162,7 @@ export const ClientsTable: React.FC<ClientsTableProps> = ({
           >
             Hide from Users {renderSortIcon('hidden')}
           </TableHead>
+          <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -177,6 +204,28 @@ export const ClientsTable: React.FC<ClientsTableProps> = ({
                     Hide
                   </label>
                 </div>
+              </TableCell>
+              <TableCell className="text-right">
+                {isDefault ? (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    disabled
+                    className="text-muted-foreground"
+                  >
+                    <Lock className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleDeleteClient(client.id)}
+                    disabled={deleteClientMutation.isPending}
+                    className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
               </TableCell>
             </TableRow>
           );
