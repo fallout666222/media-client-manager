@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/table";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Settings } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { MonthData } from '@/types/planning';
 
 const Planning = () => {
@@ -134,20 +134,12 @@ const Planning = () => {
     <div className="container mx-auto p-4 pt-16">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Planning Management</h1>
-        <div className="flex space-x-2">
-          <Link to="/planning-admin">
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Admin Settings
-            </Button>
-          </Link>
-          <Link to="/">
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Dashboard
-            </Button>
-          </Link>
-        </div>
+        <Link to="/">
+          <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Button>
+        </Link>
       </div>
 
       <div className="mb-6">
@@ -201,6 +193,7 @@ const Planning = () => {
                       isFiscalYearTotal={column.isFiscalYear}
                       onChange={column.isQuarter || column.isFiscalYear ? undefined : 
                         (value) => handleHoursChange(clientHour.client.id, column.id, value)}
+                      isLocked={column.isQuarter || column.isFiscalYear ? false : isMonthLocked(column.id)}
                     />
                   </TableCell>
                 ))}
