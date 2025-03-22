@@ -1,3 +1,4 @@
+
 import {
   Navigate,
   Route,
@@ -49,14 +50,14 @@ export const AppRoutes = () => {
       <Route path="/settings" element={<Settings />} />
       <Route path="/planning" element={<Planning />} />
       <Route path="/planning-management" element={user?.type === 'Administrator' ? <PlanningManagement /> : <Navigate to="/" />} />
-      <Route path="/custom-weeks" element={user?.type === 'Administrator' ? <CustomWeeks />} : <Navigate to="/" />} />
-      <Route path="/client-tree" element={user?.type === 'Administrator' ? <ClientTree />} : <Navigate to="/" />} />
-      <Route path="/media-type-management" element={user?.type === 'Administrator' ? <MediaTypeManagement />} : <Navigate to="/" />} />
-      <Route path="/user-first-week-management" element={user?.type === 'Administrator' ? <UserFirstWeekManagement />} : <Navigate to="/" />} />
-      <Route path="/user-week-percentage" element={user?.type === 'Administrator' ? <UserWeekPercentage />} : <Navigate to="/" />} />
-      <Route path="/user-manager-assignment" element={user?.type === 'Administrator' ? <UserManagerAssignment />} : <Navigate to="/" />} />
-      <Route path="/user-impersonation" element={user?.type === 'Administrator' ? <UserImpersonation />} : <Navigate to="/" />} />
-      <Route path="/user-head-view" element={isUserHead ? <UserHeadView />} : <Navigate to="/" />} />
+      <Route path="/custom-weeks" element={user?.type === 'Administrator' ? <CustomWeeks /> : <Navigate to="/" />} />
+      <Route path="/client-tree" element={user?.type === 'Administrator' ? <ClientTree /> : <Navigate to="/" />} />
+      <Route path="/media-type-management" element={user?.type === 'Administrator' ? <MediaTypeManagement /> : <Navigate to="/" />} />
+      <Route path="/user-first-week-management" element={user?.type === 'Administrator' ? <UserFirstWeekManagement /> : <Navigate to="/" />} />
+      <Route path="/user-week-percentage" element={user?.type === 'Administrator' ? <UserWeekPercentage /> : <Navigate to="/" />} />
+      <Route path="/user-manager-assignment" element={user?.type === 'Administrator' ? <UserManagerAssignment /> : <Navigate to="/" />} />
+      <Route path="/user-impersonation" element={user?.type === 'Administrator' ? <UserImpersonation /> : <Navigate to="/" />} />
+      <Route path="/user-head-view" element={isUserHead ? <UserHeadView /> : <Navigate to="/" />} />
       <Route path="/manager-view" element={<ManagerView />} />
       <Route path="/auth/vk" element={<AuthCallbacks />} />
       <Route path="/auth/google" element={<AuthCallbacks />} />
