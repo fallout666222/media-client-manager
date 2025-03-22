@@ -10,6 +10,16 @@ import { useToast } from "@/hooks/use-toast";
 import { getAllPlanningVersions, createPlanningVersion, updatePlanningVersion, deletePlanningVersion, fillActualHours } from '@/integrations/supabase/database';
 import * as db from '@/integrations/supabase/database';
 import { PlanningVersionForm } from '@/components/Planning/PlanningVersionForm';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface PlanningVersion {
   id: string;
@@ -28,6 +38,8 @@ const PlanningManagement = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [selectedVersion, setSelectedVersion] = useState<{id: string, year: string} | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -142,32 +154,12 @@ const PlanningManagement = () => {
     }
   };
 
-  const handleDeleteVersion = async (id: string) => {
-    try {
-      const { error } = await deletePlanningVersion(id);
-      
-      if (error) throw error;
-      
-      setPlanningVersions(prev => prev.filter(version => version.id !== id));
-      
-      toast({
-        title: "Success",
-        description: "Planning version deleted successfully"
-      });
-    } catch (error) {
-      console.error('Error deleting planning version:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete planning version",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleFillActualHours = async (versionId: string, year: string) => {
+  const handleFillActualHours = async () => {
+    if (!selectedVersion) return;
+    
     try {
       setIsProcessing(true);
-      const { error } = await fillActualHours(versionId, year);
+      const { error } = await fillActualHours(selectedVersion.id, selectedVersion.year);
       
       if (error) throw error;
       
@@ -184,7 +176,17 @@ const PlanningManagement = () => {
       });
     } finally {
       setIsProcessing(false);
+      setIsConfirmDialogOpen(false);
+      setSelectedVersion(null);
     }
+  };
+
+  const openConfirmDialog = (version: PlanningVersion) => {
+    setSelectedVersion({
+      id: version.id,
+      year: version.year
+    });
+    setIsConfirmDialogOpen(true);
   };
 
   return (
@@ -272,21 +274,14 @@ const PlanningManagement = () => {
                         }}
                       />
                     </TableCell>
-                    <TableCell className="space-x-2">
+                    <TableCell>
                       <Button 
                         variant="secondary" 
                         size="sm" 
-                        onClick={() => handleFillActualHours(version.id, version.year)}
+                        onClick={() => openConfirmDialog(version)}
                         disabled={isProcessing}
                       >
-                        {isProcessing ? "Processing..." : "Fill Actual Hours"}
-                      </Button>
-                      <Button 
-                        variant="destructive" 
-                        size="sm" 
-                        onClick={() => handleDeleteVersion(version.id)}
-                      >
-                        Delete
+                        Fill Actual Hours
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -296,6 +291,24 @@ const PlanningManagement = () => {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Fill Actual Hours</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will replace planning hours with actual hours from timesheets for all locked quarters.
+              Are you sure you want to continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSelectedVersion(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleFillActualHours} disabled={isProcessing}>
+              {isProcessing ? "Processing..." : "Continue"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
