@@ -118,30 +118,13 @@ export const useTimeSheetStatusChanges = ({
     return false;
   };
 
-  const getCurrentCustomWeek = () => {
-    if (!customWeeks || customWeeks.length === 0) return null;
-    
-    const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
-    const currentWeek = customWeeks.find(week => week.period_from === currentWeekKey);
-    
-    if (currentWeek) return currentWeek;
-    
-    if (viewedUser.id) {
-      const savedWeekId = localStorage.getItem(`selectedWeek_${viewedUser.id}`);
-      if (savedWeekId) {
-        const savedWeek = customWeeks.find(week => week.id === savedWeekId);
-        if (savedWeek) return savedWeek;
-      }
-    }
-    
-    return null;
-  };
-
   const handleSubmitForReview = async () => {
-    const currentCustomWeek = getCurrentCustomWeek();
+    const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
+    const currentCustomWeek = customWeeks.find(week => 
+      format(new Date(week.period_from), 'yyyy-MM-dd') === currentWeekKey
+    );
     
     if (!currentCustomWeek) {
-      console.error("Could not find current week data. Current date:", currentDate);
       toast({
         title: "Error",
         description: "Could not find current week data",
@@ -189,7 +172,6 @@ export const useTimeSheetStatusChanges = ({
       if (underReviewStatus && viewedUser.id) {
         await updateWeekStatus(viewedUser.id, currentCustomWeek.id, underReviewStatus.id);
         
-        const currentWeekKey = currentCustomWeek.period_from;
         setWeekStatuses(prev => ({
           ...prev,
           [currentWeekKey]: 'under-review' as TimeSheetStatus
@@ -217,10 +199,12 @@ export const useTimeSheetStatusChanges = ({
   };
 
   const handleApprove = async () => {
-    const currentCustomWeek = getCurrentCustomWeek();
+    const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
+    const currentCustomWeek = customWeeks.find(week => 
+      format(new Date(week.period_from), 'yyyy-MM-dd') === currentWeekKey
+    );
     
     if (!currentCustomWeek) {
-      console.error("Could not find current week data (approve). Current date:", currentDate);
       toast({
         title: "Error",
         description: "Could not find current week data",
@@ -250,7 +234,6 @@ export const useTimeSheetStatusChanges = ({
       if (acceptedStatus && viewedUser.id) {
         await updateWeekStatus(viewedUser.id, currentCustomWeek.id, acceptedStatus.id);
         
-        const currentWeekKey = currentCustomWeek.period_from;
         setWeekStatuses(prev => ({
           ...prev,
           [currentWeekKey]: 'accepted' as TimeSheetStatus
@@ -276,10 +259,12 @@ export const useTimeSheetStatusChanges = ({
   };
 
   const handleReject = async () => {
-    const currentCustomWeek = getCurrentCustomWeek();
+    const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
+    const currentCustomWeek = customWeeks.find(week => 
+      format(new Date(week.period_from), 'yyyy-MM-dd') === currentWeekKey
+    );
     
     if (!currentCustomWeek) {
-      console.error("Could not find current week data (reject). Current date:", currentDate);
       toast({
         title: "Error",
         description: "Could not find current week data",
@@ -297,7 +282,6 @@ export const useTimeSheetStatusChanges = ({
       if (needsRevisionStatus && viewedUser.id) {
         await updateWeekStatus(viewedUser.id, currentCustomWeek.id, needsRevisionStatus.id);
         
-        const currentWeekKey = currentCustomWeek.period_from;
         setWeekStatuses(prev => ({
           ...prev,
           [currentWeekKey]: 'needs-revision' as TimeSheetStatus
@@ -325,10 +309,12 @@ export const useTimeSheetStatusChanges = ({
   };
 
   const handleReturnToUnconfirmed = async () => {
-    const currentCustomWeek = getCurrentCustomWeek();
+    const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
+    const currentCustomWeek = customWeeks.find(week => 
+      format(new Date(week.period_from), 'yyyy-MM-dd') === currentWeekKey
+    );
     
     if (!currentCustomWeek) {
-      console.error("Could not find current week data (return to unconfirmed). Current date:", currentDate);
       toast({
         title: "Error",
         description: "Could not find current week data",
@@ -355,7 +341,6 @@ export const useTimeSheetStatusChanges = ({
       if (unconfirmedStatus && viewedUser.id) {
         await updateWeekStatus(viewedUser.id, currentCustomWeek.id, unconfirmedStatus.id);
         
-        const currentWeekKey = currentCustomWeek.period_from;
         setWeekStatuses(prev => ({
           ...prev,
           [currentWeekKey]: 'unconfirmed' as TimeSheetStatus
