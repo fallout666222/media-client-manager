@@ -18,6 +18,8 @@ import { Link } from 'react-router-dom';
 import Planning from './Planning';
 import { fetchUserVersionsForApproval } from '@/pages/api/userVersionsForApproval';
 import { fetchStatusId } from '@/pages/api/statusId';
+import { TeamMemberSelector } from '@/components/TeamMemberSelector';
+import TimeSheet from './TimeSheet';
 
 interface UserHeadViewProps {
   currentUser: User;
@@ -29,6 +31,8 @@ export default function UserHeadView({ currentUser, clients }: UserHeadViewProps
   const { toast } = useToast();
   const [userVersionsForApproval, setUserVersionsForApproval] = useState<any[]>([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [teamMembers, setTeamMembers] = useState<User[]>([]);
 
   useEffect(() => {
     const fetchVersions = async () => {
@@ -40,6 +44,18 @@ export default function UserHeadView({ currentUser, clients }: UserHeadViewProps
           
           if (result.data) {
             setUserVersionsForApproval(result.data);
+            
+            // Extract unique team members from the versions data
+            if (result.data.length > 0) {
+              const uniqueUsers = Array.from(
+                new Map(result.data.map(item => [item.user?.id, { 
+                  id: item.user?.id, 
+                  name: item.user?.name,
+                  username: item.user?.name
+                }])).values()
+              );
+              setTeamMembers(uniqueUsers);
+            }
           }
         } catch (error) {
           console.error('Error fetching versions for approval:', error);
@@ -110,6 +126,10 @@ export default function UserHeadView({ currentUser, clients }: UserHeadViewProps
     }
   };
 
+  const handleUserSelect = (user: User | null) => {
+    setSelectedUser(user);
+  };
+
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case 'unconfirmed':
@@ -150,8 +170,33 @@ export default function UserHeadView({ currentUser, clients }: UserHeadViewProps
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {/* Your existing timesheet approval content here */}
-                <div>Timesheet approval content goes here</div>
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium mb-2">Select Team Member:</h3>
+                  <TeamMemberSelector
+                    currentUser={currentUser}
+                    users={teamMembers}
+                    onUserSelect={handleUserSelect}
+                    selectedUser={selectedUser}
+                    placeholder="Search team members..."
+                  />
+                </div>
+
+                {selectedUser ? (
+                  <TimeSheet
+                    userRole="manager"
+                    firstWeek={selectedUser.first_week || ''}
+                    currentUser={currentUser}
+                    users={teamMembers}
+                    clients={clients}
+                    readOnly={false}
+                    impersonatedUser={selectedUser}
+                    isUserHead={true}
+                  />
+                ) : (
+                  <div className="text-center py-6 text-gray-500">
+                    Select a team member to view and approve their timesheet
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
