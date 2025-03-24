@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { TimeSheetStatus, User } from '@/types/timesheet';
 import { useToast } from '@/hooks/use-toast';
@@ -120,8 +119,22 @@ export const useTimeSheetStatusChanges = ({
   };
 
   const getCurrentCustomWeek = () => {
+    if (!customWeeks || customWeeks.length === 0) return null;
+    
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
-    return customWeeks.find(week => format(new Date(week.period_from), 'yyyy-MM-dd') === currentWeekKey);
+    const currentWeek = customWeeks.find(week => week.period_from === currentWeekKey);
+    
+    if (currentWeek) return currentWeek;
+    
+    if (viewedUser.id) {
+      const savedWeekId = localStorage.getItem(`selectedWeek_${viewedUser.id}`);
+      if (savedWeekId) {
+        const savedWeek = customWeeks.find(week => week.id === savedWeekId);
+        if (savedWeek) return savedWeek;
+      }
+    }
+    
+    return null;
   };
 
   const handleSubmitForReview = async () => {
