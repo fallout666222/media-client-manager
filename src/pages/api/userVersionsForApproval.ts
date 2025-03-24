@@ -38,8 +38,22 @@ export async function fetchUserVersionsForApproval(headId: string) {
 }
 
 export default async function handler(req: Request) {
+  if (req.method !== 'GET') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), { 
+      status: 405,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+  
   const url = new URL(req.url);
-  const headId = url.searchParams.get('headId') || '';
+  const headId = url.searchParams.get('headId');
+  
+  if (!headId) {
+    return new Response(JSON.stringify({ error: 'Head ID is required' }), { 
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
   
   const result = await fetchUserVersionsForApproval(headId);
   

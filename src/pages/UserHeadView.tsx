@@ -51,13 +51,18 @@ export default function UserHeadView({ currentUser, clients }: UserHeadViewProps
   const handleApprove = async (versionId: string, userId: string) => {
     try {
       // Get the 'accepted' status ID
-      const { data: statusData } = await fetch('/api/statusId?name=accepted')
-        .then(res => res.json());
+      const response = await fetch('/api/statusId?name=accepted');
       
-      const statusId = statusData?.id;
-      if (!statusId) throw new Error('Could not find accepted status');
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+      
+      const { data: statusData, error: statusError } = await response.json();
+      
+      if (statusError) throw new Error(statusError.message || 'Failed to get status ID');
+      if (!statusData?.id) throw new Error('Could not find accepted status');
 
-      await updateVersionStatus(userId, versionId, statusId);
+      await updateVersionStatus(userId, versionId, statusData.id);
       setRefreshTrigger(prev => prev + 1);
       
       toast({
@@ -78,13 +83,18 @@ export default function UserHeadView({ currentUser, clients }: UserHeadViewProps
   const handleRequestRevision = async (versionId: string, userId: string) => {
     try {
       // Get the 'needs-revision' status ID
-      const { data: statusData } = await fetch('/api/statusId?name=needs-revision')
-        .then(res => res.json());
+      const response = await fetch('/api/statusId?name=needs-revision');
       
-      const statusId = statusData?.id;
-      if (!statusId) throw new Error('Could not find needs-revision status');
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+      
+      const { data: statusData, error: statusError } = await response.json();
+      
+      if (statusError) throw new Error(statusError.message || 'Failed to get status ID');
+      if (!statusData?.id) throw new Error('Could not find needs-revision status');
 
-      await updateVersionStatus(userId, versionId, statusId);
+      await updateVersionStatus(userId, versionId, statusData.id);
       setRefreshTrigger(prev => prev + 1);
       
       toast({

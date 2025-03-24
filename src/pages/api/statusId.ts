@@ -7,7 +7,7 @@ export async function fetchStatusId(name: string) {
       .from('week_status_names')
       .select('id')
       .eq('name', name)
-      .single();
+      .maybeSingle();
     
     if (error) throw error;
     
@@ -19,8 +19,22 @@ export async function fetchStatusId(name: string) {
 }
 
 export default async function handler(req: Request) {
+  if (req.method !== 'GET') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), { 
+      status: 405,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+  
   const url = new URL(req.url);
-  const statusName = url.searchParams.get('name') || '';
+  const statusName = url.searchParams.get('name');
+  
+  if (!statusName) {
+    return new Response(JSON.stringify({ error: 'Status name is required' }), { 
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
   
   const result = await fetchStatusId(statusName);
   
