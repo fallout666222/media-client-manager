@@ -207,42 +207,6 @@ export type Database = {
         }
         Relationships: []
       }
-      user_managers: {
-        Row: {
-          created_at: string | null
-          id: string
-          manager_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          manager_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          manager_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_managers_manager_id_fkey"
-            columns: ["manager_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_managers_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       users: {
         Row: {
           created_at: string | null

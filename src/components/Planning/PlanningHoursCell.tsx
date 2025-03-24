@@ -32,7 +32,7 @@ export function PlanningHoursCell({
     setValue(initialValue);
   }, [initialValue]);
 
-  const handleDoubleClick = () => {
+  const handleClick = () => {
     if (isLocked) return;
     setIsEditing(true);
     setTimeout(() => {
@@ -94,9 +94,10 @@ export function PlanningHoursCell({
   return (
     <div 
       className={`p-2 text-center w-full ${isLocked ? 'bg-gray-100' : 'cursor-pointer hover:bg-blue-50'}`}
-      onDoubleClick={handleDoubleClick}
+      onClick={handleClick}
     >
       {value > 0 ? value : '-'}
     </div>
   );
 }
+
