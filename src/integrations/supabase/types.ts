@@ -578,6 +578,60 @@ export type Database = {
           },
         ]
       }
+      years: {
+        Row: {
+          apr: number
+          aug: number
+          created_at: string | null
+          dec: number
+          feb: number
+          id: string
+          jan: number
+          jul: number
+          jun: number
+          mar: number
+          may: number
+          nov: number
+          oct: number
+          sep: number
+          year: string
+        }
+        Insert: {
+          apr?: number
+          aug?: number
+          created_at?: string | null
+          dec?: number
+          feb?: number
+          id?: string
+          jan?: number
+          jul?: number
+          jun?: number
+          mar?: number
+          may?: number
+          nov?: number
+          oct?: number
+          sep?: number
+          year: string
+        }
+        Update: {
+          apr?: number
+          aug?: number
+          created_at?: string | null
+          dec?: number
+          feb?: number
+          id?: string
+          jan?: number
+          jul?: number
+          jun?: number
+          mar?: number
+          may?: number
+          nov?: number
+          oct?: number
+          sep?: number
+          year?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

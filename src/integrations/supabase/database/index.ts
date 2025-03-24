@@ -42,6 +42,9 @@ export * from './planningVersions';
 // Version Status operations
 export * from './versionStatus';
 
+// Years operations
+export * from './years';
+
 // Explicitly re-export the functions that would cause duplicates
 // We're choosing the implementations from customWeeks and timesheet over the ones in week and weekHours
 export { getCustomWeeks, createCustomWeek } from './customWeeks';
