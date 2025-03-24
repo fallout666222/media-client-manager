@@ -20,14 +20,16 @@ import {
 import { Button } from '@/components/ui/button';
 import { usePlanningData, QUARTERS } from '@/hooks/usePlanningData';
 import { PlanningHoursCell } from '@/components/Planning/PlanningHoursCell';
+import { PlanningVersionStatus } from '@/components/Planning/PlanningVersionStatus';
 import { User, Client } from '@/types/timesheet';
 
 interface PlanningProps {
   currentUser: User;
   clients: Client[];
+  isUserHead?: boolean;
 }
 
-export default function Planning({ currentUser, clients }: PlanningProps) {
+export default function Planning({ currentUser, clients, isUserHead = false }: PlanningProps) {
   const { 
     versions, 
     selectedVersionId, 
@@ -36,8 +38,9 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
     reloadPlanningData,
     visibleClients,
     months,
-    quarters
-  } = usePlanningData({ currentUser });
+    quarters,
+    versionStatus
+  } = usePlanningData({ currentUser, isUserHead });
   
   const [filteredClients, setFilteredClients] = useState(planningData);
   
@@ -76,11 +79,22 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
     return isQuarterLocked(quarter.name);
   };
 
+  // Is cell locked because of status
+  const isCellLockedByStatus = (status: string) => {
+    // Only can edit if unconfirmed or needs-revision
+    return !(status === 'unconfirmed' || status === 'needs-revision');
+  };
+
   const handleCellUpdate = useCallback(() => {
     // Trigger reload of planning data
     if (reloadPlanningData) {
       reloadPlanningData();
     }
+  }, [reloadPlanningData]);
+
+  const handleStatusUpdate = useCallback(() => {
+    // Reload data to get updated status
+    reloadPlanningData();
   }, [reloadPlanningData]);
 
   return (
@@ -105,7 +119,7 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
         </div>
       </div>
       
-      <div className="mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div className="max-w-xs">
           <label htmlFor="version-select" className="block text-sm font-medium mb-1">
             Select Planning Version
@@ -120,12 +134,22 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
             <SelectContent>
               {versions.map((version) => (
                 <SelectItem key={version.id} value={version.id}>
-                  {version.name} ({version.year})
+                  {version.name} ({version.year}) {version.status && `- ${version.status}`}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
+        
+        {selectedVersionId && (
+          <PlanningVersionStatus
+            currentUser={currentUser}
+            versionId={selectedVersionId}
+            currentStatus={versionStatus}
+            isUserHead={isUserHead}
+            onStatusUpdate={handleStatusUpdate}
+          />
+        )}
       </div>
       
       <div className="overflow-x-auto border rounded-lg shadow">
@@ -183,7 +207,7 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
                       clientId={client.clientId}
                       month="Jan"
                       initialValue={client.months.Jan}
-                      isLocked={isMonthLocked("Jan")}
+                      isLocked={isMonthLocked("Jan") || isCellLockedByStatus(versionStatus)}
                       onUpdate={handleCellUpdate}
                     />
                   </TableCell>
@@ -194,7 +218,7 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
                       clientId={client.clientId}
                       month="Feb"
                       initialValue={client.months.Feb}
-                      isLocked={isMonthLocked("Feb")}
+                      isLocked={isMonthLocked("Feb") || isCellLockedByStatus(versionStatus)}
                       onUpdate={handleCellUpdate}
                     />
                   </TableCell>
@@ -205,7 +229,7 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
                       clientId={client.clientId}
                       month="Mar"
                       initialValue={client.months.Mar}
-                      isLocked={isMonthLocked("Mar")}
+                      isLocked={isMonthLocked("Mar") || isCellLockedByStatus(versionStatus)}
                       onUpdate={handleCellUpdate}
                     />
                   </TableCell>
@@ -222,7 +246,7 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
                       clientId={client.clientId}
                       month="Apr"
                       initialValue={client.months.Apr}
-                      isLocked={isMonthLocked("Apr")}
+                      isLocked={isMonthLocked("Apr") || isCellLockedByStatus(versionStatus)}
                       onUpdate={handleCellUpdate}
                     />
                   </TableCell>
@@ -233,7 +257,7 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
                       clientId={client.clientId}
                       month="May"
                       initialValue={client.months.May}
-                      isLocked={isMonthLocked("May")}
+                      isLocked={isMonthLocked("May") || isCellLockedByStatus(versionStatus)}
                       onUpdate={handleCellUpdate}
                     />
                   </TableCell>
@@ -244,7 +268,7 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
                       clientId={client.clientId}
                       month="Jun"
                       initialValue={client.months.Jun}
-                      isLocked={isMonthLocked("Jun")}
+                      isLocked={isMonthLocked("Jun") || isCellLockedByStatus(versionStatus)}
                       onUpdate={handleCellUpdate}
                     />
                   </TableCell>
@@ -261,7 +285,7 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
                       clientId={client.clientId}
                       month="Jul"
                       initialValue={client.months.Jul}
-                      isLocked={isMonthLocked("Jul")}
+                      isLocked={isMonthLocked("Jul") || isCellLockedByStatus(versionStatus)}
                       onUpdate={handleCellUpdate}
                     />
                   </TableCell>
@@ -272,7 +296,7 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
                       clientId={client.clientId}
                       month="Aug"
                       initialValue={client.months.Aug}
-                      isLocked={isMonthLocked("Aug")}
+                      isLocked={isMonthLocked("Aug") || isCellLockedByStatus(versionStatus)}
                       onUpdate={handleCellUpdate}
                     />
                   </TableCell>
@@ -283,7 +307,7 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
                       clientId={client.clientId}
                       month="Sep"
                       initialValue={client.months.Sep}
-                      isLocked={isMonthLocked("Sep")}
+                      isLocked={isMonthLocked("Sep") || isCellLockedByStatus(versionStatus)}
                       onUpdate={handleCellUpdate}
                     />
                   </TableCell>
@@ -300,7 +324,7 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
                       clientId={client.clientId}
                       month="Oct"
                       initialValue={client.months.Oct}
-                      isLocked={isMonthLocked("Oct")}
+                      isLocked={isMonthLocked("Oct") || isCellLockedByStatus(versionStatus)}
                       onUpdate={handleCellUpdate}
                     />
                   </TableCell>
@@ -311,7 +335,7 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
                       clientId={client.clientId}
                       month="Nov"
                       initialValue={client.months.Nov}
-                      isLocked={isMonthLocked("Nov")}
+                      isLocked={isMonthLocked("Nov") || isCellLockedByStatus(versionStatus)}
                       onUpdate={handleCellUpdate}
                     />
                   </TableCell>
@@ -322,7 +346,7 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
                       clientId={client.clientId}
                       month="Dec"
                       initialValue={client.months.Dec}
-                      isLocked={isMonthLocked("Dec")}
+                      isLocked={isMonthLocked("Dec") || isCellLockedByStatus(versionStatus)}
                       onUpdate={handleCellUpdate}
                     />
                   </TableCell>
@@ -340,7 +364,7 @@ export default function Planning({ currentUser, clients }: PlanningProps) {
             ) : (
               <TableRow>
                 <TableCell colSpan={18} className="text-center py-8 text-gray-500">
-                  No planning data available. Double-click on a cell to add hours.
+                  No planning data available. Click on a cell to add hours.
                 </TableCell>
               </TableRow>
             )}

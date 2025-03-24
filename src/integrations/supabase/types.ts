@@ -289,6 +289,52 @@ export type Database = {
           },
         ]
       }
+      version_statuses: {
+        Row: {
+          created_at: string | null
+          id: string
+          user_id: string
+          version_id: string
+          version_status_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          user_id: string
+          version_id: string
+          version_status_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          user_id?: string
+          version_id?: string
+          version_status_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "version_statuses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "version_statuses_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "planning_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "version_statuses_version_status_id_fkey"
+            columns: ["version_status_id"]
+            isOneToOne: false
+            referencedRelation: "week_status_names"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       visible_clients: {
         Row: {
           client_id: string

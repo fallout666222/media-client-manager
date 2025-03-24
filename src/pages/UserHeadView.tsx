@@ -1,492 +1,234 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, Send, AlertCircle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import TimeSheet from "./TimeSheet";
-import { User, TimeSheetStatus } from '@/types/timesheet';
+import { User, Client } from '@/types/timesheet';
 import { 
-  getUsers, 
-  getWeekStatuses, 
-  updateWeekStatus, 
-  getWeekStatusNames, 
-  getUserFirstUnconfirmedWeek,
-  updateHours,
-  getWeekHours
-} from '@/integrations/supabase/database';
-import { useQuery } from '@tanstack/react-query';
-import { format, parse, isBefore, getYear } from 'date-fns';
-import { TeamMemberSelector } from '@/components/TeamMemberSelector';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle 
+} from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { updateVersionStatus } from '@/integrations/supabase/database';
+import { useToast } from '@/hooks/use-toast';
+import { Link } from 'react-router-dom';
+import Planning from './Planning';
 
 interface UserHeadViewProps {
   currentUser: User;
-  clients: any[];
+  clients: Client[];
 }
 
-const UserHeadView: React.FC<UserHeadViewProps> = ({ currentUser, clients }) => {
-  const [selectedTeamMember, setSelectedTeamMember] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [firstUnconfirmedWeek, setFirstUnconfirmedWeek] = useState<any>(null);
-  const [weekStatuses, setWeekStatuses] = useState<any[]>([]);
-  const [firstUnderReviewWeek, setFirstUnderReviewWeek] = useState<any>(null);
-  const [forceRefresh, setForceRefresh] = useState<number>(0);
-  const [filterYear, setFilterYear] = useState<number | null>(null);
+export default function UserHeadView({ currentUser, clients }: UserHeadViewProps) {
+  const [activeTab, setActiveTab] = useState<string>('timesheet');
   const { toast } = useToast();
+  const [userVersionsForApproval, setUserVersionsForApproval] = useState<any[]>([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const { data: users = [], isLoading, error } = useQuery({
-    queryKey: ['users'],
-    queryFn: async () => {
-      const { data, error } = await getUsers();
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const teamMembers = users.filter(user => 
-    user.user_head_id === currentUser.id && !user.hidden
-  );
-
-  const handleSearchChange = (value: string) => {
-    setSearchTerm(value);
-  };
-
-  const handleTeamMemberSelect = (user: User) => {
-    setSelectedTeamMember(user.id);
-    
-    const savedYearFilter = localStorage.getItem(`selectedYearFilter_${user.id}`);
-    if (savedYearFilter) {
-      setFilterYear(parseInt(savedYearFilter));
-    } else {
-      setFilterYear(new Date().getFullYear());
-    }
-    
-    fetchFirstUnconfirmedWeek(user.id);
-    fetchWeekStatuses(user.id);
-    findFirstUnderReviewWeek(user.id);
-  };
-
-  const fetchFirstUnconfirmedWeek = async (userId: string) => {
-    try {
-      const week = await getUserFirstUnconfirmedWeek(userId);
-      setFirstUnconfirmedWeek(week);
-      
-      if (week) {
-        toast({
-          title: "First Unconfirmed Week Found",
-          description: `${week.name} needs attention`,
-        });
-      }
-    } catch (error) {
-    }
-  };
-
-  const fetchWeekStatuses = async (userId: string) => {
-    try {
-      const { data } = await getWeekStatuses(userId);
-      if (data) {
-        setWeekStatuses(data);
-        findFirstUnderReviewWeek(userId, data);
-      }
-    } catch (error) {
-    }
-  };
-
-  const findFirstUnderReviewWeek = async (userId: string, statusData?: any[]) => {
-    try {
-      const data = statusData || weekStatuses;
-      if (!data || data.length === 0) {
-        const { data: freshData } = await getWeekStatuses(userId);
-        if (!freshData || freshData.length === 0) {
-          setFirstUnderReviewWeek(null);
-          return;
-        }
-        
-        findFirstUnderReviewWeek(userId, freshData);
-        return;
-      }
-      
-      const sortedWeeks = [...data].sort((a, b) => {
-        if (!a.week || !b.week) return 0;
-        
-        const dateA = new Date(a.week.period_from);
-        const dateB = new Date(b.week.period_from);
-        return dateA.getTime() - dateB.getTime();
-      });
-      
-      const firstUnderReview = sortedWeeks.find(status => 
-        status.status?.name === 'under-review'
-      );
-      
-      setFirstUnderReviewWeek(firstUnderReview);
-    } catch (error) {
-    }
-  };
-
-  const navigateToFirstUnderReviewWeek = () => {
-    if (firstUnderReviewWeek && selectedTeamMember) {
-      if (firstUnderReviewWeek.week && selectedTeamMember) {
-        localStorage.setItem(`selectedWeek_${selectedTeamMember}`, firstUnderReviewWeek.week_id);
-        
-        if (firstUnderReviewWeek.week.period_from) {
-          try {
-            const weekDate = new Date(firstUnderReviewWeek.week.period_from);
-            const weekYear = getYear(weekDate);
-            setFilterYear(weekYear);
-            localStorage.setItem(`selectedYearFilter_${selectedTeamMember}`, weekYear.toString());
-          } catch (error) {
+  useEffect(() => {
+    const fetchVersionsForApproval = async () => {
+      if (currentUser.id) {
+        try {
+          const { data, error } = await fetch('/api/userVersionsForApproval?headId=' + currentUser.id)
+            .then(res => res.json());
+            
+          if (error) throw error;
+          
+          if (data) {
+            setUserVersionsForApproval(data);
           }
-        }
-        
-        setForceRefresh(prev => prev + 1);
-        
-        fetchWeekStatuses(selectedTeamMember);
-        
-        toast({
-          title: "Navigated to First Week Under Review",
-          description: `Week: ${firstUnderReviewWeek.week?.name}`,
-        });
-        
-        const timeSheetContainer = document.getElementById('timesheet-container');
-        if (timeSheetContainer) {
-          timeSheetContainer.classList.add('refresh-trigger');
-          setTimeout(() => {
-            timeSheetContainer.classList.remove('refresh-trigger');
-          }, 50);
+        } catch (error) {
+          console.error('Error fetching versions for approval:', error);
         }
       }
-    } else {
-      toast({
-        title: "No Weeks Under Review",
-        description: "There are no weeks currently under review.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const checkForEarlierWeeksUnderReview = (weekId: string) => {
-    if (!weekStatuses.length) return false;
-    
-    const currentWeek = weekStatuses.find(status => 
-      status.week_id === weekId
-    );
-    
-    if (!currentWeek || !currentWeek.week) return false;
-    
-    const currentWeekDate = new Date(currentWeek.week.period_from);
-    
-    const earlierWeeksUnderReview = weekStatuses.filter(status => {
-      if (!status.week || !status.status) return false;
-      
-      const weekDate = new Date(status.week.period_from);
-      
-      const isEarlier = isBefore(weekDate, currentWeekDate);
-      const isUnderReview = status.status.name === 'under-review';
-      
-      if (isEarlier && isUnderReview) {
-        return true;
-      }
-      
-      return false;
-    });
-    
-    return earlierWeeksUnderReview.length > 0;
-  };
-
-  const handleSubmitForReview = async (userId: string, weekId: string) => {
-    try {
-      const { data: statusNames } = await getWeekStatusNames();
-      const underReviewStatus = statusNames?.find(status => status.name === 'under-review');
-      
-      if (underReviewStatus && userId) {
-        await updateWeekStatus(userId, weekId, underReviewStatus.id);
-        
-        toast({
-          title: "Timesheet Submitted",
-          description: "Timesheet has been submitted for review",
-        });
-        
-        fetchWeekStatuses(userId);
-        
-        if (selectedTeamMember) {
-          fetchFirstUnconfirmedWeek(selectedTeamMember);
-          findFirstUnderReviewWeek(selectedTeamMember);
-        }
-        
-        setForceRefresh(prev => prev + 1);
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to submit timesheet",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleApprove = async (userId: string, weekId: string) => {
-    try {
-      const hasEarlierWeeks = checkForEarlierWeeksUnderReview(weekId);
-      
-      if (hasEarlierWeeks) {
-        toast({
-          title: "Cannot Approve",
-          description: "Earlier weeks must be approved first. Navigating to the first week under review.",
-          variant: "destructive"
-        });
-        
-        await fetchWeekStatuses(userId);
-        findFirstUnderReviewWeek(userId);
-        navigateToFirstUnderReviewWeek();
-        return;
-      }
-      
-      const { data: statusNames } = await getWeekStatusNames();
-      const acceptedStatus = statusNames?.find(status => status.name === 'accepted');
-      
-      if (acceptedStatus && userId) {
-        await updateWeekStatus(userId, weekId, acceptedStatus.id);
-        
-        toast({
-          title: "Timesheet Approved",
-          description: "Timesheet has been approved",
-        });
-        
-        fetchWeekStatuses(userId);
-        
-        if (selectedTeamMember) {
-          fetchFirstUnconfirmedWeek(selectedTeamMember);
-          findFirstUnderReviewWeek(selectedTeamMember);
-        }
-        
-        setForceRefresh(prev => prev + 1);
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to approve timesheet",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleReject = async (userId: string, weekId: string) => {
-    try {
-      const { data: statusNames } = await getWeekStatusNames();
-      const needsRevisionStatus = statusNames?.find(status => status.name === 'needs-revision');
-      
-      if (needsRevisionStatus && userId) {
-        await updateWeekStatus(userId, weekId, needsRevisionStatus.id);
-        
-        toast({
-          title: "Timesheet Rejected",
-          description: "Timesheet has been rejected and needs revision",
-        });
-        
-        fetchWeekStatuses(userId);
-        
-        if (selectedTeamMember) {
-          fetchFirstUnconfirmedWeek(selectedTeamMember);
-          findFirstUnderReviewWeek(selectedTeamMember);
-        }
-        
-        setForceRefresh(prev => prev + 1);
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to reject timesheet",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleTimeUpdate = async (userId: string, weekId: string, client: string, mediaType: string, hours: number) => {
-    try {
-      await updateHours(userId, weekId, client, mediaType, hours);
-      
-      toast({
-        title: "Hours Updated",
-        description: "Time entry has been updated successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update time entry",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const renderTeamMemberTimesheet = () => {
-    if (!selectedTeamMember) {
-      return null;
-    }
-    
-    const teamMember = users.find(u => u.id === selectedTeamMember);
-    if (!teamMember) {
-      return (
-        <div className="p-4 border rounded-lg bg-gray-50">
-          <p className="text-center text-gray-500">
-            User not found
-          </p>
-        </div>
-      );
-    }
-    
-    if (!teamMember.first_week) {
-      return (
-        <div className="p-4 border rounded-lg bg-gray-50">
-          <p className="text-center text-gray-500">
-            This user does not have a first week set
-          </p>
-        </div>
-      );
-    }
-    
-    const userForTimesheet: User = {
-      id: teamMember.id,
-      name: teamMember.name,
-      role: teamMember.type as 'admin' | 'user' | 'manager',
-      firstWeek: teamMember.first_week,
-      firstCustomWeekId: teamMember.first_custom_week_id,
-      username: teamMember.login,
-      login: teamMember.login,
-      type: teamMember.type,
-      email: teamMember.email,
-      job_position: teamMember.job_position,
-      description: teamMember.description,
-      department_id: teamMember.department_id,
-      departmentId: teamMember.department_id,
-      first_week: teamMember.first_week,
-      first_custom_week_id: teamMember.first_custom_week_id,
-      deletion_mark: teamMember.deletion_mark,
-      hidden: teamMember.hidden,
-      user_head_id: teamMember.user_head_id
     };
     
-    const initialWeekId = firstUnderReviewWeek ? 
-      firstUnderReviewWeek.week_id : 
-      (firstUnconfirmedWeek ? firstUnconfirmedWeek.id : null);
-    
-    return (
-      <>
-        <div className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          {firstUnconfirmedWeek && (
-            <div className="p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded">
-              <h3 className="font-medium">First Week Needing Attention</h3>
-              <p>Week: {firstUnconfirmedWeek.name} ({format(new Date(firstUnconfirmedWeek.period_from), 'MMM d')} - {format(new Date(firstUnconfirmedWeek.period_to), 'MMM d, yyyy')})</p>
-              <div className="mt-2 flex gap-2">
-                <Button 
-                  size="sm" 
-                  onClick={() => handleSubmitForReview(teamMember.id, firstUnconfirmedWeek.id)}
-                >
-                  <Send className="h-4 w-4 mr-2" />
-                  Submit for Review
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-        
-        <div id="timesheet-container">
-          <TimeSheet
-            key={`timesheet-${selectedTeamMember}-${initialWeekId}-${forceRefresh}`}
-            userRole={teamMember.type as 'admin' | 'user' | 'manager'}
-            firstWeek={teamMember.first_week}
-            currentUser={currentUser}
-            users={users}
-            impersonatedUser={userForTimesheet}
-            clients={clients}
-            initialWeekId={initialWeekId}
-            isUserHead={true}
-            onTimeUpdate={(weekId, client, mediaType, hours) => 
-              handleTimeUpdate(teamMember.id, weekId, client, mediaType, hours)
-            }
-            checkEarlierWeeksUnderReview={(weekId) => checkForEarlierWeeksUnderReview(weekId)}
-          />
-        </div>
-      </>
-    );
+    fetchVersionsForApproval();
+  }, [currentUser.id, refreshTrigger]);
+
+  const handleApprove = async (versionId: string, userId: string) => {
+    try {
+      // Get the 'accepted' status ID
+      const { data: statusData } = await fetch('/api/statusId?name=accepted')
+        .then(res => res.json());
+      
+      const statusId = statusData?.id;
+      if (!statusId) throw new Error('Could not find accepted status');
+
+      await updateVersionStatus(userId, versionId, statusId);
+      setRefreshTrigger(prev => prev + 1);
+      
+      toast({
+        title: 'Version Approved',
+        description: 'Planning version has been approved',
+        variant: 'default'
+      });
+    } catch (error) {
+      console.error('Error approving version:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to approve version',
+        variant: 'destructive'
+      });
+    }
+  };
+  
+  const handleRequestRevision = async (versionId: string, userId: string) => {
+    try {
+      // Get the 'needs-revision' status ID
+      const { data: statusData } = await fetch('/api/statusId?name=needs-revision')
+        .then(res => res.json());
+      
+      const statusId = statusData?.id;
+      if (!statusId) throw new Error('Could not find needs-revision status');
+
+      await updateVersionStatus(userId, versionId, statusId);
+      setRefreshTrigger(prev => prev + 1);
+      
+      toast({
+        title: 'Revision Requested',
+        description: 'User will need to revise the planning version',
+        variant: 'default'
+      });
+    } catch (error) {
+      console.error('Error requesting revision:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to request revision',
+        variant: 'destructive'
+      });
+    }
   };
 
-  if (isLoading) {
-    return (
-      <div className="container mx-auto p-4 pt-16 text-center">
-        <p>Loading team members...</p>
-      </div>
-    );
-  }
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case 'unconfirmed':
+        return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
+      case 'under-review':
+        return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
+      case 'accepted':
+        return 'bg-green-100 text-green-800 hover:bg-green-200';
+      case 'needs-revision':
+        return 'bg-red-100 text-red-800 hover:bg-red-200';
+      default:
+        return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
+    }
+  };
 
   return (
     <div className="container mx-auto p-4 pt-16">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Team Timesheets (User Head View)</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">User Head View</h1>
         <Link to="/">
-          <Button variant="outline" size="sm" className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Dashboard
-          </Button>
+          <Button variant="outline">Back to Dashboard</Button>
         </Link>
       </div>
 
-      {teamMembers.length === 0 ? (
-        <div className="p-4 border rounded-lg bg-gray-50">
-          <p className="text-center text-gray-500">
-            You don't have any team members assigned to you as User Head
-          </p>
-        </div>
-      ) : (
-        <>
-          <div className="mb-8">
-            <h2 className="text-lg font-medium mb-4">My Team</h2>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="timesheet">Timesheet Approvals</TabsTrigger>
+          <TabsTrigger value="planning">Planning</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="timesheet">
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Timesheet Approvals</CardTitle>
+                <CardDescription>
+                  Review and approve timesheets for team members
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {/* Your existing timesheet approval content here */}
+                <div>Timesheet approval content goes here</div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="planning">
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Planning Approvals</CardTitle>
+                <CardDescription>
+                  Review and approve planning versions for team members
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {userVersionsForApproval.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>User</TableHead>
+                        <TableHead>Version</TableHead>
+                        <TableHead>Year</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {userVersionsForApproval.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell>{item.user?.name}</TableCell>
+                          <TableCell>{item.version?.name}</TableCell>
+                          <TableCell>{item.version?.year}</TableCell>
+                          <TableCell>
+                            <Badge className={getStatusBadgeColor(item.status?.name)}>
+                              {item.status?.name === 'under-review' ? 'Under Review' : 
+                               item.status?.name === 'needs-revision' ? 'Needs Revision' : 
+                               item.status?.name?.charAt(0).toUpperCase() + item.status?.name?.slice(1)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {item.status?.name === 'under-review' && (
+                              <div className="flex gap-2">
+                                <Button 
+                                  size="sm" 
+                                  variant="default" 
+                                  onClick={() => handleApprove(item.version_id, item.user_id)}
+                                >
+                                  Approve
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  onClick={() => handleRequestRevision(item.version_id, item.user_id)}
+                                >
+                                  Request Revision
+                                </Button>
+                              </div>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-6 text-gray-500">
+                    No planning versions awaiting approval
+                  </div>
+                )}
+              </CardContent>
+            </Card>
             
-            <TeamMemberSelector 
-              currentUser={currentUser}
-              users={teamMembers}
-              onUserSelect={handleTeamMemberSelect}
-              selectedUser={selectedTeamMember ? users.find(u => u.id === selectedTeamMember) || null : null}
-              searchValue={searchTerm}
-              onSearchChange={handleSearchChange}
-              autoOpenOnFocus={true}
-              clearSearchOnSelect={true}
-              showNoResultsMessage={true}
-              className="w-full md:w-[320px] mb-4"
-            />
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Planning</CardTitle>
+                <CardDescription>
+                  Manage your own planning
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Planning currentUser={currentUser} clients={clients} isUserHead={true} />
+              </CardContent>
+            </Card>
           </div>
-
-          <div>
-            {selectedTeamMember ? (
-              <>
-                <h2 className="text-lg font-medium mb-4">
-                  Timesheet for {users.find(u => u.id === selectedTeamMember)?.login}
-                </h2>
-                {renderTeamMemberTimesheet()}
-              </>
-            ) : (
-              <div className="p-4 border rounded-lg bg-gray-50">
-                <p className="text-center text-gray-500">
-                  Select a team member to view their timesheet
-                </p>
-              </div>
-            )}
-          </div>
-        </>
-      )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
-};
-
-export default UserHeadView;
+}

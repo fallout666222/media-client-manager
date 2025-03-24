@@ -1,10 +1,13 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { 
   getPlanningVersions, 
   getPlanningHours, 
   getUserVisibleClients,
-  getClients
+  getClients,
+  getVersionStatus,
+  getUserVersionsForApproval
 } from '@/integrations/supabase/database';
 import { User, Client } from '@/types/timesheet';
 
@@ -31,6 +34,7 @@ export interface PlanningVersion {
   q2_locked: boolean;
   q3_locked: boolean;
   q4_locked: boolean;
+  status?: string;
 }
 
 export interface ClientHours {
@@ -43,11 +47,12 @@ export interface ClientHours {
 
 interface UsePlanningDataProps {
   currentUser: User;
+  isUserHead?: boolean;
 }
 
 const LOCAL_STORAGE_KEY = 'selectedPlanningVersionId';
 
-export const usePlanningData = ({ currentUser }: UsePlanningDataProps) => {
+export const usePlanningData = ({ currentUser, isUserHead = false }: UsePlanningDataProps) => {
   const [versions, setVersions] = useState<PlanningVersion[]>([]);
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(
     localStorage.getItem(LOCAL_STORAGE_KEY) || null
@@ -56,6 +61,8 @@ export const usePlanningData = ({ currentUser }: UsePlanningDataProps) => {
   const [visibleClients, setVisibleClients] = useState<string[]>([]);
   const [allClients, setAllClients] = useState<Client[]>([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [versionStatus, setVersionStatus] = useState<string>('unconfirmed');
+  const [userVersionsForApproval, setUserVersionsForApproval] = useState<any[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -74,6 +81,7 @@ export const usePlanningData = ({ currentUser }: UsePlanningDataProps) => {
     setRefreshTrigger(prev => prev + 1);
   }, []);
 
+  // Fetch versions and status
   useEffect(() => {
     const fetchVersions = async () => {
       try {
@@ -81,7 +89,21 @@ export const usePlanningData = ({ currentUser }: UsePlanningDataProps) => {
         if (error) throw error;
         
         if (data && data.length > 0) {
-          setVersions(data);
+          // Now also fetch version statuses for these versions
+          const versionsWithStatus = await Promise.all(
+            data.map(async (version) => {
+              if (currentUser.id) {
+                const { data: statusData } = await getVersionStatus(currentUser.id, version.id);
+                return {
+                  ...version,
+                  status: statusData?.status?.name || 'unconfirmed'
+                };
+              }
+              return { ...version, status: 'unconfirmed' };
+            })
+          );
+          
+          setVersions(versionsWithStatus);
           
           if (!selectedVersionId) {
             setSelectedVersionId(data[0].id);
@@ -103,7 +125,46 @@ export const usePlanningData = ({ currentUser }: UsePlanningDataProps) => {
     };
     
     fetchVersions();
-  }, [toast, selectedVersionId]);
+  }, [toast, selectedVersionId, currentUser.id, refreshTrigger]);
+
+  // Fetch version status for selected version
+  useEffect(() => {
+    const fetchVersionStatus = async () => {
+      if (currentUser.id && selectedVersionId) {
+        try {
+          const { data, error } = await getVersionStatus(currentUser.id, selectedVersionId);
+          if (error) throw error;
+          
+          setVersionStatus(data?.status?.name || 'unconfirmed');
+        } catch (error) {
+          console.error('Error fetching version status:', error);
+          setVersionStatus('unconfirmed');
+        }
+      }
+    };
+    
+    fetchVersionStatus();
+  }, [currentUser.id, selectedVersionId, refreshTrigger]);
+
+  // Fetch versions for approval if user is a head
+  useEffect(() => {
+    const fetchVersionsForApproval = async () => {
+      if (isUserHead && currentUser.id) {
+        try {
+          const { data, error } = await getUserVersionsForApproval(currentUser.id);
+          if (error) throw error;
+          
+          if (data) {
+            setUserVersionsForApproval(data);
+          }
+        } catch (error) {
+          console.error('Error fetching versions for approval:', error);
+        }
+      }
+    };
+    
+    fetchVersionsForApproval();
+  }, [isUserHead, currentUser.id, refreshTrigger]);
 
   useEffect(() => {
     const fetchClientsData = async () => {
@@ -225,6 +286,9 @@ export const usePlanningData = ({ currentUser }: UsePlanningDataProps) => {
     allClients,
     months: MONTHS,
     quarters: QUARTERS,
-    reloadPlanningData
+    reloadPlanningData,
+    versionStatus,
+    userVersionsForApproval,
+    isUserHead
   };
 };
