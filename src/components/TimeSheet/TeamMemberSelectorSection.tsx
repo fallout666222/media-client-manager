@@ -19,7 +19,8 @@ export const TeamMemberSelectorSection: React.FC<TeamMemberSelectorSectionProps>
 }) => {
   const { handleUserSelect, viewedUser } = useTimeSheet();
 
-  if (userRole !== 'manager' && userRole !== 'admin' || impersonatedUser) {
+  // Check for admin or manager role and ensure we're not in impersonation mode
+  if ((userRole !== 'manager' && userRole !== 'admin') || impersonatedUser) {
     return null;
   }
 
@@ -28,7 +29,7 @@ export const TeamMemberSelectorSection: React.FC<TeamMemberSelectorSectionProps>
       <h3 className="text-sm font-medium mb-2">View Timesheet For:</h3>
       <TeamMemberSelector
         currentUser={currentUser}
-        users={users}
+        users={users || []} // Add fallback for null users
         onUserSelect={handleUserSelect}
         selectedUser={viewedUser}
       />

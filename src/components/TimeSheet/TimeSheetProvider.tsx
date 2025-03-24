@@ -29,8 +29,8 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
 }) => {
   const [showSettings, setShowSettings] = useState(false);
   const [viewedUser, setViewedUser] = useState<User>(impersonatedUser || currentUser);
-  const viewedUserId = viewedUser.id;
-  
+  const viewedUserId = viewedUser?.id || null;
+
   const [filterYear, setFilterYear] = useState<number | null>(() => {
     if (viewedUserId) {
       const savedYearFilter = localStorage.getItem(`selectedYearFilter_${viewedUserId}`);
@@ -44,18 +44,18 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
   const [currentDate, setCurrentDate] = useState<Date>(() => {
     if (initialWeekId) return new Date();
     
-    if (userRole === 'admin' && (!firstWeek || firstWeek === 'null') && !currentUser.firstCustomWeekId) {
+    if (userRole === 'admin' && (!firstWeek || firstWeek === 'null') && !currentUser?.firstCustomWeekId) {
       return parse("2024-01-01", 'yyyy-MM-dd', new Date());
     }
-    if (currentUser.firstCustomWeekId) {
+    if (currentUser?.firstCustomWeekId) {
       return new Date();
     }
-    return parse(firstWeek, 'yyyy-MM-dd', new Date());
+    return parse(firstWeek || "2024-01-01", 'yyyy-MM-dd', new Date());
   });
   
   const [weekHours, setWeekHours] = useState<number>(40);
   const [availableMediaTypes, setAvailableMediaTypes] = useState<string[]>(DEFAULT_AVAILABLE_MEDIA_TYPES);
-  const isViewingOwnTimesheet = impersonatedUser ? adminOverride : viewedUser.id === currentUser.id;
+  const isViewingOwnTimesheet = impersonatedUser ? adminOverride : (viewedUser?.id === currentUser?.id);
   const availableClients = clients.filter(client => !client.hidden).map(client => client.name);
   const [currentCustomWeekState, setCurrentCustomWeekState] = useState<any>(null);
 
@@ -90,7 +90,7 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
     currentDate,
     customWeeks,
     initialWeekId,
-    firstWeek,
+    firstWeek: firstWeek || "2024-01-01",
     userRole,
     adminOverride
   });
@@ -121,7 +121,7 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
     weekHours,
     isUserHead,
     isViewingOwnTimesheet,
-    firstWeek,
+    firstWeek: firstWeek || "2024-01-01",
     setCurrentDate,
     weekPercentage,
     weekStatuses,
@@ -194,13 +194,14 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
     setWeekHours(hours);
   };
 
-  const clientsWithEntries = Object.entries(timeEntries[format(currentDate, 'yyyy-MM-dd')] || {})
+  const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
+  const clientsWithEntries = Object.entries(timeEntries[currentWeekKey] || {})
     .filter(([_, mediaEntries]) => 
       Object.values(mediaEntries).some(entry => entry.hours && entry.hours > 0)
     )
     .map(([client]) => client);
   
-  const mediaTypesWithEntries = Object.values(timeEntries[format(currentDate, 'yyyy-MM-dd')] || {})
+  const mediaTypesWithEntries = Object.values(timeEntries[currentWeekKey] || {})
     .flatMap(mediaEntries => 
       Object.entries(mediaEntries)
         .filter(([_, entry]) => entry.hours && entry.hours > 0)

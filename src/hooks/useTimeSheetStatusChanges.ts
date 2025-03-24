@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { TimeSheetStatus, User } from '@/types/timesheet';
 import { useToast } from '@/hooks/use-toast';
@@ -53,6 +52,11 @@ export const useTimeSheetStatusChanges = ({
   
   const refreshWeekStatuses = async () => {
     try {
+      if (!viewedUser?.id) {
+        console.error('Cannot refresh week statuses: viewedUser.id is null or undefined');
+        return;
+      }
+      
       const { data } = await getWeekStatuses(viewedUser.id);
       
       if (data && data.length > 0) {
@@ -82,12 +86,18 @@ export const useTimeSheetStatusChanges = ({
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
     
     // First try an exact match with the currentDate
-    let currentCustomWeek = customWeeks.find(week => 
-      format(parse(week.period_from, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === currentWeekKey
-    );
+    let currentCustomWeek = customWeeks.find(week => {
+      try {
+        const weekDate = format(parse(week.period_from, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd');
+        return weekDate === currentWeekKey;
+      } catch (error) {
+        console.error(`Error parsing date ${week.period_from}:`, error);
+        return false;
+      }
+    });
     
     // If no exact match, check if we have a saved week in localStorage
-    if (!currentCustomWeek && viewedUser.id) {
+    if (!currentCustomWeek && viewedUser?.id) {
       const savedWeekId = localStorage.getItem(`selectedWeek_${viewedUser.id}`);
       if (savedWeekId) {
         currentCustomWeek = customWeeks.find(week => week.id === savedWeekId);
@@ -123,7 +133,7 @@ export const useTimeSheetStatusChanges = ({
     const currentIndex = sortedWeeks.findIndex(week => week.id === currentCustomWeek.id);
     if (currentIndex <= 0) return false; // First week or week not found
     
-    const userFirstWeek = customWeeks.find(week => week.id === viewedUser.firstCustomWeekId);
+    const userFirstWeek = customWeeks.find(week => week.id === viewedUser?.firstCustomWeekId);
     const userFirstWeekIndex = userFirstWeek ? 
       sortedWeeks.findIndex(week => week.id === userFirstWeek.id) : 0;
     
@@ -188,7 +198,7 @@ export const useTimeSheetStatusChanges = ({
       const { data: statusNames } = await getWeekStatusNames();
       const underReviewStatus = statusNames?.find(status => status.name === 'under-review');
       
-      if (underReviewStatus && viewedUser.id) {
+      if (underReviewStatus && viewedUser?.id) {
         await updateWeekStatus(viewedUser.id, currentCustomWeek.id, underReviewStatus.id);
         
         setWeekStatuses(prev => ({
@@ -204,6 +214,8 @@ export const useTimeSheetStatusChanges = ({
           title: "Success",
           description: "Timesheet submitted for review"
         });
+      } else {
+        throw new Error("Failed to find under-review status or viewedUser.id is missing");
       }
     } catch (error) {
       console.error('Error submitting timesheet:', error);
@@ -247,7 +259,7 @@ export const useTimeSheetStatusChanges = ({
       const { data: statusNames } = await getWeekStatusNames();
       const acceptedStatus = statusNames?.find(status => status.name === 'accepted');
       
-      if (acceptedStatus && viewedUser.id) {
+      if (acceptedStatus && viewedUser?.id) {
         await updateWeekStatus(viewedUser.id, currentCustomWeek.id, acceptedStatus.id);
         
         setWeekStatuses(prev => ({
@@ -261,6 +273,8 @@ export const useTimeSheetStatusChanges = ({
           title: "Success",
           description: "Timesheet approved"
         });
+      } else {
+        throw new Error("Failed to find accepted status or viewedUser.id is missing");
       }
     } catch (error) {
       console.error('Error approving timesheet:', error);
@@ -292,7 +306,7 @@ export const useTimeSheetStatusChanges = ({
       const { data: statusNames } = await getWeekStatusNames();
       const needsRevisionStatus = statusNames?.find(status => status.name === 'needs-revision');
       
-      if (needsRevisionStatus && viewedUser.id) {
+      if (needsRevisionStatus && viewedUser?.id) {
         await updateWeekStatus(viewedUser.id, currentCustomWeek.id, needsRevisionStatus.id);
         
         setWeekStatuses(prev => ({
@@ -308,6 +322,8 @@ export const useTimeSheetStatusChanges = ({
           title: "Success",
           description: "Timesheet sent back for revision"
         });
+      } else {
+        throw new Error("Failed to find needs-revision status or viewedUser.id is missing");
       }
     } catch (error) {
       console.error('Error rejecting timesheet:', error);
@@ -348,7 +364,7 @@ export const useTimeSheetStatusChanges = ({
       const { data: statusNames } = await getWeekStatusNames();
       const unconfirmedStatus = statusNames?.find(status => status.name === 'unconfirmed');
       
-      if (unconfirmedStatus && viewedUser.id) {
+      if (unconfirmedStatus && viewedUser?.id) {
         await updateWeekStatus(viewedUser.id, currentCustomWeek.id, unconfirmedStatus.id);
         
         setWeekStatuses(prev => ({
@@ -364,6 +380,8 @@ export const useTimeSheetStatusChanges = ({
           title: "Success",
           description: "Week returned to unconfirmed status"
         });
+      } else {
+        throw new Error("Failed to find unconfirmed status or viewedUser.id is missing");
       }
     } catch (error) {
       console.error('Error returning week to unconfirmed status:', error);
@@ -382,7 +400,8 @@ export const useTimeSheetStatusChanges = ({
     handleApprove,
     handleReject,
     handleReturnToUnconfirmed,
-    isSubmitting
+    isSubmitting,
+    getCurrentCustomWeek
   };
 };
 
