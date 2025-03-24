@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { TimeSheetStatus, User } from '@/types/timesheet';
 import { useToast } from '@/hooks/use-toast';
@@ -118,37 +119,16 @@ export const useTimeSheetStatusChanges = ({
     return false;
   };
 
-  const handleSubmitForReview = async () => {
+  const getCurrentCustomWeek = () => {
     const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
-    
-    console.log("Looking for current week with key:", currentWeekKey);
-    console.log("Available weeks:", customWeeks.map(w => ({ id: w.id, from: w.period_from, name: w.name })));
-    
-    // Improved current week finding - try both exact and non-exact matching
-    const currentCustomWeek = customWeeks.find(week => {
-      // Try exact string matching first
-      if (format(new Date(week.period_from), 'yyyy-MM-dd') === currentWeekKey) {
-        return true;
-      }
-      
-      // Try date object comparison as fallback
-      try {
-        const weekDate = parse(week.period_from, 'yyyy-MM-dd', new Date());
-        const currentDateStartOfDay = new Date(currentDate);
-        currentDateStartOfDay.setHours(0, 0, 0, 0);
-        
-        return weekDate.getTime() === currentDateStartOfDay.getTime();
-      } catch (error) {
-        console.error("Error comparing dates:", error);
-        return false;
-      }
-    });
+    return customWeeks.find(week => format(new Date(week.period_from), 'yyyy-MM-dd') === currentWeekKey);
+  };
+
+  const handleSubmitForReview = async () => {
+    const currentCustomWeek = getCurrentCustomWeek();
     
     if (!currentCustomWeek) {
       console.error("Could not find current week data. Current date:", currentDate);
-      console.error("Current week key:", currentWeekKey);
-      console.error("Available weeks:", customWeeks);
-      
       toast({
         title: "Error",
         description: "Could not find current week data",
@@ -196,6 +176,7 @@ export const useTimeSheetStatusChanges = ({
       if (underReviewStatus && viewedUser.id) {
         await updateWeekStatus(viewedUser.id, currentCustomWeek.id, underReviewStatus.id);
         
+        const currentWeekKey = currentCustomWeek.period_from;
         setWeekStatuses(prev => ({
           ...prev,
           [currentWeekKey]: 'under-review' as TimeSheetStatus
@@ -223,29 +204,7 @@ export const useTimeSheetStatusChanges = ({
   };
 
   const handleApprove = async () => {
-    const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
-    
-    console.log("Looking for current week with key (approve):", currentWeekKey);
-    
-    // Improved current week finding - try both exact and non-exact matching
-    const currentCustomWeek = customWeeks.find(week => {
-      // Try exact string matching first
-      if (format(new Date(week.period_from), 'yyyy-MM-dd') === currentWeekKey) {
-        return true;
-      }
-      
-      // Try date object comparison as fallback
-      try {
-        const weekDate = parse(week.period_from, 'yyyy-MM-dd', new Date());
-        const currentDateStartOfDay = new Date(currentDate);
-        currentDateStartOfDay.setHours(0, 0, 0, 0);
-        
-        return weekDate.getTime() === currentDateStartOfDay.getTime();
-      } catch (error) {
-        console.error("Error comparing dates:", error);
-        return false;
-      }
-    });
+    const currentCustomWeek = getCurrentCustomWeek();
     
     if (!currentCustomWeek) {
       console.error("Could not find current week data (approve). Current date:", currentDate);
@@ -278,6 +237,7 @@ export const useTimeSheetStatusChanges = ({
       if (acceptedStatus && viewedUser.id) {
         await updateWeekStatus(viewedUser.id, currentCustomWeek.id, acceptedStatus.id);
         
+        const currentWeekKey = currentCustomWeek.period_from;
         setWeekStatuses(prev => ({
           ...prev,
           [currentWeekKey]: 'accepted' as TimeSheetStatus
@@ -303,29 +263,7 @@ export const useTimeSheetStatusChanges = ({
   };
 
   const handleReject = async () => {
-    const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
-    
-    console.log("Looking for current week with key (reject):", currentWeekKey);
-    
-    // Improved current week finding - try both exact and non-exact matching
-    const currentCustomWeek = customWeeks.find(week => {
-      // Try exact string matching first
-      if (format(new Date(week.period_from), 'yyyy-MM-dd') === currentWeekKey) {
-        return true;
-      }
-      
-      // Try date object comparison as fallback
-      try {
-        const weekDate = parse(week.period_from, 'yyyy-MM-dd', new Date());
-        const currentDateStartOfDay = new Date(currentDate);
-        currentDateStartOfDay.setHours(0, 0, 0, 0);
-        
-        return weekDate.getTime() === currentDateStartOfDay.getTime();
-      } catch (error) {
-        console.error("Error comparing dates:", error);
-        return false;
-      }
-    });
+    const currentCustomWeek = getCurrentCustomWeek();
     
     if (!currentCustomWeek) {
       console.error("Could not find current week data (reject). Current date:", currentDate);
@@ -346,6 +284,7 @@ export const useTimeSheetStatusChanges = ({
       if (needsRevisionStatus && viewedUser.id) {
         await updateWeekStatus(viewedUser.id, currentCustomWeek.id, needsRevisionStatus.id);
         
+        const currentWeekKey = currentCustomWeek.period_from;
         setWeekStatuses(prev => ({
           ...prev,
           [currentWeekKey]: 'needs-revision' as TimeSheetStatus
@@ -373,29 +312,7 @@ export const useTimeSheetStatusChanges = ({
   };
 
   const handleReturnToUnconfirmed = async () => {
-    const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
-    
-    console.log("Looking for current week with key (return to unconfirmed):", currentWeekKey);
-    
-    // Improved current week finding - try both exact and non-exact matching
-    const currentCustomWeek = customWeeks.find(week => {
-      // Try exact string matching first
-      if (format(new Date(week.period_from), 'yyyy-MM-dd') === currentWeekKey) {
-        return true;
-      }
-      
-      // Try date object comparison as fallback
-      try {
-        const weekDate = parse(week.period_from, 'yyyy-MM-dd', new Date());
-        const currentDateStartOfDay = new Date(currentDate);
-        currentDateStartOfDay.setHours(0, 0, 0, 0);
-        
-        return weekDate.getTime() === currentDateStartOfDay.getTime();
-      } catch (error) {
-        console.error("Error comparing dates:", error);
-        return false;
-      }
-    });
+    const currentCustomWeek = getCurrentCustomWeek();
     
     if (!currentCustomWeek) {
       console.error("Could not find current week data (return to unconfirmed). Current date:", currentDate);
@@ -425,6 +342,7 @@ export const useTimeSheetStatusChanges = ({
       if (unconfirmedStatus && viewedUser.id) {
         await updateWeekStatus(viewedUser.id, currentCustomWeek.id, unconfirmedStatus.id);
         
+        const currentWeekKey = currentCustomWeek.period_from;
         setWeekStatuses(prev => ({
           ...prev,
           [currentWeekKey]: 'unconfirmed' as TimeSheetStatus
