@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { TimeSheetStatus, User } from '@/types/timesheet';
 import { useToast } from '@/hooks/use-toast';
@@ -77,13 +78,34 @@ export const useTimeSheetStatusChanges = ({
     }
   };
 
+  const getCurrentCustomWeek = () => {
+    const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
+    
+    // First try an exact match with the currentDate
+    let currentCustomWeek = customWeeks.find(week => 
+      format(parse(week.period_from, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === currentWeekKey
+    );
+    
+    // If no exact match, check if we have a saved week in localStorage
+    if (!currentCustomWeek && viewedUser.id) {
+      const savedWeekId = localStorage.getItem(`selectedWeek_${viewedUser.id}`);
+      if (savedWeekId) {
+        currentCustomWeek = customWeeks.find(week => week.id === savedWeekId);
+      }
+    }
+    
+    // If still no match, use the first available week
+    if (!currentCustomWeek && customWeeks.length > 0) {
+      currentCustomWeek = customWeeks[0];
+    }
+    
+    return currentCustomWeek;
+  };
+
   const hasEarlierUnsubmittedWeeks = () => {
     if (!customWeeks.length) return false;
     
-    const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
-    const currentCustomWeek = customWeeks.find(week => 
-      format(new Date(week.period_from), 'yyyy-MM-dd') === currentWeekKey
-    );
+    const currentCustomWeek = getCurrentCustomWeek();
     
     if (!currentCustomWeek) return false;
     
@@ -119,10 +141,7 @@ export const useTimeSheetStatusChanges = ({
   };
 
   const handleSubmitForReview = async () => {
-    const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
-    const currentCustomWeek = customWeeks.find(week => 
-      format(new Date(week.period_from), 'yyyy-MM-dd') === currentWeekKey
-    );
+    const currentCustomWeek = getCurrentCustomWeek();
     
     if (!currentCustomWeek) {
       toast({
@@ -174,10 +193,10 @@ export const useTimeSheetStatusChanges = ({
         
         setWeekStatuses(prev => ({
           ...prev,
-          [currentWeekKey]: 'under-review' as TimeSheetStatus
+          [currentCustomWeek.period_from]: 'under-review' as TimeSheetStatus
         }));
         
-        setSubmittedWeeks(prev => [...prev, currentWeekKey]);
+        setSubmittedWeeks(prev => [...prev, currentCustomWeek.period_from]);
         
         await refreshWeekStatuses();
         
@@ -199,10 +218,7 @@ export const useTimeSheetStatusChanges = ({
   };
 
   const handleApprove = async () => {
-    const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
-    const currentCustomWeek = customWeeks.find(week => 
-      format(new Date(week.period_from), 'yyyy-MM-dd') === currentWeekKey
-    );
+    const currentCustomWeek = getCurrentCustomWeek();
     
     if (!currentCustomWeek) {
       toast({
@@ -236,7 +252,7 @@ export const useTimeSheetStatusChanges = ({
         
         setWeekStatuses(prev => ({
           ...prev,
-          [currentWeekKey]: 'accepted' as TimeSheetStatus
+          [currentCustomWeek.period_from]: 'accepted' as TimeSheetStatus
         }));
         
         await refreshWeekStatuses();
@@ -259,10 +275,7 @@ export const useTimeSheetStatusChanges = ({
   };
 
   const handleReject = async () => {
-    const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
-    const currentCustomWeek = customWeeks.find(week => 
-      format(new Date(week.period_from), 'yyyy-MM-dd') === currentWeekKey
-    );
+    const currentCustomWeek = getCurrentCustomWeek();
     
     if (!currentCustomWeek) {
       toast({
@@ -284,10 +297,10 @@ export const useTimeSheetStatusChanges = ({
         
         setWeekStatuses(prev => ({
           ...prev,
-          [currentWeekKey]: 'needs-revision' as TimeSheetStatus
+          [currentCustomWeek.period_from]: 'needs-revision' as TimeSheetStatus
         }));
         
-        setSubmittedWeeks(prev => prev.filter(week => week !== currentWeekKey));
+        setSubmittedWeeks(prev => prev.filter(week => week !== currentCustomWeek.period_from));
         
         await refreshWeekStatuses();
         
@@ -309,10 +322,7 @@ export const useTimeSheetStatusChanges = ({
   };
 
   const handleReturnToUnconfirmed = async () => {
-    const currentWeekKey = format(currentDate, 'yyyy-MM-dd');
-    const currentCustomWeek = customWeeks.find(week => 
-      format(new Date(week.period_from), 'yyyy-MM-dd') === currentWeekKey
-    );
+    const currentCustomWeek = getCurrentCustomWeek();
     
     if (!currentCustomWeek) {
       toast({
@@ -343,10 +353,10 @@ export const useTimeSheetStatusChanges = ({
         
         setWeekStatuses(prev => ({
           ...prev,
-          [currentWeekKey]: 'unconfirmed' as TimeSheetStatus
+          [currentCustomWeek.period_from]: 'unconfirmed' as TimeSheetStatus
         }));
         
-        setSubmittedWeeks(prev => prev.filter(week => week !== currentWeekKey));
+        setSubmittedWeeks(prev => prev.filter(week => week !== currentCustomWeek.period_from));
         
         await refreshWeekStatuses();
         
@@ -375,3 +385,4 @@ export const useTimeSheetStatusChanges = ({
     isSubmitting
   };
 };
+

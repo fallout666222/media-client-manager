@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Select,
@@ -40,7 +39,6 @@ export const WeekPicker = ({
 }: WeekPickerProps) => {
   const [availableWeeks, setAvailableWeeks] = useState<CustomWeek[]>([]);
   const [loading, setLoading] = useState(true);
-
   const [currentWeekId, setCurrentWeekId] = useState<string | null>(null);
 
   const availableYears = useMemo(() => {
@@ -84,7 +82,9 @@ export const WeekPicker = ({
     const fetchWeeks = async () => {
       try {
         setLoading(true);
-        if (propCustomWeeks.length > 0) {
+        
+        if (propCustomWeeks && propCustomWeeks.length > 0) {
+          console.log('Using provided custom weeks:', propCustomWeeks.length);
           const formattedWeeks = propCustomWeeks.map(week => ({
             id: week.id,
             name: week.name,
@@ -93,10 +93,18 @@ export const WeekPicker = ({
             hours: week.required_hours || week.hours
           }));
           setAvailableWeeks(formattedWeeks);
-          setLoading(false);
         } else {
-          const { data } = await getCustomWeeks();
+          console.log('Fetching custom weeks from database');
+          const { data, error } = await getCustomWeeks();
+          
+          if (error) {
+            console.error('Error fetching weeks:', error);
+            setLoading(false);
+            return;
+          }
+          
           if (data && data.length > 0) {
+            console.log('Received custom weeks from DB:', data.length);
             const formattedWeeks = data.map(week => ({
               id: week.id,
               name: week.name,
@@ -105,13 +113,13 @@ export const WeekPicker = ({
               hours: week.required_hours
             }));
             setAvailableWeeks(formattedWeeks);
-            setLoading(false);
           } else {
-            setLoading(false);
+            console.warn('No custom weeks found in database');
           }
         }
       } catch (error) {
-        console.error('Error fetching custom weeks:', error);
+        console.error('Error in fetchWeeks:', error);
+      } finally {
         setLoading(false);
       }
     };

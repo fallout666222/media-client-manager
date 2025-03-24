@@ -19,7 +19,7 @@ export const TeamMemberSelectorSection: React.FC<TeamMemberSelectorSectionProps>
 }) => {
   const { handleUserSelect, viewedUser } = useTimeSheet();
 
-  if (userRole !== 'manager' || impersonatedUser) {
+  if (userRole !== 'manager' && userRole !== 'admin' || impersonatedUser) {
     return null;
   }
 
