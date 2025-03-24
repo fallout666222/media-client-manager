@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { Client, User } from '@/types/timesheet';
 import TimeSheet from './TimeSheet';
 import { Link } from 'react-router-dom';
 import { parse } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 interface UserImpersonationProps {
   clients: Client[];
@@ -22,24 +24,27 @@ const UserImpersonation = ({ clients }: UserImpersonationProps) => {
   const [adminUser, setAdminUser] = useState<User | null>(null);
   const [customWeeks, setCustomWeeks] = useState<any[]>([]);
   const [initialWeekId, setInitialWeekId] = useState<string | null>(null);
+  const [userDataLoading, setUserDataLoading] = useState(false);
+  const { toast } = useToast();
 
+  // Fetch basic data only once on component mount
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchInitialData = async () => {
       try {
         setLoading(true);
         
-        // Fetch users
-        const { data: usersData } = await getUsers();
+        // Parallel requests for initial data
+        const [usersResponse, weeksResponse] = await Promise.all([
+          getUsers(),
+          getCustomWeeks()
+        ]);
         
-        // Fetch custom weeks
-        const { data: weeksData } = await getCustomWeeks();
-        
-        if (weeksData) {
-          setCustomWeeks(weeksData);
-          console.log(`Loaded ${weeksData.length} custom weeks from database`);
+        if (weeksResponse.data) {
+          setCustomWeeks(weeksResponse.data);
+          console.log(`Loaded ${weeksResponse.data.length} custom weeks from database`);
         }
         
-        if (usersData) {
+        if (usersResponse.data) {
           // Create admin user for context
           const admin: User = {
             id: 'admin',
@@ -52,45 +57,76 @@ const UserImpersonation = ({ clients }: UserImpersonationProps) => {
           };
           
           setAdminUser(admin);
-          setUsers(usersData);
+          setUsers(usersResponse.data);
         }
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching initial data:', error);
+        toast({
+          title: "Error loading data",
+          description: "There was a problem loading user data.",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
       }
     };
     
-    fetchData();
-  }, []);
+    fetchInitialData();
+  }, [toast]);
+
+  // Optimized function to find a week with hours, with better error handling and caching
+  const findWeekWithHours = useCallback(async (userId: string) => {
+    if (!userId || customWeeks.length === 0) return null;
+    
+    try {
+      // Start from most recent week (last 10 weeks to improve performance)
+      const recentWeeks = customWeeks.slice(-10);
+      
+      for (const week of recentWeeks) {
+        const { data: hoursData, error } = await getWeekHours(userId, week.id);
+        
+        if (error) {
+          console.warn(`Error checking hours for week ${week.id}:`, error);
+          continue;
+        }
+        
+        // If this week has hours entries, use it
+        if (hoursData && hoursData.length > 0) {
+          console.log(`Found recent week with hours: ${week.name}`);
+          return week.id;
+        }
+      }
+      
+      // If no week with hours found, use the latest week
+      if (customWeeks.length > 0) {
+        console.log(`No weeks with hours found, using latest week: ${customWeeks[customWeeks.length - 1].name}`);
+        return customWeeks[customWeeks.length - 1].id;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error finding week with hours:', error);
+      return null;
+    }
+  }, [customWeeks]);
 
   const handleImpersonateUser = async (user: User) => {
+    if (userDataLoading) return; // Prevent multiple requests
+    
     try {
+      setUserDataLoading(true);
+      
       // Reset initial week ID
       setInitialWeekId(null);
       
-      // Find most recent week with filled hours for this user
-      if (user.id && customWeeks.length > 0) {
-        let mostRecentWeekWithHours = null;
-        
-        // Check each week for hours data, start from the end (most recent)
-        for (const week of customWeeks) {
-          const { data: hoursData } = await getWeekHours(user.id, week.id);
-          
-          // If this week has hours entries, use it
-          if (hoursData && hoursData.length > 0) {
-            mostRecentWeekWithHours = week;
-            break;
-          }
-        }
-        
-        // If we found a week with hours, set it as initial
-        if (mostRecentWeekWithHours) {
-          console.log(`Found recent week with hours: ${mostRecentWeekWithHours.name}`);
-          setInitialWeekId(mostRecentWeekWithHours.id);
+      // Only try to find initial week if user has a first custom week ID
+      if (user.id) {
+        const weekId = await findWeekWithHours(user.id);
+        if (weekId) {
+          setInitialWeekId(weekId);
+        } else if (user.firstCustomWeekId) {
+          setInitialWeekId(user.firstCustomWeekId);
         } else if (customWeeks.length > 0) {
-          // Otherwise, use the first week from custom_weeks
-          console.log(`No weeks with hours found, using first week: ${customWeeks[0].name}`);
           setInitialWeekId(customWeeks[0].id);
         }
       }
@@ -98,9 +134,14 @@ const UserImpersonation = ({ clients }: UserImpersonationProps) => {
       // Set the selected user
       setSelectedUser(user);
     } catch (error) {
-      console.error('Error finding week with hours:', error);
-      // Set the user anyway, we'll default to the first week
-      setSelectedUser(user);
+      console.error('Error preparing user data:', error);
+      toast({
+        title: "Error",
+        description: "Could not load user timesheet data",
+        variant: "destructive"
+      });
+    } finally {
+      setUserDataLoading(false);
     }
   };
 
@@ -169,26 +210,32 @@ const UserImpersonation = ({ clients }: UserImpersonationProps) => {
           </Card>
         )}
         
-        {/* Timesheet with admin privileges */}
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Timesheet Management</h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            As an administrator, you can view and edit this user's timesheet, submit weeks for review,
-            approve or reject weeks under review, and make changes regardless of the week's status.
-          </p>
-          
-          <TimeSheet 
-            userRole="admin" 
-            firstWeek={selectedUser.firstWeek || selectedUser.first_week || '2024-01-01'} 
-            currentUser={adminUser}
-            users={users}
-            clients={clients}
-            impersonatedUser={selectedUser}
-            adminOverride={true}
-            customWeeks={customWeeks}
-            initialWeekId={initialWeekId}
-          />
-        </div>
+        {userDataLoading ? (
+          <div className="flex justify-center items-center p-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            <p className="ml-3 text-lg">Loading timesheet data...</p>
+          </div>
+        ) : (
+          <>
+            <h2 className="text-xl font-semibold mb-4">Timesheet Management</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              As an administrator, you can view and edit this user's timesheet, submit weeks for review,
+              approve or reject weeks under review, and make changes regardless of the week's status.
+            </p>
+            
+            <TimeSheet 
+              userRole="admin" 
+              firstWeek={selectedUser.firstWeek || selectedUser.first_week || '2024-01-01'} 
+              currentUser={adminUser}
+              users={users}
+              clients={clients}
+              impersonatedUser={selectedUser}
+              adminOverride={true}
+              customWeeks={customWeeks}
+              initialWeekId={initialWeekId}
+            />
+          </>
+        )}
       </div>
     );
   }
@@ -247,8 +294,13 @@ const UserImpersonation = ({ clients }: UserImpersonationProps) => {
                           size="sm"
                           onClick={() => handleImpersonateUser(user)}
                           className="flex items-center gap-1"
+                          disabled={userDataLoading}
                         >
-                          <Eye className="h-4 w-4" />
+                          {userDataLoading ? (
+                            <span className="h-4 w-4 animate-spin rounded-full border-t-2 border-primary" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
                           Impersonate
                         </Button>
                       </TableCell>
