@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -56,7 +55,6 @@ const PlanningManagement = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Function to fetch all data
   const fetchData = async () => {
     try {
       setIsLoading(true);
@@ -77,7 +75,6 @@ const PlanningManagement = () => {
         return date.getFullYear().toString();
       }) || [])];
       
-      // Explicitly cast the array elements to ensure they match the expected type
       const yearsWithIds = years.map(year => ({ 
         id: year as string, 
         name: year as string 
@@ -121,7 +118,6 @@ const PlanningManagement = () => {
       
       if (error) throw error;
       
-      // Refresh the versions list after adding a new one
       await fetchData();
       
       toast({
@@ -147,7 +143,6 @@ const PlanningManagement = () => {
       
       if (error) throw error;
       
-      // Refresh the years list after adding a new one
       await fetchData();
       
       toast({
@@ -157,7 +152,6 @@ const PlanningManagement = () => {
     } catch (error: any) {
       console.error('Error creating year data:', error);
       
-      // Check for unique constraint violation
       if (error.code === '23505') {
         toast({
           title: "Error",
@@ -268,7 +262,7 @@ const PlanningManagement = () => {
             <CardContent>
               <PlanningVersionAddForm 
                 onSubmit={handleAddVersion} 
-                availableYears={customWeeks.map(week => week.name)} 
+                availableYears={years.map(year => year.year)} 
                 isSubmitting={isSubmitting}
               />
             </CardContent>
