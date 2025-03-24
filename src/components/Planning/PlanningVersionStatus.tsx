@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +18,9 @@ interface PlanningVersionStatusProps {
   currentStatus?: string;
   isUserHead?: boolean;
   onStatusUpdate: () => void;
+  monthlyLimits?: Record<string, number>;
+  monthTotals?: Record<string, number>;
+  totalPlannedHours?: number;
 }
 
 export function PlanningVersionStatus({
@@ -24,12 +28,44 @@ export function PlanningVersionStatus({
   versionId,
   currentStatus = 'unconfirmed',
   isUserHead = false,
-  onStatusUpdate
+  onStatusUpdate,
+  monthlyLimits,
+  monthTotals,
+  totalPlannedHours = 0
 }: PlanningVersionStatusProps) {
   const { toast } = useToast();
 
+  const checkMonthsAreFilled = () => {
+    if (!monthlyLimits || !monthTotals) return true;
+    
+    // Check if all months with limits have at least some hours planned
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    for (const month of months) {
+      const limit = monthlyLimits[month];
+      const total = monthTotals[month] || 0;
+      
+      // If there's a limit for this month but no hours planned, return false
+      if (limit && limit > 0 && total === 0) {
+        return false;
+      }
+    }
+    
+    return true;
+  };
+
   const handleSubmitForReview = async () => {
     try {
+      // Check if all months are filled
+      if (!checkMonthsAreFilled()) {
+        toast({
+          title: 'Missing Hours',
+          description: 'Please add hours for all months before submitting for review',
+          variant: 'destructive'
+        });
+        return;
+      }
+      
       // Get the 'under-review' status ID directly from Supabase
       const statusResult = await fetchStatusId('under-review');
       

@@ -12,6 +12,8 @@ interface PlanningHoursCellProps {
   initialValue: number;
   isLocked?: boolean;
   onUpdate?: (newValue: number) => void;
+  monthLimit?: number;
+  monthTotal?: number;
 }
 
 export function PlanningHoursCell({ 
@@ -21,7 +23,9 @@ export function PlanningHoursCell({
   month, 
   initialValue,
   isLocked = false,
-  onUpdate 
+  onUpdate,
+  monthLimit,
+  monthTotal
 }: PlanningHoursCellProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [value, setValue] = useState(initialValue);
@@ -47,6 +51,22 @@ export function PlanningHoursCell({
     if (value === initialValue) return;
     
     try {
+      // Check if the new value would exceed the month limit
+      if (monthLimit !== undefined && monthTotal !== undefined) {
+        const difference = value - initialValue;
+        const newMonthTotal = monthTotal + difference;
+        
+        if (newMonthTotal > monthLimit) {
+          toast({
+            title: 'Limit Exceeded',
+            description: `Cannot add more hours. Monthly limit of ${monthLimit} would be exceeded.`,
+            variant: 'destructive'
+          });
+          setValue(initialValue); // Revert to original value
+          return;
+        }
+      }
+
       await updatePlanningHours(userId, versionId, clientId, month, value);
       if (onUpdate) onUpdate(value);
       
@@ -100,4 +120,3 @@ export function PlanningHoursCell({
     </div>
   );
 }
-

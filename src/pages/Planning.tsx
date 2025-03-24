@@ -181,6 +181,9 @@ export default function Planning({ currentUser, clients, isUserHead = false }: P
             currentStatus={versionStatus}
             isUserHead={isUserHead}
             onStatusUpdate={handleStatusUpdate}
+            monthlyLimits={monthlyLimits}
+            monthTotals={monthTotals}
+            totalPlannedHours={totalPlannedHours}
           />
         )}
       </div>
@@ -242,6 +245,8 @@ export default function Planning({ currentUser, clients, isUserHead = false }: P
                       initialValue={client.months.Jan}
                       isLocked={isMonthLocked("Jan") || isCellLockedByStatus(versionStatus)}
                       onUpdate={handleCellUpdate}
+                      monthLimit={monthlyLimits?.Jan}
+                      monthTotal={monthTotals.Jan}
                     />
                   </TableCell>
                   <TableCell className="p-0">
@@ -253,6 +258,8 @@ export default function Planning({ currentUser, clients, isUserHead = false }: P
                       initialValue={client.months.Feb}
                       isLocked={isMonthLocked("Feb") || isCellLockedByStatus(versionStatus)}
                       onUpdate={handleCellUpdate}
+                      monthLimit={monthlyLimits?.Feb}
+                      monthTotal={monthTotals.Feb}
                     />
                   </TableCell>
                   <TableCell className="p-0">
@@ -264,6 +271,8 @@ export default function Planning({ currentUser, clients, isUserHead = false }: P
                       initialValue={client.months.Mar}
                       isLocked={isMonthLocked("Mar") || isCellLockedByStatus(versionStatus)}
                       onUpdate={handleCellUpdate}
+                      monthLimit={monthlyLimits?.Mar}
+                      monthTotal={monthTotals.Mar}
                     />
                   </TableCell>
                   {/* Q1 Total */}
@@ -281,6 +290,8 @@ export default function Planning({ currentUser, clients, isUserHead = false }: P
                       initialValue={client.months.Apr}
                       isLocked={isMonthLocked("Apr") || isCellLockedByStatus(versionStatus)}
                       onUpdate={handleCellUpdate}
+                      monthLimit={monthlyLimits?.Apr}
+                      monthTotal={monthTotals.Apr}
                     />
                   </TableCell>
                   <TableCell className="p-0">
@@ -292,6 +303,8 @@ export default function Planning({ currentUser, clients, isUserHead = false }: P
                       initialValue={client.months.May}
                       isLocked={isMonthLocked("May") || isCellLockedByStatus(versionStatus)}
                       onUpdate={handleCellUpdate}
+                      monthLimit={monthlyLimits?.May}
+                      monthTotal={monthTotals.May}
                     />
                   </TableCell>
                   <TableCell className="p-0">
@@ -303,6 +316,8 @@ export default function Planning({ currentUser, clients, isUserHead = false }: P
                       initialValue={client.months.Jun}
                       isLocked={isMonthLocked("Jun") || isCellLockedByStatus(versionStatus)}
                       onUpdate={handleCellUpdate}
+                      monthLimit={monthlyLimits?.Jun}
+                      monthTotal={monthTotals.Jun}
                     />
                   </TableCell>
                   {/* Q2 Total */}
@@ -320,6 +335,8 @@ export default function Planning({ currentUser, clients, isUserHead = false }: P
                       initialValue={client.months.Jul}
                       isLocked={isMonthLocked("Jul") || isCellLockedByStatus(versionStatus)}
                       onUpdate={handleCellUpdate}
+                      monthLimit={monthlyLimits?.Jul}
+                      monthTotal={monthTotals.Jul}
                     />
                   </TableCell>
                   <TableCell className="p-0">
@@ -331,6 +348,8 @@ export default function Planning({ currentUser, clients, isUserHead = false }: P
                       initialValue={client.months.Aug}
                       isLocked={isMonthLocked("Aug") || isCellLockedByStatus(versionStatus)}
                       onUpdate={handleCellUpdate}
+                      monthLimit={monthlyLimits?.Aug}
+                      monthTotal={monthTotals.Aug}
                     />
                   </TableCell>
                   <TableCell className="p-0">
@@ -342,6 +361,8 @@ export default function Planning({ currentUser, clients, isUserHead = false }: P
                       initialValue={client.months.Sep}
                       isLocked={isMonthLocked("Sep") || isCellLockedByStatus(versionStatus)}
                       onUpdate={handleCellUpdate}
+                      monthLimit={monthlyLimits?.Sep}
+                      monthTotal={monthTotals.Sep}
                     />
                   </TableCell>
                   {/* Q3 Total */}
@@ -359,6 +380,8 @@ export default function Planning({ currentUser, clients, isUserHead = false }: P
                       initialValue={client.months.Oct}
                       isLocked={isMonthLocked("Oct") || isCellLockedByStatus(versionStatus)}
                       onUpdate={handleCellUpdate}
+                      monthLimit={monthlyLimits?.Oct}
+                      monthTotal={monthTotals.Oct}
                     />
                   </TableCell>
                   <TableCell className="p-0">
@@ -370,6 +393,8 @@ export default function Planning({ currentUser, clients, isUserHead = false }: P
                       initialValue={client.months.Nov}
                       isLocked={isMonthLocked("Nov") || isCellLockedByStatus(versionStatus)}
                       onUpdate={handleCellUpdate}
+                      monthLimit={monthlyLimits?.Nov}
+                      monthTotal={monthTotals.Nov}
                     />
                   </TableCell>
                   <TableCell className="p-0">
@@ -381,6 +406,8 @@ export default function Planning({ currentUser, clients, isUserHead = false }: P
                       initialValue={client.months.Dec}
                       isLocked={isMonthLocked("Dec") || isCellLockedByStatus(versionStatus)}
                       onUpdate={handleCellUpdate}
+                      monthLimit={monthlyLimits?.Dec}
+                      monthTotal={monthTotals.Dec}
                     />
                   </TableCell>
                   {/* Q4 Total */}
@@ -476,63 +503,63 @@ export default function Planning({ currentUser, clients, isUserHead = false }: P
               
               {/* Month limits for Q1 */}
               <TableCell className="text-center text-sm bg-gray-100">
-                {monthlyLimits.Jan ? `${monthTotals.Jan}/${monthlyLimits.Jan}` : '-'}
+                {monthlyLimits?.Jan ? `${monthTotals.Jan}/${monthlyLimits.Jan}` : '-'}
               </TableCell>
               <TableCell className="text-center text-sm bg-gray-100">
-                {monthlyLimits.Feb ? `${monthTotals.Feb}/${monthlyLimits.Feb}` : '-'}
+                {monthlyLimits?.Feb ? `${monthTotals.Feb}/${monthlyLimits.Feb}` : '-'}
               </TableCell>
               <TableCell className="text-center text-sm bg-gray-100">
-                {monthlyLimits.Mar ? `${monthTotals.Mar}/${monthlyLimits.Mar}` : '-'}
+                {monthlyLimits?.Mar ? `${monthTotals.Mar}/${monthlyLimits.Mar}` : '-'}
               </TableCell>
               <TableCell className="text-center text-sm bg-gray-100">
-                {`${quarterTotals.Q1}/${(monthlyLimits.Jan || 0) + (monthlyLimits.Feb || 0) + (monthlyLimits.Mar || 0)}`}
+                {`${quarterTotals.Q1}/${(monthlyLimits?.Jan || 0) + (monthlyLimits?.Feb || 0) + (monthlyLimits?.Mar || 0)}`}
               </TableCell>
               
               {/* Month limits for Q2 */}
               <TableCell className="text-center text-sm bg-gray-100">
-                {monthlyLimits.Apr ? `${monthTotals.Apr}/${monthlyLimits.Apr}` : '-'}
+                {monthlyLimits?.Apr ? `${monthTotals.Apr}/${monthlyLimits.Apr}` : '-'}
               </TableCell>
               <TableCell className="text-center text-sm bg-gray-100">
-                {monthlyLimits.May ? `${monthTotals.May}/${monthlyLimits.May}` : '-'}
+                {monthlyLimits?.May ? `${monthTotals.May}/${monthlyLimits.May}` : '-'}
               </TableCell>
               <TableCell className="text-center text-sm bg-gray-100">
-                {monthlyLimits.Jun ? `${monthTotals.Jun}/${monthlyLimits.Jun}` : '-'}
+                {monthlyLimits?.Jun ? `${monthTotals.Jun}/${monthlyLimits.Jun}` : '-'}
               </TableCell>
               <TableCell className="text-center text-sm bg-gray-100">
-                {`${quarterTotals.Q2}/${(monthlyLimits.Apr || 0) + (monthlyLimits.May || 0) + (monthlyLimits.Jun || 0)}`}
+                {`${quarterTotals.Q2}/${(monthlyLimits?.Apr || 0) + (monthlyLimits?.May || 0) + (monthlyLimits?.Jun || 0)}`}
               </TableCell>
               
               {/* Month limits for Q3 */}
               <TableCell className="text-center text-sm bg-gray-100">
-                {monthlyLimits.Jul ? `${monthTotals.Jul}/${monthlyLimits.Jul}` : '-'}
+                {monthlyLimits?.Jul ? `${monthTotals.Jul}/${monthlyLimits.Jul}` : '-'}
               </TableCell>
               <TableCell className="text-center text-sm bg-gray-100">
-                {monthlyLimits.Aug ? `${monthTotals.Aug}/${monthlyLimits.Aug}` : '-'}
+                {monthlyLimits?.Aug ? `${monthTotals.Aug}/${monthlyLimits.Aug}` : '-'}
               </TableCell>
               <TableCell className="text-center text-sm bg-gray-100">
-                {monthlyLimits.Sep ? `${monthTotals.Sep}/${monthlyLimits.Sep}` : '-'}
+                {monthlyLimits?.Sep ? `${monthTotals.Sep}/${monthlyLimits.Sep}` : '-'}
               </TableCell>
               <TableCell className="text-center text-sm bg-gray-100">
-                {`${quarterTotals.Q3}/${(monthlyLimits.Jul || 0) + (monthlyLimits.Aug || 0) + (monthlyLimits.Sep || 0)}`}
+                {`${quarterTotals.Q3}/${(monthlyLimits?.Jul || 0) + (monthlyLimits?.Aug || 0) + (monthlyLimits?.Sep || 0)}`}
               </TableCell>
               
               {/* Month limits for Q4 */}
               <TableCell className="text-center text-sm bg-gray-100">
-                {monthlyLimits.Oct ? `${monthTotals.Oct}/${monthlyLimits.Oct}` : '-'}
+                {monthlyLimits?.Oct ? `${monthTotals.Oct}/${monthlyLimits.Oct}` : '-'}
               </TableCell>
               <TableCell className="text-center text-sm bg-gray-100">
-                {monthlyLimits.Nov ? `${monthTotals.Nov}/${monthlyLimits.Nov}` : '-'}
+                {monthlyLimits?.Nov ? `${monthTotals.Nov}/${monthlyLimits.Nov}` : '-'}
               </TableCell>
               <TableCell className="text-center text-sm bg-gray-100">
-                {monthlyLimits.Dec ? `${monthTotals.Dec}/${monthlyLimits.Dec}` : '-'}
+                {monthlyLimits?.Dec ? `${monthTotals.Dec}/${monthlyLimits.Dec}` : '-'}
               </TableCell>
               <TableCell className="text-center text-sm bg-gray-100">
-                {`${quarterTotals.Q4}/${(monthlyLimits.Oct || 0) + (monthlyLimits.Nov || 0) + (monthlyLimits.Dec || 0)}`}
+                {`${quarterTotals.Q4}/${(monthlyLimits?.Oct || 0) + (monthlyLimits?.Nov || 0) + (monthlyLimits?.Dec || 0)}`}
               </TableCell>
               
               {/* Year total/limit */}
               <TableCell className="text-center font-bold bg-blue-100">
-                {`${totalPlannedHours}/${monthlyLimits.totalLimit || 0}`}
+                {`${totalPlannedHours}/${monthlyLimits?.totalLimit || 0}`}
               </TableCell>
             </TableRow>
           </TableFooter>
