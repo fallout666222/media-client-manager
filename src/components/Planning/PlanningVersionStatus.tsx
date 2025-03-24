@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,36 +27,52 @@ export function PlanningVersionStatus({
 }: PlanningVersionStatusProps) {
   const { toast } = useToast();
 
-  const handleSubmitForReview = async () => {
+  const fetchStatusId = async (statusName: string) => {
     try {
-      // Get the 'under-review' status ID
-      const response = await fetch('/api/statusId?name=under-review');
+      // Use window.location.origin to ensure we have the full base URL
+      const baseUrl = window.location.origin;
+      const apiUrl = `${baseUrl}/api/statusId?name=${statusName}`;
+      console.log('Fetching status ID from:', apiUrl);
+      
+      const response = await fetch(apiUrl);
       
       if (!response.ok) {
         throw new Error(`API request failed with status ${response.status}`);
       }
       
       const responseText = await response.text();
+      console.log('API response:', responseText);
       
       // Check if the response is valid JSON
       try {
-        const { data: statusData, error: statusError } = JSON.parse(responseText);
-        
-        if (statusError) throw new Error(statusError.message || 'Failed to get status ID');
-        if (!statusData?.id) throw new Error('Could not find under-review status');
-
-        await updateVersionStatus(currentUser.id || '', versionId, statusData.id);
-        onStatusUpdate();
-        
-        toast({
-          title: 'Status Updated',
-          description: 'Planning version submitted for review',
-          variant: 'default'
-        });
+        const responseData = JSON.parse(responseText);
+        return responseData;
       } catch (jsonError) {
         console.error('Error parsing JSON:', responseText);
         throw new Error('Invalid response from server');
       }
+    } catch (error) {
+      console.error('Error fetching status ID:', error);
+      throw error;
+    }
+  };
+
+  const handleSubmitForReview = async () => {
+    try {
+      // Get the 'under-review' status ID
+      const { data: statusData, error: statusError } = await fetchStatusId('under-review');
+      
+      if (statusError) throw new Error(statusError.message || 'Failed to get status ID');
+      if (!statusData?.id) throw new Error('Could not find under-review status');
+
+      await updateVersionStatus(currentUser.id || '', versionId, statusData.id);
+      onStatusUpdate();
+      
+      toast({
+        title: 'Status Updated',
+        description: 'Planning version submitted for review',
+        variant: 'default'
+      });
     } catch (error) {
       console.error('Error updating status:', error);
       toast({
@@ -71,33 +86,19 @@ export function PlanningVersionStatus({
   const handleApprove = async () => {
     try {
       // Get the 'accepted' status ID
-      const response = await fetch('/api/statusId?name=accepted');
+      const { data: statusData, error: statusError } = await fetchStatusId('accepted');
       
-      if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
-      }
-      
-      const responseText = await response.text();
-      
-      // Check if the response is valid JSON
-      try {
-        const { data: statusData, error: statusError } = JSON.parse(responseText);
-        
-        if (statusError) throw new Error(statusError.message || 'Failed to get status ID');
-        if (!statusData?.id) throw new Error('Could not find accepted status');
+      if (statusError) throw new Error(statusError.message || 'Failed to get status ID');
+      if (!statusData?.id) throw new Error('Could not find accepted status');
 
-        await updateVersionStatus(currentUser.id || '', versionId, statusData.id);
-        onStatusUpdate();
-        
-        toast({
-          title: 'Version Approved',
-          description: 'Planning version has been approved',
-          variant: 'default'
-        });
-      } catch (jsonError) {
-        console.error('Error parsing JSON:', responseText);
-        throw new Error('Invalid response from server');
-      }
+      await updateVersionStatus(currentUser.id || '', versionId, statusData.id);
+      onStatusUpdate();
+      
+      toast({
+        title: 'Version Approved',
+        description: 'Planning version has been approved',
+        variant: 'default'
+      });
     } catch (error) {
       console.error('Error approving version:', error);
       toast({
@@ -111,33 +112,19 @@ export function PlanningVersionStatus({
   const handleRequestRevision = async () => {
     try {
       // Get the 'needs-revision' status ID
-      const response = await fetch('/api/statusId?name=needs-revision');
+      const { data: statusData, error: statusError } = await fetchStatusId('needs-revision');
       
-      if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
-      }
-      
-      const responseText = await response.text();
-      
-      // Check if the response is valid JSON
-      try {
-        const { data: statusData, error: statusError } = JSON.parse(responseText);
-        
-        if (statusError) throw new Error(statusError.message || 'Failed to get status ID');
-        if (!statusData?.id) throw new Error('Could not find needs-revision status');
+      if (statusError) throw new Error(statusError.message || 'Failed to get status ID');
+      if (!statusData?.id) throw new Error('Could not find needs-revision status');
 
-        await updateVersionStatus(currentUser.id || '', versionId, statusData.id);
-        onStatusUpdate();
-        
-        toast({
-          title: 'Revision Requested',
-          description: 'User will need to revise the planning version',
-          variant: 'default'
-        });
-      } catch (jsonError) {
-        console.error('Error parsing JSON:', responseText);
-        throw new Error('Invalid response from server');
-      }
+      await updateVersionStatus(currentUser.id || '', versionId, statusData.id);
+      onStatusUpdate();
+      
+      toast({
+        title: 'Revision Requested',
+        description: 'User will need to revise the planning version',
+        variant: 'default'
+      });
     } catch (error) {
       console.error('Error requesting revision:', error);
       toast({
