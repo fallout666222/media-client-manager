@@ -41,6 +41,7 @@ export const TeamMemberSelectorSection: React.FC<TeamMemberSelectorSectionProps>
         users={teamMembers} // Only pass relevant users
         onUserSelect={handleUserSelect}
         selectedUser={viewedUser}
+        placeholder="Select team member"
       />
     </div>
   );

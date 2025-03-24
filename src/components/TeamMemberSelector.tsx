@@ -13,8 +13,14 @@ import {
 interface TeamMemberSelectorProps {
   currentUser: User;
   users: User[];
-  selectedUser: User;
-  onUserSelect: (user: User) => void;
+  selectedUser: User | null;
+  onUserSelect: (user: User | null) => void;
+  placeholder?: string;
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
+  autoOpenOnFocus?: boolean;
+  clearSearchOnSelect?: boolean;
+  className?: string;
 }
 
 export const TeamMemberSelector = memo(({
@@ -22,8 +28,21 @@ export const TeamMemberSelector = memo(({
   users,
   selectedUser,
   onUserSelect,
+  placeholder = "Select team member",
+  className = "w-[200px]",
+  // We're not actually using these props yet, but we're adding them to the interface
+  // to prevent TypeScript errors in the consumer components
+  searchValue,
+  onSearchChange,
+  autoOpenOnFocus,
+  clearSearchOnSelect,
 }: TeamMemberSelectorProps) => {
   const handleUserChange = (userId: string) => {
+    if (userId === 'none') {
+      onUserSelect(null);
+      return;
+    }
+    
     if (userId === currentUser.id) {
       onUserSelect(currentUser);
     } else {
@@ -36,19 +55,22 @@ export const TeamMemberSelector = memo(({
 
   return (
     <Select 
-      value={selectedUser.id}
+      value={selectedUser?.id || 'none'}
       onValueChange={handleUserChange}
     >
-      <SelectTrigger className="w-[200px]">
-        <SelectValue placeholder="Select team member" />
+      <SelectTrigger className={className}>
+        <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value={currentUser.id}>My Timesheet</SelectItem>
+        {currentUser.id && (
+          <SelectItem value={currentUser.id}>My Timesheet</SelectItem>
+        )}
         {users.map(user => (
           <SelectItem key={user.id} value={user.id}>
             {user.name || user.username || user.login}
           </SelectItem>
         ))}
+        <SelectItem value="none">None</SelectItem>
       </SelectContent>
     </Select>
   );
