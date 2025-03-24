@@ -45,33 +45,81 @@ export const useTimeSheetInitialization = ({
           weeksData = data || [];
         }
         
-        setCustomWeeks(weeksData);
-        
-        const savedWeekId = viewedUserId ? localStorage.getItem(`selectedWeek_${viewedUserId}`) : null;
-        
-        if (savedWeekId && weeksData.length > 0) {
-          const savedWeek = weeksData.find((week: any) => week.id === savedWeekId);
-          if (savedWeek) {
-            setCurrentDate(parse(savedWeek.period_from, 'yyyy-MM-dd', new Date()));
-            setCurrentCustomWeek(savedWeek);
-            setWeekHours(savedWeek.required_hours);
-            return;
+        // Only use database weeks, not hardcoded ones
+        if (weeksData.length > 0) {
+          setCustomWeeks(weeksData);
+          
+          // Check for redirectToWeek that might have been set on login
+          const redirectWeek = localStorage.getItem('redirectToWeek');
+          if (redirectWeek) {
+            try {
+              const { weekId, date } = JSON.parse(redirectWeek);
+              if (weekId) {
+                const targetWeek = weeksData.find((week: any) => week.id === weekId);
+                if (targetWeek) {
+                  console.log(`Redirecting to week ${targetWeek.name} from login`);
+                  setCurrentDate(parse(targetWeek.period_from, 'yyyy-MM-dd', new Date()));
+                  setCurrentCustomWeek(targetWeek);
+                  setWeekHours(targetWeek.required_hours);
+                  
+                  // Only remove redirect flag after successfully navigating
+                  localStorage.removeItem('redirectToWeek');
+                  
+                  // Update selectedWeek in localStorage
+                  if (viewedUserId) {
+                    localStorage.setItem(`selectedWeek_${viewedUserId}`, weekId);
+                  }
+                  return;
+                }
+              }
+            } catch (error) {
+              console.error('Error parsing redirectToWeek:', error);
+              localStorage.removeItem('redirectToWeek');
+            }
           }
-        }
-        
-        if (initialWeekId && weeksData.length > 0) {
-          const initialWeek = weeksData.find((week: any) => week.id === initialWeekId);
-          if (initialWeek) {
-            setCurrentDate(parse(initialWeek.period_from, 'yyyy-MM-dd', new Date()));
-            setCurrentCustomWeek(initialWeek);
-            setWeekHours(initialWeek.required_hours);
+          
+          // If no redirect or redirect failed, try saved week
+          const savedWeekId = viewedUserId ? localStorage.getItem(`selectedWeek_${viewedUserId}`) : null;
+          
+          if (savedWeekId) {
+            const savedWeek = weeksData.find((week: any) => week.id === savedWeekId);
+            if (savedWeek) {
+              console.log(`Loading saved week ${savedWeek.name} for user ${viewedUserId}`);
+              setCurrentDate(parse(savedWeek.period_from, 'yyyy-MM-dd', new Date()));
+              setCurrentCustomWeek(savedWeek);
+              setWeekHours(savedWeek.required_hours);
+              return;
+            }
           }
-        } else if (currentUser.firstCustomWeekId) {
-          const userFirstWeek = weeksData.find((week: any) => week.id === currentUser.firstCustomWeekId);
-          if (userFirstWeek) {
-            setCurrentDate(parse(userFirstWeek.period_from, 'yyyy-MM-dd', new Date()));
-            setCurrentCustomWeek(userFirstWeek);
-            setWeekHours(userFirstWeek.required_hours);
+          
+          // Try initialWeekId if provided
+          if (initialWeekId) {
+            const initialWeek = weeksData.find((week: any) => week.id === initialWeekId);
+            if (initialWeek) {
+              setCurrentDate(parse(initialWeek.period_from, 'yyyy-MM-dd', new Date()));
+              setCurrentCustomWeek(initialWeek);
+              setWeekHours(initialWeek.required_hours);
+              return;
+            }
+          }
+          
+          // Default to user's first custom week if available
+          if (currentUser.firstCustomWeekId) {
+            const userFirstWeek = weeksData.find((week: any) => week.id === currentUser.firstCustomWeekId);
+            if (userFirstWeek) {
+              setCurrentDate(parse(userFirstWeek.period_from, 'yyyy-MM-dd', new Date()));
+              setCurrentCustomWeek(userFirstWeek);
+              setWeekHours(userFirstWeek.required_hours);
+              return;
+            }
+          }
+          
+          // As a last resort, use the first week in the dataset
+          if (weeksData.length > 0) {
+            const firstWeek = weeksData[0];
+            setCurrentDate(parse(firstWeek.period_from, 'yyyy-MM-dd', new Date()));
+            setCurrentCustomWeek(firstWeek);
+            setWeekHours(firstWeek.required_hours);
           }
         }
       } catch (error) {

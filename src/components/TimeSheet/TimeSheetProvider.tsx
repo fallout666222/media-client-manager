@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format, parse, isSameDay } from 'date-fns';
 import { TimeSheetStatus, User, Client } from '@/types/timesheet';
@@ -60,9 +61,9 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
   const [currentCustomWeekState, setCurrentCustomWeekState] = useState<any>(null);
 
   const { customWeeks } = useTimeSheetInitialization({
-    currentUser,
-    viewedUser,
-    viewedUserId,
+    currentUser: currentUser || { id: '', name: '', role: 'user' },
+    viewedUser: viewedUser || { id: '', name: '', role: 'user' },
+    viewedUserId: viewedUserId || '',
     currentDate,
     setCurrentDate,
     setCurrentCustomWeek: setCurrentCustomWeekState,
@@ -85,8 +86,8 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
     setSelectedMediaTypes,
     getCurrentWeekStatus
   } = useTimeSheetData({
-    currentUser,
-    viewedUser,
+    currentUser: currentUser || { id: '', name: '', role: 'user' },
+    viewedUser: viewedUser || { id: '', name: '', role: 'user' },
     currentDate,
     customWeeks,
     initialWeekId,
@@ -112,8 +113,8 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
     setCurrentCustomWeek,
     currentCustomWeek
   } = useTimeSheetActions({
-    currentUser,
-    viewedUser,
+    currentUser: currentUser || { id: '', name: '', role: 'user' },
+    viewedUser: viewedUser || { id: '', name: '', role: 'user' },
     currentDate,
     customWeeks,
     userRole,
@@ -187,7 +188,9 @@ export const TimeSheetProvider: React.FC<TimeSheetProviderProps> = ({
   };
 
   const handleUserSelect = (user: User) => {
-    setViewedUser(user);
+    if (user) {
+      setViewedUser(user);
+    }
   };
 
   const handleWeekHoursChange = (hours: number) => {

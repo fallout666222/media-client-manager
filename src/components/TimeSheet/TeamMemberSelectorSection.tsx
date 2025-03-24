@@ -20,7 +20,7 @@ export const TeamMemberSelectorSection: React.FC<TeamMemberSelectorSectionProps>
   const { handleUserSelect, viewedUser } = useTimeSheet();
 
   // Check for admin or manager role and ensure we're not in impersonation mode
-  if ((userRole !== 'manager' && userRole !== 'admin') || impersonatedUser) {
+  if (!currentUser || (userRole !== 'manager' && userRole !== 'admin') || impersonatedUser) {
     return null;
   }
 
