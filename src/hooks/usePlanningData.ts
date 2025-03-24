@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -45,6 +46,7 @@ export interface ClientHours {
   total: number;
 }
 
+// Modified interface with index signature to make it compatible with Record<string, number>
 export interface MonthlyLimits {
   Jan?: number;
   Feb?: number;
@@ -59,6 +61,7 @@ export interface MonthlyLimits {
   Nov?: number;
   Dec?: number;
   totalLimit: number;
+  [key: string]: number | undefined; // Add index signature
 }
 
 interface UsePlanningDataProps {
