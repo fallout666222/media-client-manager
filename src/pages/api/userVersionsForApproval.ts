@@ -38,56 +38,15 @@ export async function fetchUserVersionsForApproval(headId: string) {
 }
 
 export default async function handler(req: Request) {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      },
-    });
-  }
-
-  if (req.method !== 'GET') {
-    return new Response(
-      JSON.stringify({ error: 'Method not allowed' }), 
-      { 
-        status: 405,
-        headers: { 
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        }
-      }
-    );
-  }
-  
   const url = new URL(req.url);
-  const headId = url.searchParams.get('headId');
-  
-  if (!headId) {
-    return new Response(
-      JSON.stringify({ error: 'Head ID is required' }), 
-      { 
-        status: 400,
-        headers: { 
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        }
-      }
-    );
-  }
+  const headId = url.searchParams.get('headId') || '';
   
   const result = await fetchUserVersionsForApproval(headId);
   
   return new Response(
     JSON.stringify(result), 
     { 
-      headers: { 
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: { 'Content-Type': 'application/json' },
       status: result.error ? 500 : 200
     }
   );

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,45 +28,16 @@ export function PlanningVersionStatus({
 }: PlanningVersionStatusProps) {
   const { toast } = useToast();
 
-  const fetchStatusId = async (statusName: string) => {
-    try {
-      // Use window.location.origin to ensure we have the full base URL
-      const baseUrl = window.location.origin;
-      const apiUrl = `${baseUrl}/api/statusId?name=${statusName}`;
-      console.log('Fetching status ID from:', apiUrl);
-      
-      const response = await fetch(apiUrl);
-      
-      if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
-      }
-      
-      const responseText = await response.text();
-      console.log('API response:', responseText);
-      
-      // Check if the response is valid JSON
-      try {
-        const responseData = JSON.parse(responseText);
-        return responseData;
-      } catch (jsonError) {
-        console.error('Error parsing JSON:', responseText);
-        throw new Error('Invalid response from server');
-      }
-    } catch (error) {
-      console.error('Error fetching status ID:', error);
-      throw error;
-    }
-  };
-
   const handleSubmitForReview = async () => {
     try {
-      // Get the 'under-review' status ID
-      const { data: statusData, error: statusError } = await fetchStatusId('under-review');
+      // Get the 'under-review' status ID - this would be better stored in a context or config
+      const { data: statusData } = await fetch('/api/statusId?name=under-review')
+        .then(res => res.json());
       
-      if (statusError) throw new Error(statusError.message || 'Failed to get status ID');
-      if (!statusData?.id) throw new Error('Could not find under-review status');
+      const statusId = statusData?.id;
+      if (!statusId) throw new Error('Could not find under-review status');
 
-      await updateVersionStatus(currentUser.id || '', versionId, statusData.id);
+      await updateVersionStatus(currentUser.id || '', versionId, statusId);
       onStatusUpdate();
       
       toast({
@@ -86,12 +58,13 @@ export function PlanningVersionStatus({
   const handleApprove = async () => {
     try {
       // Get the 'accepted' status ID
-      const { data: statusData, error: statusError } = await fetchStatusId('accepted');
+      const { data: statusData } = await fetch('/api/statusId?name=accepted')
+        .then(res => res.json());
       
-      if (statusError) throw new Error(statusError.message || 'Failed to get status ID');
-      if (!statusData?.id) throw new Error('Could not find accepted status');
+      const statusId = statusData?.id;
+      if (!statusId) throw new Error('Could not find accepted status');
 
-      await updateVersionStatus(currentUser.id || '', versionId, statusData.id);
+      await updateVersionStatus(currentUser.id || '', versionId, statusId);
       onStatusUpdate();
       
       toast({
@@ -112,12 +85,13 @@ export function PlanningVersionStatus({
   const handleRequestRevision = async () => {
     try {
       // Get the 'needs-revision' status ID
-      const { data: statusData, error: statusError } = await fetchStatusId('needs-revision');
+      const { data: statusData } = await fetch('/api/statusId?name=needs-revision')
+        .then(res => res.json());
       
-      if (statusError) throw new Error(statusError.message || 'Failed to get status ID');
-      if (!statusData?.id) throw new Error('Could not find needs-revision status');
+      const statusId = statusData?.id;
+      if (!statusId) throw new Error('Could not find needs-revision status');
 
-      await updateVersionStatus(currentUser.id || '', versionId, statusData.id);
+      await updateVersionStatus(currentUser.id || '', versionId, statusId);
       onStatusUpdate();
       
       toast({
