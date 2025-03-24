@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { User, Client } from '@/types/timesheet';
 import { 
@@ -15,6 +16,8 @@ import { updateVersionStatus } from '@/integrations/supabase/database';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import Planning from './Planning';
+import { fetchUserVersionsForApproval } from '@/pages/api/userVersionsForApproval';
+import { fetchStatusId } from '@/pages/api/statusId';
 
 interface UserHeadViewProps {
   currentUser: User;
@@ -28,16 +31,15 @@ export default function UserHeadView({ currentUser, clients }: UserHeadViewProps
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
-    const fetchVersionsForApproval = async () => {
+    const fetchVersions = async () => {
       if (currentUser.id) {
         try {
-          const { data, error } = await fetch('/api/userVersionsForApproval?headId=' + currentUser.id)
-            .then(res => res.json());
-            
-          if (error) throw error;
+          const result = await fetchUserVersionsForApproval(currentUser.id);
           
-          if (data) {
-            setUserVersionsForApproval(data);
+          if (result.error) throw result.error;
+          
+          if (result.data) {
+            setUserVersionsForApproval(result.data);
           }
         } catch (error) {
           console.error('Error fetching versions for approval:', error);
@@ -45,16 +47,19 @@ export default function UserHeadView({ currentUser, clients }: UserHeadViewProps
       }
     };
     
-    fetchVersionsForApproval();
+    fetchVersions();
   }, [currentUser.id, refreshTrigger]);
 
   const handleApprove = async (versionId: string, userId: string) => {
     try {
-      // Get the 'accepted' status ID
-      const { data: statusData } = await fetch('/api/statusId?name=accepted')
-        .then(res => res.json());
+      // Get the 'accepted' status ID directly from Supabase
+      const statusResult = await fetchStatusId('accepted');
       
-      const statusId = statusData?.id;
+      if (statusResult.error) {
+        throw new Error('Could not find accepted status');
+      }
+      
+      const statusId = statusResult.data?.id;
       if (!statusId) throw new Error('Could not find accepted status');
 
       await updateVersionStatus(userId, versionId, statusId);
@@ -77,11 +82,14 @@ export default function UserHeadView({ currentUser, clients }: UserHeadViewProps
   
   const handleRequestRevision = async (versionId: string, userId: string) => {
     try {
-      // Get the 'needs-revision' status ID
-      const { data: statusData } = await fetch('/api/statusId?name=needs-revision')
-        .then(res => res.json());
+      // Get the 'needs-revision' status ID directly from Supabase
+      const statusResult = await fetchStatusId('needs-revision');
       
-      const statusId = statusData?.id;
+      if (statusResult.error) {
+        throw new Error('Could not find needs-revision status');
+      }
+      
+      const statusId = statusResult.data?.id;
       if (!statusId) throw new Error('Could not find needs-revision status');
 
       await updateVersionStatus(userId, versionId, statusId);

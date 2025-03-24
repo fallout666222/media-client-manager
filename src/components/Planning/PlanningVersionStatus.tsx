@@ -1,10 +1,10 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { updateVersionStatus } from '@/integrations/supabase/database';
 import { useToast } from '@/hooks/use-toast';
 import { User } from '@/types/timesheet';
+import { fetchStatusId } from '@/pages/api/statusId';
 
 interface VersionStatus {
   id: string;
@@ -28,41 +28,16 @@ export function PlanningVersionStatus({
 }: PlanningVersionStatusProps) {
   const { toast } = useToast();
 
-  const fetchStatusId = async (statusName: string) => {
-    console.log(`Fetching status ID from: ${window.location.origin}/api/statusId?name=${statusName}`);
-    try {
-      const response = await fetch(`/api/statusId?name=${statusName}`);
-      
-      // Log the raw response for debugging
-      const responseText = await response.text();
-      console.log("API response:", responseText);
-      
-      // Parse the response as JSON
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (error) {
-        console.error("Error parsing JSON:", responseText);
-        throw new Error("Invalid response from server");
-      }
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch status ID');
-      }
-      
-      return data;
-    } catch (error) {
-      console.error(`Error fetching status ID for ${statusName}:`, error);
-      throw error;
-    }
-  };
-
   const handleSubmitForReview = async () => {
     try {
-      // Get the 'under-review' status ID
-      const statusData = await fetchStatusId('under-review');
+      // Get the 'under-review' status ID directly from Supabase
+      const statusResult = await fetchStatusId('under-review');
       
-      const statusId = statusData?.data?.id;
+      if (statusResult.error) {
+        throw new Error('Could not find under-review status');
+      }
+      
+      const statusId = statusResult.data?.id;
       if (!statusId) throw new Error('Could not find under-review status');
 
       await updateVersionStatus(currentUser.id || '', versionId, statusId);
@@ -85,10 +60,14 @@ export function PlanningVersionStatus({
   
   const handleApprove = async () => {
     try {
-      // Get the 'accepted' status ID
-      const statusData = await fetchStatusId('accepted');
+      // Get the 'accepted' status ID directly from Supabase
+      const statusResult = await fetchStatusId('accepted');
       
-      const statusId = statusData?.data?.id;
+      if (statusResult.error) {
+        throw new Error('Could not find accepted status');
+      }
+      
+      const statusId = statusResult.data?.id;
       if (!statusId) throw new Error('Could not find accepted status');
 
       await updateVersionStatus(currentUser.id || '', versionId, statusId);
@@ -111,10 +90,14 @@ export function PlanningVersionStatus({
   
   const handleRequestRevision = async () => {
     try {
-      // Get the 'needs-revision' status ID
-      const statusData = await fetchStatusId('needs-revision');
+      // Get the 'needs-revision' status ID directly from Supabase
+      const statusResult = await fetchStatusId('needs-revision');
       
-      const statusId = statusData?.data?.id;
+      if (statusResult.error) {
+        throw new Error('Could not find needs-revision status');
+      }
+      
+      const statusId = statusResult.data?.id;
       if (!statusId) throw new Error('Could not find needs-revision status');
 
       await updateVersionStatus(currentUser.id || '', versionId, statusId);
