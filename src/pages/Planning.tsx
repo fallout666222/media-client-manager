@@ -8,7 +8,8 @@ import {
   TableCell, 
   TableHead, 
   TableHeader, 
-  TableRow 
+  TableRow,
+  TableFooter
 } from '@/components/ui/table';
 import { 
   Select, 
@@ -39,7 +40,9 @@ export default function Planning({ currentUser, clients, isUserHead = false }: P
     visibleClients,
     months,
     quarters,
-    versionStatus
+    versionStatus,
+    monthlyLimits,
+    totalPlannedHours
   } = usePlanningData({ currentUser, isUserHead });
   
   const [filteredClients, setFilteredClients] = useState(planningData);
@@ -96,6 +99,36 @@ export default function Planning({ currentUser, clients, isUserHead = false }: P
     // Reload data to get updated status
     reloadPlanningData();
   }, [reloadPlanningData]);
+
+  // Calculate month totals for all clients
+  const calculateMonthTotals = () => {
+    const totals: Record<string, number> = {};
+    const quarterTotals: Record<string, number> = {};
+    
+    // Initialize totals
+    months.forEach(month => {
+      totals[month] = 0;
+    });
+    
+    quarters.forEach(quarter => {
+      quarterTotals[quarter.name] = 0;
+    });
+    
+    // Sum up the hours for each month and quarter
+    filteredClients.forEach(client => {
+      months.forEach(month => {
+        totals[month] += client.months[month] || 0;
+      });
+      
+      quarters.forEach(quarter => {
+        quarterTotals[quarter.name] += client.quarters[quarter.name] || 0;
+      });
+    });
+    
+    return { monthTotals: totals, quarterTotals };
+  };
+  
+  const { monthTotals, quarterTotals } = calculateMonthTotals();
 
   return (
     <div className="container mx-auto p-4 pt-16">
@@ -369,6 +402,140 @@ export default function Planning({ currentUser, clients, isUserHead = false }: P
               </TableRow>
             )}
           </TableBody>
+          
+          {/* Table Footer with Monthly Totals and Limits */}
+          <TableFooter>
+            <TableRow>
+              <TableCell className="font-bold bg-gray-200 sticky left-0 z-10">Total</TableCell>
+              
+              {/* Month totals for Q1 */}
+              <TableCell className="text-center font-medium bg-gray-200">
+                {monthTotals.Jan}
+              </TableCell>
+              <TableCell className="text-center font-medium bg-gray-200">
+                {monthTotals.Feb}
+              </TableCell>
+              <TableCell className="text-center font-medium bg-gray-200">
+                {monthTotals.Mar}
+              </TableCell>
+              <TableCell className="text-center font-bold bg-gray-300">
+                {quarterTotals.Q1}
+              </TableCell>
+              
+              {/* Month totals for Q2 */}
+              <TableCell className="text-center font-medium bg-gray-200">
+                {monthTotals.Apr}
+              </TableCell>
+              <TableCell className="text-center font-medium bg-gray-200">
+                {monthTotals.May}
+              </TableCell>
+              <TableCell className="text-center font-medium bg-gray-200">
+                {monthTotals.Jun}
+              </TableCell>
+              <TableCell className="text-center font-bold bg-gray-300">
+                {quarterTotals.Q2}
+              </TableCell>
+              
+              {/* Month totals for Q3 */}
+              <TableCell className="text-center font-medium bg-gray-200">
+                {monthTotals.Jul}
+              </TableCell>
+              <TableCell className="text-center font-medium bg-gray-200">
+                {monthTotals.Aug}
+              </TableCell>
+              <TableCell className="text-center font-medium bg-gray-200">
+                {monthTotals.Sep}
+              </TableCell>
+              <TableCell className="text-center font-bold bg-gray-300">
+                {quarterTotals.Q3}
+              </TableCell>
+              
+              {/* Month totals for Q4 */}
+              <TableCell className="text-center font-medium bg-gray-200">
+                {monthTotals.Oct}
+              </TableCell>
+              <TableCell className="text-center font-medium bg-gray-200">
+                {monthTotals.Nov}
+              </TableCell>
+              <TableCell className="text-center font-medium bg-gray-200">
+                {monthTotals.Dec}
+              </TableCell>
+              <TableCell className="text-center font-bold bg-gray-300">
+                {quarterTotals.Q4}
+              </TableCell>
+              
+              {/* Year total */}
+              <TableCell className="text-center font-bold bg-blue-200">
+                {totalPlannedHours}
+              </TableCell>
+            </TableRow>
+            
+            {/* Monthly Limits Row */}
+            <TableRow>
+              <TableCell className="font-bold bg-gray-100 sticky left-0 z-10">Target Hours</TableCell>
+              
+              {/* Month limits for Q1 */}
+              <TableCell className="text-center text-sm bg-gray-100">
+                {monthlyLimits.Jan ? `${monthTotals.Jan}/${monthlyLimits.Jan}` : '-'}
+              </TableCell>
+              <TableCell className="text-center text-sm bg-gray-100">
+                {monthlyLimits.Feb ? `${monthTotals.Feb}/${monthlyLimits.Feb}` : '-'}
+              </TableCell>
+              <TableCell className="text-center text-sm bg-gray-100">
+                {monthlyLimits.Mar ? `${monthTotals.Mar}/${monthlyLimits.Mar}` : '-'}
+              </TableCell>
+              <TableCell className="text-center text-sm bg-gray-100">
+                {`${quarterTotals.Q1}/${(monthlyLimits.Jan || 0) + (monthlyLimits.Feb || 0) + (monthlyLimits.Mar || 0)}`}
+              </TableCell>
+              
+              {/* Month limits for Q2 */}
+              <TableCell className="text-center text-sm bg-gray-100">
+                {monthlyLimits.Apr ? `${monthTotals.Apr}/${monthlyLimits.Apr}` : '-'}
+              </TableCell>
+              <TableCell className="text-center text-sm bg-gray-100">
+                {monthlyLimits.May ? `${monthTotals.May}/${monthlyLimits.May}` : '-'}
+              </TableCell>
+              <TableCell className="text-center text-sm bg-gray-100">
+                {monthlyLimits.Jun ? `${monthTotals.Jun}/${monthlyLimits.Jun}` : '-'}
+              </TableCell>
+              <TableCell className="text-center text-sm bg-gray-100">
+                {`${quarterTotals.Q2}/${(monthlyLimits.Apr || 0) + (monthlyLimits.May || 0) + (monthlyLimits.Jun || 0)}`}
+              </TableCell>
+              
+              {/* Month limits for Q3 */}
+              <TableCell className="text-center text-sm bg-gray-100">
+                {monthlyLimits.Jul ? `${monthTotals.Jul}/${monthlyLimits.Jul}` : '-'}
+              </TableCell>
+              <TableCell className="text-center text-sm bg-gray-100">
+                {monthlyLimits.Aug ? `${monthTotals.Aug}/${monthlyLimits.Aug}` : '-'}
+              </TableCell>
+              <TableCell className="text-center text-sm bg-gray-100">
+                {monthlyLimits.Sep ? `${monthTotals.Sep}/${monthlyLimits.Sep}` : '-'}
+              </TableCell>
+              <TableCell className="text-center text-sm bg-gray-100">
+                {`${quarterTotals.Q3}/${(monthlyLimits.Jul || 0) + (monthlyLimits.Aug || 0) + (monthlyLimits.Sep || 0)}`}
+              </TableCell>
+              
+              {/* Month limits for Q4 */}
+              <TableCell className="text-center text-sm bg-gray-100">
+                {monthlyLimits.Oct ? `${monthTotals.Oct}/${monthlyLimits.Oct}` : '-'}
+              </TableCell>
+              <TableCell className="text-center text-sm bg-gray-100">
+                {monthlyLimits.Nov ? `${monthTotals.Nov}/${monthlyLimits.Nov}` : '-'}
+              </TableCell>
+              <TableCell className="text-center text-sm bg-gray-100">
+                {monthlyLimits.Dec ? `${monthTotals.Dec}/${monthlyLimits.Dec}` : '-'}
+              </TableCell>
+              <TableCell className="text-center text-sm bg-gray-100">
+                {`${quarterTotals.Q4}/${(monthlyLimits.Oct || 0) + (monthlyLimits.Nov || 0) + (monthlyLimits.Dec || 0)}`}
+              </TableCell>
+              
+              {/* Year total/limit */}
+              <TableCell className="text-center font-bold bg-blue-100">
+                {`${totalPlannedHours}/${monthlyLimits.totalLimit || 0}`}
+              </TableCell>
+            </TableRow>
+          </TableFooter>
         </Table>
       </div>
     </div>

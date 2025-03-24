@@ -25,6 +25,14 @@ export const getAllYears = async () => {
     .order('year', { ascending: false });
 };
 
+export const getYearByName = async (yearName: string) => {
+  return await supabase
+    .from('years')
+    .select('*')
+    .eq('year', yearName)
+    .single();
+};
+
 export const createYear = async (yearData: YearData) => {
   return await supabase
     .from('years')

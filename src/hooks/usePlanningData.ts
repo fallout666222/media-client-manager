@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -7,7 +6,8 @@ import {
   getUserVisibleClients,
   getClients,
   getVersionStatus,
-  getUserVersionsForApproval
+  getUserVersionsForApproval,
+  getYearByName
 } from '@/integrations/supabase/database';
 import { User, Client } from '@/types/timesheet';
 
@@ -45,6 +45,22 @@ export interface ClientHours {
   total: number;
 }
 
+export interface MonthlyLimits {
+  Jan?: number;
+  Feb?: number;
+  Mar?: number;
+  Apr?: number;
+  May?: number;
+  Jun?: number;
+  Jul?: number;
+  Aug?: number;
+  Sep?: number;
+  Oct?: number;
+  Nov?: number;
+  Dec?: number;
+  totalLimit: number;
+}
+
 interface UsePlanningDataProps {
   currentUser: User;
   isUserHead?: boolean;
@@ -63,6 +79,8 @@ export const usePlanningData = ({ currentUser, isUserHead = false }: UsePlanning
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [versionStatus, setVersionStatus] = useState<string>('unconfirmed');
   const [userVersionsForApproval, setUserVersionsForApproval] = useState<any[]>([]);
+  const [monthlyLimits, setMonthlyLimits] = useState<MonthlyLimits>({ totalLimit: 0 });
+  const [totalPlannedHours, setTotalPlannedHours] = useState<number>(0);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -81,7 +99,6 @@ export const usePlanningData = ({ currentUser, isUserHead = false }: UsePlanning
     setRefreshTrigger(prev => prev + 1);
   }, []);
 
-  // Fetch versions and status
   useEffect(() => {
     const fetchVersions = async () => {
       try {
@@ -89,7 +106,6 @@ export const usePlanningData = ({ currentUser, isUserHead = false }: UsePlanning
         if (error) throw error;
         
         if (data && data.length > 0) {
-          // Now also fetch version statuses for these versions
           const versionsWithStatus = await Promise.all(
             data.map(async (version) => {
               if (currentUser.id) {
@@ -127,7 +143,6 @@ export const usePlanningData = ({ currentUser, isUserHead = false }: UsePlanning
     fetchVersions();
   }, [toast, selectedVersionId, currentUser.id, refreshTrigger]);
 
-  // Fetch version status for selected version
   useEffect(() => {
     const fetchVersionStatus = async () => {
       if (currentUser.id && selectedVersionId) {
@@ -146,7 +161,6 @@ export const usePlanningData = ({ currentUser, isUserHead = false }: UsePlanning
     fetchVersionStatus();
   }, [currentUser.id, selectedVersionId, refreshTrigger]);
 
-  // Fetch versions for approval if user is a head
   useEffect(() => {
     const fetchVersionsForApproval = async () => {
       if (isUserHead && currentUser.id) {
@@ -196,6 +210,48 @@ export const usePlanningData = ({ currentUser, isUserHead = false }: UsePlanning
     
     fetchClientsData();
   }, [currentUser.id, toast]);
+
+  useEffect(() => {
+    const fetchYearLimits = async () => {
+      const selectedVersion = versions.find(v => v.id === selectedVersionId);
+      if (selectedVersion) {
+        try {
+          const { data, error } = await getYearByName(selectedVersion.year);
+          
+          if (error) {
+            console.error('Error fetching year data:', error);
+            return;
+          }
+          
+          if (data) {
+            const totalLimit = MONTHS.reduce((sum, month) => sum + (data[month.toLowerCase()] || 0), 0);
+            
+            setMonthlyLimits({
+              Jan: data.jan,
+              Feb: data.feb,
+              Mar: data.mar,
+              Apr: data.apr,
+              May: data.may,
+              Jun: data.jun,
+              Jul: data.jul,
+              Aug: data.aug,
+              Sep: data.sep,
+              Oct: data.oct,
+              Nov: data.nov,
+              Dec: data.dec,
+              totalLimit
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching year limits:', error);
+        }
+      }
+    };
+    
+    if (selectedVersionId && versions.length > 0) {
+      fetchYearLimits();
+    }
+  }, [selectedVersionId, versions]);
 
   useEffect(() => {
     const fetchPlanningData = async () => {
@@ -277,6 +333,13 @@ export const usePlanningData = ({ currentUser, isUserHead = false }: UsePlanning
     fetchPlanningData();
   }, [currentUser.id, selectedVersionId, allClients, toast, refreshTrigger]);
 
+  useEffect(() => {
+    const total = planningData.reduce((sum, client) => {
+      return sum + client.total;
+    }, 0);
+    setTotalPlannedHours(total);
+  }, [planningData]);
+
   return {
     versions,
     selectedVersionId,
@@ -289,6 +352,8 @@ export const usePlanningData = ({ currentUser, isUserHead = false }: UsePlanning
     reloadPlanningData,
     versionStatus,
     userVersionsForApproval,
-    isUserHead
+    isUserHead,
+    monthlyLimits,
+    totalPlannedHours
   };
 };
