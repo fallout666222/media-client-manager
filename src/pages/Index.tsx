@@ -20,15 +20,25 @@ const Index = () => {
       
       if (!connectionResult.success) {
         console.error('Failed to connect to database:', connectionResult.error);
-        toast({
-          title: "Ошибка подключения к базе данных",
-          description: `Не удалось подключиться к ${
-            connectionResult.environment === 'direct_postgres' 
-              ? 'PostgreSQL напрямую' 
-              : (connectionResult.environment === 'local' ? 'локальной' : 'удаленной') + ' базе данных'
-          }. Проверьте настройки подключения и запущен ли сервер.`,
-          variant: "destructive",
-        });
+        
+        if (connectionResult.environment === 'direct_postgres_not_supported') {
+          toast({
+            title: "Unsupported Connection Mode",
+            description: "Direct PostgreSQL connections are not supported in browser environments. Please use Supabase instead. Set VITE_USE_DIRECT_PG=false in your .env file.",
+            variant: "destructive",
+            duration: 10000,
+          });
+        } else {
+          toast({
+            title: "Ошибка подключения к базе данных",
+            description: `Не удалось подключиться к ${
+              connectionResult.environment === 'direct_postgres' 
+                ? 'PostgreSQL напрямую' 
+                : (connectionResult.environment === 'local' ? 'локальной' : 'удаленной') + ' базе данных'
+            }. Проверьте настройки подключения и запущен ли сервер.`,
+            variant: "destructive",
+          });
+        }
       } else {
         console.log(`Successfully connected to ${connectionResult.environment} database`);
       }

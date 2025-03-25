@@ -20,4 +20,19 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // Add Node.js polyfills and handle pg module
+  define: {
+    'process.env': {},
+    'process.version': '"v16.0.0"',
+    'process.platform': '"browser"',
+    global: 'globalThis',
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      // Node.js global to browser globalThis
+      define: {
+        global: 'globalThis'
+      },
+    }
+  },
 }));
