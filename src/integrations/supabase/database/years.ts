@@ -1,5 +1,5 @@
 
-import { supabase } from '../client';
+import { db } from '../client';
 
 export interface YearData {
   id?: string;
@@ -19,14 +19,14 @@ export interface YearData {
 }
 
 export const getAllYears = async () => {
-  return await supabase
+  return await db
     .from('years')
     .select('*')
     .order('year', { ascending: false });
 };
 
 export const getYearByName = async (yearName: string) => {
-  return await supabase
+  return await db
     .from('years')
     .select('*')
     .eq('year', yearName)
@@ -34,7 +34,7 @@ export const getYearByName = async (yearName: string) => {
 };
 
 export const createYear = async (yearData: YearData) => {
-  return await supabase
+  return await db
     .from('years')
     .insert(yearData)
     .select()
@@ -42,7 +42,7 @@ export const createYear = async (yearData: YearData) => {
 };
 
 export const updateYear = async (id: string, yearData: Partial<YearData>) => {
-  return await supabase
+  return await db
     .from('years')
     .update(yearData)
     .eq('id', id)
@@ -51,7 +51,7 @@ export const updateYear = async (id: string, yearData: Partial<YearData>) => {
 };
 
 export const deleteYear = async (id: string) => {
-  return await supabase
+  return await db
     .from('years')
     .delete()
     .eq('id', id);

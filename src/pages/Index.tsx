@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
 import { getCustomWeeks } from '@/integrations/supabase/database';
-import { testConnection } from '@/integrations/supabase/client';
+import { testConnection, db } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
@@ -19,10 +19,14 @@ const Index = () => {
       const connectionResult = await testConnection();
       
       if (!connectionResult.success) {
-        console.error('Failed to connect to Supabase:', connectionResult.error);
+        console.error('Failed to connect to database:', connectionResult.error);
         toast({
           title: "Ошибка подключения к базе данных",
-          description: `Не удалось подключиться к ${connectionResult.environment === 'local' ? 'локальной' : 'удаленной'} базе данных. Проверьте настройки подключения и запущен ли сервер.`,
+          description: `Не удалось подключиться к ${
+            connectionResult.environment === 'direct_postgres' 
+              ? 'PostgreSQL напрямую' 
+              : (connectionResult.environment === 'local' ? 'локальной' : 'удаленной') + ' базе данных'
+          }. Проверьте настройки подключения и запущен ли сервер.`,
           variant: "destructive",
         });
       } else {

@@ -1,9 +1,9 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/integrations/supabase/client";
 
 export async function fetchStatusId(name: string) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('week_status_names')
       .select('id')
       .eq('name', name)

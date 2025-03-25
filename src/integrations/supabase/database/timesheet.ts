@@ -1,9 +1,9 @@
 
-import { supabase } from '../client';
+import { db } from '../client';
 
 // Week Hours
 export const getWeekHours = async (userId: string, weekId: string) => {
-  return await supabase.from('week_hours').select(`
+  return await db.from('week_hours').select(`
     *,
     client:clients(*),
     media_type:media_types(*)
@@ -19,7 +19,7 @@ export const updateWeekHours = async (
 ) => {
   if (hours === 0) {
     // Delete if hours is 0
-    return await supabase.from('week_hours')
+    return await db.from('week_hours')
       .delete()
       .eq('user_id', userId)
       .eq('week_id', weekId)
@@ -28,7 +28,7 @@ export const updateWeekHours = async (
   }
 
   // Check if entry exists
-  const { data } = await supabase.from('week_hours')
+  const { data } = await db.from('week_hours')
     .select('*')
     .eq('user_id', userId)
     .eq('week_id', weekId)
@@ -38,14 +38,14 @@ export const updateWeekHours = async (
 
   if (data) {
     // Update existing entry
-    return await supabase.from('week_hours')
+    return await db.from('week_hours')
       .update({ hours })
       .eq('id', data.id)
       .select()
       .single();
   } else {
     // Insert new entry
-    return await supabase.from('week_hours')
+    return await db.from('week_hours')
       .insert({
         user_id: userId,
         week_id: weekId,
