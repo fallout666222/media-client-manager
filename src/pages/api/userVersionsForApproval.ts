@@ -1,14 +1,13 @@
 
-import { db } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 
 export async function fetchUserVersionsForApproval(headId: string) {
   try {
     // Get all users where this person is head
-    const userQuery = db.from('users')
+    const { data: users, error: usersError } = await supabase
+      .from('users')
       .select('id, name')
       .eq('user_head_id', headId);
-    
-    const { data: users, error: usersError } = await userQuery;
     
     if (usersError) throw usersError;
     
@@ -19,7 +18,7 @@ export async function fetchUserVersionsForApproval(headId: string) {
     const userIds = users.map(user => user.id);
     
     // Get version statuses for these users
-    const statusQuery = db.from('version_statuses')
+    const { data, error } = await supabase.from('version_statuses')
       .select(`
         *,
         user:users(id, name),
@@ -28,8 +27,6 @@ export async function fetchUserVersionsForApproval(headId: string) {
       `)
       .in('user_id', userIds)
       .order('created_at', { ascending: false });
-    
-    const { data, error } = await statusQuery;
     
     if (error) throw error;
     

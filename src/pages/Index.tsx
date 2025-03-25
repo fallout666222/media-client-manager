@@ -1,58 +1,16 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
 import { getCustomWeeks } from '@/integrations/supabase/database';
-import { testConnection, db } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
   const { user, customWeeks } = useApp();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isConnectionTesting, setIsConnectionTesting] = useState(true);
   
-  // First check database connection
   useEffect(() => {
-    const checkConnection = async () => {
-      setIsConnectionTesting(true);
-      const connectionResult = await testConnection();
-      
-      if (!connectionResult.success) {
-        console.error('Failed to connect to database:', connectionResult.error);
-        
-        if (connectionResult.environment === 'direct_postgres_not_supported') {
-          toast({
-            title: "Unsupported Connection Mode",
-            description: "Direct PostgreSQL connections are not supported in browser environments. Please use Supabase instead. Set VITE_USE_DIRECT_PG=false in your .env file.",
-            variant: "destructive",
-            duration: 10000,
-          });
-        } else {
-          toast({
-            title: "Ошибка подключения к базе данных",
-            description: `Не удалось подключиться к ${
-              connectionResult.environment === 'direct_postgres' 
-                ? 'PostgreSQL напрямую' 
-                : (connectionResult.environment === 'local' ? 'локальной' : 'удаленной') + ' базе данных'
-            }. Проверьте настройки подключения и запущен ли сервер.`,
-            variant: "destructive",
-          });
-        }
-      } else {
-        console.log(`Successfully connected to ${connectionResult.environment} database`);
-      }
-      
-      setIsConnectionTesting(false);
-    };
-    
-    checkConnection();
-  }, [toast]);
-  
-  // Then load user preferences if connection is available and user is logged in
-  useEffect(() => {
-    if (isConnectionTesting) return;
-    
     const loadUserPreferences = async () => {
       if (user) {
         try {
@@ -61,19 +19,8 @@ const Index = () => {
           
           if (savedWeekId) {
             // User has a saved week, load it
-            const { data: weeksData, error } = await getCustomWeeks();
-            
-            if (error) {
-              console.error('Error loading custom weeks:', error);
-              toast({
-                title: "Ошибка подключения к базе данных",
-                description: "Не удалось загрузить пользовательские недели. Проверьте подключение к базе данных.",
-                variant: "destructive",
-              });
-              return;
-            }
-            
-            const savedWeek = weeksData?.find((week: any) => week.id === savedWeekId);
+            const { data: weeksData } = await getCustomWeeks();
+            const savedWeek = weeksData.find((week: any) => week.id === savedWeekId);
             
             if (savedWeek) {
               console.log('Found saved week in localStorage:', savedWeek.name);
@@ -87,30 +34,19 @@ const Index = () => {
             // Check for unconfirmed weeks
             console.log('No saved week found, looking for first unconfirmed week');
             const { getUserFirstUnconfirmedWeek } = await import('@/integrations/supabase/database');
+            const firstUnconfirmedWeek = await getUserFirstUnconfirmedWeek(user.id);
             
-            try {
-              const firstUnconfirmedWeek = await getUserFirstUnconfirmedWeek(user.id);
-              
-              if (firstUnconfirmedWeek) {
-                console.log('Found unconfirmed week to redirect to:', firstUnconfirmedWeek);
-                // Set the redirect flag
-                localStorage.setItem('redirectToWeek', JSON.stringify({
-                  weekId: firstUnconfirmedWeek.id,
-                  date: firstUnconfirmedWeek.period_from
-                }));
-              }
-            } catch (error) {
-              console.error('Error getting unconfirmed week:', error);
-              // Continue without throwing - we'll just not redirect to an unconfirmed week
+            if (firstUnconfirmedWeek) {
+              console.log('Found unconfirmed week to redirect to:', firstUnconfirmedWeek);
+              // Set the redirect flag
+              localStorage.setItem('redirectToWeek', JSON.stringify({
+                weekId: firstUnconfirmedWeek.id,
+                date: firstUnconfirmedWeek.period_from
+              }));
             }
           }
         } catch (error) {
           console.error('Error loading user preferences:', error);
-          toast({
-            title: "Ошибка",
-            description: "Не удалось загрузить пользовательские настройки. Попробуйте позже.",
-            variant: "destructive",
-          });
         }
       } else {
         // If no user is logged in, redirect to login page
@@ -119,22 +55,19 @@ const Index = () => {
     };
     
     loadUserPreferences();
-  }, [user, navigate, toast, isConnectionTesting]);
+  }, [user, navigate]);
 
   // Show a loading or welcome screen
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="text-center max-w-xl p-6 bg-white rounded-lg shadow-lg">
-        <h1 className="text-4xl font-bold mb-4">Добро пожаловать в Timesheet App</h1>
-        <p className="text-xl text-gray-600 mb-6">Управляйте своим временем эффективно</p>
-        {isConnectionTesting && (
-          <p className="text-gray-500">Проверка подключения к базе данных...</p>
+        <h1 className="text-4xl font-bold mb-4">Welcome to Timesheet App</h1>
+        <p className="text-xl text-gray-600 mb-6">Manage your time efficiently</p>
+        {!user && (
+          <p className="text-gray-500">Redirecting to login page...</p>
         )}
-        {!isConnectionTesting && !user && (
-          <p className="text-gray-500">Перенаправление на страницу входа...</p>
-        )}
-        {!isConnectionTesting && user && (
-          <p className="text-gray-500">Загрузка данных вашего табеля...</p>
+        {user && (
+          <p className="text-gray-500">Loading your timesheet data...</p>
         )}
       </div>
     </div>
