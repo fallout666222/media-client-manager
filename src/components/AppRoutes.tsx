@@ -1,3 +1,4 @@
+
 import { Routes, Route, Navigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -17,7 +18,7 @@ import UserHeadView from "@/pages/UserHeadView";
 import Planning from "@/pages/Planning";
 import PlanningManagement from "@/pages/PlanningManagement";
 import { AdfsCallback } from "@/pages/AuthCallbacks";
-import { SamlCallback } from "@/pages/SamlCallback";
+import SamlCallback from "@/pages/SamlCallback";
 import { useApp } from "@/contexts/AppContext";
 
 const AppRoutes = () => {
