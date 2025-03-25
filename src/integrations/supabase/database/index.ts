@@ -24,11 +24,8 @@ export {
   updateWeekPercentage
 } from './week';
 
-// Week Hours operations - export everything except the duplicated functions
-import * as WeekHoursModule from './weekHours';
-export {
-  // Re-export only non-duplicate functions from weekHours
-} from './weekHours';
+// Week Hours operations - export everything from weekHours
+export * from './weekHours';
 
 // Visible Entity operations (clients and media types visibility)
 export * from './visibleEntity';
