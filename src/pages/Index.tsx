@@ -1,16 +1,44 @@
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
 import { getCustomWeeks } from '@/integrations/supabase/database';
+import { testConnection } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
   const { user, customWeeks } = useApp();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [isConnectionTesting, setIsConnectionTesting] = useState(true);
   
+  // First check database connection
   useEffect(() => {
+    const checkConnection = async () => {
+      setIsConnectionTesting(true);
+      const connectionResult = await testConnection();
+      
+      if (!connectionResult.success) {
+        console.error('Failed to connect to Supabase:', connectionResult.error);
+        toast({
+          title: "Ошибка подключения к базе данных",
+          description: `Не удалось подключиться к ${connectionResult.environment === 'local' ? 'локальной' : 'удаленной'} базе данных. Проверьте настройки подключения и запущен ли сервер.`,
+          variant: "destructive",
+        });
+      } else {
+        console.log(`Successfully connected to ${connectionResult.environment} database`);
+      }
+      
+      setIsConnectionTesting(false);
+    };
+    
+    checkConnection();
+  }, [toast]);
+  
+  // Then load user preferences if connection is available and user is logged in
+  useEffect(() => {
+    if (isConnectionTesting) return;
+    
     const loadUserPreferences = async () => {
       if (user) {
         try {
@@ -24,8 +52,8 @@ const Index = () => {
             if (error) {
               console.error('Error loading custom weeks:', error);
               toast({
-                title: "Database Connection Error",
-                description: "Could not connect to the database. Please check your connection settings.",
+                title: "Ошибка подключения к базе данных",
+                description: "Не удалось загрузить пользовательские недели. Проверьте подключение к базе данных.",
                 variant: "destructive",
               });
               return;
@@ -65,8 +93,8 @@ const Index = () => {
         } catch (error) {
           console.error('Error loading user preferences:', error);
           toast({
-            title: "Error",
-            description: "Could not load user preferences. Please try again later.",
+            title: "Ошибка",
+            description: "Не удалось загрузить пользовательские настройки. Попробуйте позже.",
             variant: "destructive",
           });
         }
@@ -77,19 +105,22 @@ const Index = () => {
     };
     
     loadUserPreferences();
-  }, [user, navigate, toast]);
+  }, [user, navigate, toast, isConnectionTesting]);
 
   // Show a loading or welcome screen
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="text-center max-w-xl p-6 bg-white rounded-lg shadow-lg">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Timesheet App</h1>
-        <p className="text-xl text-gray-600 mb-6">Manage your time efficiently</p>
-        {!user && (
-          <p className="text-gray-500">Redirecting to login page...</p>
+        <h1 className="text-4xl font-bold mb-4">Добро пожаловать в Timesheet App</h1>
+        <p className="text-xl text-gray-600 mb-6">Управляйте своим временем эффективно</p>
+        {isConnectionTesting && (
+          <p className="text-gray-500">Проверка подключения к базе данных...</p>
         )}
-        {user && (
-          <p className="text-gray-500">Loading your timesheet data...</p>
+        {!isConnectionTesting && !user && (
+          <p className="text-gray-500">Перенаправление на страницу входа...</p>
+        )}
+        {!isConnectionTesting && user && (
+          <p className="text-gray-500">Загрузка данных вашего табеля...</p>
         )}
       </div>
     </div>
