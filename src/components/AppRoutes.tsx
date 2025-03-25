@@ -17,9 +17,7 @@ import UserHeadView from "@/pages/UserHeadView";
 import Planning from "@/pages/Planning";
 import PlanningManagement from "@/pages/PlanningManagement";
 import { AdfsCallback } from "@/pages/AuthCallbacks";
-import SamlCallback from "@/pages/SamlCallback";
-import AzureCallback from "@/pages/AzureCallback";
-import ResetPassword from "@/pages/ResetPassword";
+import { SamlCallback } from "@/pages/SamlCallback";
 import { useApp } from "@/contexts/AppContext";
 
 const AppRoutes = () => {
@@ -80,14 +78,8 @@ const AppRoutes = () => {
         element={!user ? <Login onLogin={handleLogin} users={users} /> : <Navigate to="/" replace />} 
       />
 
-      <Route 
-        path="/reset-password" 
-        element={!user ? <ResetPassword /> : <Navigate to="/" replace />} 
-      />
-
       <Route path="/auth/adfs-callback" element={<AdfsCallback />} />
       <Route path="/auth/saml-callback" element={<SamlCallback />} />
-      <Route path="/auth/azure-callback" element={<AzureCallback />} />
 
       <Route 
         path="/planning" 

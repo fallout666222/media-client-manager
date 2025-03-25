@@ -8,8 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon, User as UserIcon } from "lucide-react";
 import { SamlAuth } from "./SamlAuth";
-import { SupabaseAuth } from "./SupabaseAuth";
-import { AzureAuth } from "./AzureAuth";
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -281,13 +279,11 @@ export const Login = ({
         </div>
         
         <Tabs defaultValue="password" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="password">Password</TabsTrigger>
-            <TabsTrigger value="kerberos">Kerberos</TabsTrigger>
-            <TabsTrigger value="adfs">ADFS</TabsTrigger>
-            <TabsTrigger value="saml">SAML</TabsTrigger>
-            <TabsTrigger value="azure">Azure AD</TabsTrigger>
-            <TabsTrigger value="supabase">Supabase</TabsTrigger>
+            <TabsTrigger value="kerberos">Kerberos SSO</TabsTrigger>
+            <TabsTrigger value="adfs">ADFS SSO</TabsTrigger>
+            <TabsTrigger value="saml">SAML SSO</TabsTrigger>
           </TabsList>
           
           <TabsContent value="password">
@@ -361,14 +357,6 @@ export const Login = ({
           
           <TabsContent value="saml">
             <SamlAuth onLogin={onLogin} />
-          </TabsContent>
-          
-          <TabsContent value="azure">
-            <AzureAuth onLogin={onLogin} />
-          </TabsContent>
-
-          <TabsContent value="supabase">
-            <SupabaseAuth onLogin={onLogin} />
           </TabsContent>
         </Tabs>
       </div>
