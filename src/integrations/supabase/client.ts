@@ -110,18 +110,42 @@ export const directQuery = async (query: string, params: any[] = []): Promise<Qu
   }
 };
 
+// Define a type for our query builder to match Supabase's API
+type QueryBuilder = {
+  select: (columns?: string) => QueryBuilder;
+  insert: (values: any, options?: { select?: boolean }) => Promise<{ data: any; error: any }>;
+  update: (values: any, options?: { select?: boolean }) => QueryBuilder;
+  delete: () => Promise<{ error: any }>;
+  eq: (column: string, value: any) => QueryBuilder;
+  in: (column: string, values: any[]) => QueryBuilder;
+  order: (column: string, options: { ascending: boolean }) => QueryBuilder;
+  single: () => Promise<{ data: any; error: any }>;
+  maybeSingle: () => Promise<{ data: any; error: any }>;
+  limit: (limit: number) => QueryBuilder;
+};
+
 // Enhanced database client that works with both Supabase and direct PostgreSQL
 class DatabaseClient {
-  async from(table: string) {
+  // Store conditions for the PostgreSQL implementation
+  private pgConditions: { column: string; operator: string; value: any }[] = [];
+  private pgOrderBy: { column: string; direction: string } | null = null;
+  private pgLimit: number | null = null;
+  private pgColumns: string = '*';
+  private currentTable: string = '';
+
+  async from(table: string): Promise<QueryBuilder> {
+    this.currentTable = table;
+    this.pgConditions = [];
+    this.pgOrderBy = null;
+    this.pgLimit = null;
+    this.pgColumns = '*';
+
     if (USE_DIRECT_PG && pgPool) {
+      // For PostgreSQL, return our custom query builder
       return {
-        select: async (columns = '*') => {
-          try {
-            const result = await directQuery(`SELECT ${columns} FROM ${table}`);
-            return { data: result.rows, error: null };
-          } catch (error) {
-            return { data: null, error };
-          }
+        select: (columns = '*') => {
+          this.pgColumns = columns;
+          return this._getPgQueryBuilder();
         },
         insert: async (values: any, options: { select?: boolean } = {}) => {
           try {
@@ -136,63 +160,58 @@ class DatabaseClient {
             return { data: null, error };
           }
         },
-        update: async (values: any, options: { select?: boolean } = {}) => {
-          try {
-            // This is a simplified implementation - in real use, you would need to add conditions (WHERE clause)
-            const setClause = Object.keys(values)
-              .map((key, i) => `${key} = $${i + 1}`)
-              .join(', ');
-            
-            const selectClause = options.select ? 'RETURNING *' : '';
-            const query = `UPDATE ${table} SET ${setClause} ${selectClause}`;
-            const result = await directQuery(query, Object.values(values));
-            return { data: options.select ? result.rows : null, error: null };
-          } catch (error) {
-            return { data: null, error };
-          }
+        update: (values: any, options: { select?: boolean } = {}) => {
+          // Store values for later execution
+          const queryBuilder = this._getPgQueryBuilder();
+          queryBuilder.updateValues = values;
+          queryBuilder.updateOptions = options;
+          return queryBuilder;
         },
         delete: async () => {
           try {
-            // This is a simplified implementation - in real use, you would need to add conditions (WHERE clause)
-            const query = `DELETE FROM ${table}`;
-            await directQuery(query);
+            let query = `DELETE FROM ${table}`;
+            const params: any[] = [];
+            
+            // Add WHERE conditions
+            if (this.pgConditions.length > 0) {
+              query += ' WHERE ';
+              this.pgConditions.forEach((condition, index) => {
+                if (index > 0) {
+                  query += ' AND ';
+                }
+                
+                if (condition.operator === 'IN') {
+                  const placeholders = (condition.value as any[]).map((_, i) => `$${params.length + i + 1}`).join(', ');
+                  query += `${condition.column} IN (${placeholders})`;
+                  params.push(...condition.value);
+                } else {
+                  query += `${condition.column} ${condition.operator} $${params.length + 1}`;
+                  params.push(condition.value);
+                }
+              });
+            }
+            
+            await directQuery(query, params);
             return { error: null };
           } catch (error) {
             return { error };
           }
         },
-        eq: async (column: string, value: any) => {
-          try {
-            const query = `SELECT * FROM ${table} WHERE ${column} = $1`;
-            const result = await directQuery(query, [value]);
-            return { data: result.rows, error: null };
-          } catch (error) {
-            return { data: null, error };
-          }
+        eq: (column: string, value: any) => {
+          this.pgConditions.push({ column, operator: '=', value });
+          return this._getPgQueryBuilder();
         },
-        in: async (column: string, values: any[]) => {
-          try {
-            const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
-            const query = `SELECT * FROM ${table} WHERE ${column} IN (${placeholders})`;
-            const result = await directQuery(query, values);
-            return { data: result.rows, error: null };
-          } catch (error) {
-            return { data: null, error };
-          }
+        in: (column: string, values: any[]) => {
+          this.pgConditions.push({ column, operator: 'IN', value: values });
+          return this._getPgQueryBuilder();
         },
-        order: async (column: string, options: { ascending: boolean }) => {
-          try {
-            const direction = options.ascending ? 'ASC' : 'DESC';
-            const query = `SELECT * FROM ${table} ORDER BY ${column} ${direction}`;
-            const result = await directQuery(query);
-            return { data: result.rows, error: null };
-          } catch (error) {
-            return { data: null, error };
-          }
+        order: (column: string, options: { ascending: boolean }) => {
+          this.pgOrderBy = { column, direction: options.ascending ? 'ASC' : 'DESC' };
+          return this._getPgQueryBuilder();
         },
         single: async () => {
           try {
-            const result = await directQuery(`SELECT * FROM ${table} LIMIT 1`);
+            const result = await this._executePgQuery(true, 1);
             if (result.rows.length === 0) {
               throw new Error('No rows returned');
             }
@@ -203,30 +222,164 @@ class DatabaseClient {
         },
         maybeSingle: async () => {
           try {
-            const result = await directQuery(`SELECT * FROM ${table} LIMIT 1`);
+            const result = await this._executePgQuery(true, 1);
             return { data: result.rows[0] || null, error: null };
           } catch (error) {
             return { data: null, error };
           }
         },
-        limit: async (limit: number) => {
-          try {
-            const query = `SELECT * FROM ${table} LIMIT ${limit}`;
-            const result = await directQuery(query);
-            return { data: result.rows, error: null };
-          } catch (error) {
-            return { data: null, error };
-          }
+        limit: (limit: number) => {
+          this.pgLimit = limit;
+          return this._getPgQueryBuilder();
         }
       };
     } else if (supabaseClient) {
-      return supabaseClient.from(table);
+      // For Supabase, we can use the existing from method
+      // We need to cast to any to avoid type errors from string argument
+      return supabaseClient.from(table as any) as unknown as QueryBuilder;
     }
     
     throw new Error('No database connection available');
   }
 
-  // Other methods can be implemented as needed
+  // Helper to generate the PostgreSQL query builder with the correct 'this' context
+  private _getPgQueryBuilder(): any {
+    const self = this;
+    
+    return {
+      select: (columns = '*') => {
+        self.pgColumns = columns;
+        return self._getPgQueryBuilder();
+      },
+      eq: (column: string, value: any) => {
+        self.pgConditions.push({ column, operator: '=', value });
+        return self._getPgQueryBuilder();
+      },
+      in: (column: string, values: any[]) => {
+        self.pgConditions.push({ column, operator: 'IN', value: values });
+        return self._getPgQueryBuilder();
+      },
+      order: (column: string, options: { ascending: boolean }) => {
+        self.pgOrderBy = { column, direction: options.ascending ? 'ASC' : 'DESC' };
+        return self._getPgQueryBuilder();
+      },
+      limit: (limit: number) => {
+        self.pgLimit = limit;
+        return self._getPgQueryBuilder();
+      },
+      single: async () => {
+        try {
+          const result = await self._executePgQuery(true, 1);
+          if (result.rows.length === 0) {
+            throw new Error('No rows returned');
+          }
+          return { data: result.rows[0], error: null };
+        } catch (error) {
+          return { data: null, error };
+        }
+      },
+      maybeSingle: async () => {
+        try {
+          const result = await self._executePgQuery(true, 1);
+          return { data: result.rows[0] || null, error: null };
+        } catch (error) {
+          return { data: null, error };
+        }
+      },
+      update: async (values: any, options: { select?: boolean } = {}) => {
+        try {
+          const setClause = Object.keys(values)
+            .map((key, i) => `${key} = $${i + 1}`)
+            .join(', ');
+          
+          let query = `UPDATE ${self.currentTable} SET ${setClause}`;
+          const params = [...Object.values(values)];
+          let paramIndex = params.length;
+          
+          // Add WHERE conditions
+          if (self.pgConditions.length > 0) {
+            query += ' WHERE ';
+            self.pgConditions.forEach((condition, index) => {
+              if (index > 0) {
+                query += ' AND ';
+              }
+              
+              if (condition.operator === 'IN') {
+                const placeholders = (condition.value as any[]).map((_, i) => `$${paramIndex + i + 1}`).join(', ');
+                query += `${condition.column} IN (${placeholders})`;
+                params.push(...condition.value);
+                paramIndex += (condition.value as any[]).length;
+              } else {
+                query += `${condition.column} ${condition.operator} $${paramIndex + 1}`;
+                params.push(condition.value);
+                paramIndex += 1;
+              }
+            });
+          }
+          
+          const selectClause = options.select ? 'RETURNING *' : '';
+          if (selectClause) {
+            query += ' ' + selectClause;
+          }
+          
+          const result = await directQuery(query, params);
+          return { data: options.select ? result.rows : null, error: null };
+        } catch (error) {
+          return { data: null, error };
+        }
+      },
+      // For backward compatibility, return actual data when awaited
+      then: (resolve: any) => {
+        return self._executePgQuery().then(result => {
+          resolve({ data: result.rows, error: null });
+        }).catch(error => {
+          resolve({ data: null, error });
+        });
+      }
+    };
+  }
+
+  // Helper to execute the PostgreSQL query based on the stored conditions
+  private async _executePgQuery(forSingle = false, limit: number | null = null): Promise<QueryResult> {
+    if (!pgPool) {
+      throw new Error('PostgreSQL pool not available');
+    }
+    
+    let query = `SELECT ${this.pgColumns} FROM ${this.currentTable}`;
+    const params: any[] = [];
+    
+    // Add WHERE conditions
+    if (this.pgConditions.length > 0) {
+      query += ' WHERE ';
+      this.pgConditions.forEach((condition, index) => {
+        if (index > 0) {
+          query += ' AND ';
+        }
+        
+        if (condition.operator === 'IN') {
+          const placeholders = (condition.value as any[]).map((_, i) => `$${params.length + i + 1}`).join(', ');
+          query += `${condition.column} IN (${placeholders})`;
+          params.push(...condition.value);
+        } else {
+          query += `${condition.column} ${condition.operator} $${params.length + 1}`;
+          params.push(condition.value);
+        }
+      });
+    }
+    
+    // Add ORDER BY
+    if (this.pgOrderBy) {
+      query += ` ORDER BY ${this.pgOrderBy.column} ${this.pgOrderBy.direction}`;
+    }
+    
+    // Add LIMIT
+    const effectiveLimit = forSingle ? 1 : (limit !== null ? limit : this.pgLimit);
+    if (effectiveLimit !== null) {
+      query += ` LIMIT ${effectiveLimit}`;
+    }
+    
+    return await directQuery(query, params);
+  }
 }
 
 // Instantiate and export the client
