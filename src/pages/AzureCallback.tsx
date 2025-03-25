@@ -35,7 +35,7 @@ const AzureCallback = () => {
         console.log('Session retrieved:', session);
         
         // Get user profile from Supabase
-        const { data: profileData, error: profileError } = await supabase
+        let { data: profileData, error: profileError } = await supabase
           .from('user_profiles')
           .select('*')
           .eq('id', session.user.id)

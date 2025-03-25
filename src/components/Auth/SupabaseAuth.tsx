@@ -81,7 +81,7 @@ export const SupabaseAuth = ({ onLogin }: SupabaseAuthProps) => {
           try {
             // Get user profile from user_profiles table
             console.log('Fetching user profile for ID:', data.user.id);
-            const { data: profileData, error: profileError } = await supabase
+            let { data: profileData, error: profileError } = await supabase
               .from('user_profiles')
               .select('*')
               .eq('id', data.user.id)
