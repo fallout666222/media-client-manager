@@ -23,12 +23,16 @@ const AzureCallback = () => {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
+          console.error('Session error:', sessionError);
           throw sessionError;
         }
         
         if (!session || !session.user) {
+          console.error('No session or user found');
           throw new Error('Не удалось получить данные сессии');
         }
+        
+        console.log('Session retrieved:', session);
         
         // Get user profile from Supabase
         const { data: profileData, error: profileError } = await supabase
@@ -39,8 +43,30 @@ const AzureCallback = () => {
         
         if (profileError) {
           console.error('Error fetching user profile:', profileError);
-          throw new Error('Не удалось получить профиль пользователя');
+          
+          // Try to wait a moment and retry once
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          const { data: retryProfileData, error: retryError } = await supabase
+            .from('user_profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+            
+          if (retryError) {
+            console.error('Error on retry fetching user profile:', retryError);
+            throw new Error('Не удалось получить профиль пользователя');
+          }
+          
+          profileData = retryProfileData;
         }
+        
+        if (!profileData) {
+          console.error('No profile data found');
+          throw new Error('Профиль пользователя не найден');
+        }
+        
+        console.log('Profile data retrieved:', profileData);
         
         // Create a properly formatted User object with ALL fields
         const appUser: User = {
@@ -65,6 +91,8 @@ const AzureCallback = () => {
           dark_theme: profileData.dark_theme,
           language: profileData.language
         };
+        
+        console.log('App user object created:', appUser);
         
         // Save user data to localStorage for session persistence
         localStorage.setItem('userSession', JSON.stringify(appUser));

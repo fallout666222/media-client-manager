@@ -45,6 +45,9 @@ export const AzureAuth: React.FC<AzureAuthProps> = ({ onLogin }) => {
       if (data?.url) {
         // Redirect to Azure AD login page
         window.location.href = data.url;
+      } else {
+        // If no URL is returned, show error
+        throw new Error('No redirect URL returned from Supabase');
       }
       
     } catch (error) {

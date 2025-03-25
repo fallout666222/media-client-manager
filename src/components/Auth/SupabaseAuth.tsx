@@ -27,6 +27,7 @@ export const SupabaseAuth = ({ onLogin }: SupabaseAuthProps) => {
 
     try {
       if (isSignUp) {
+        console.log('Attempting to sign up with email:', email);
         // Sign up with email and password
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -34,6 +35,7 @@ export const SupabaseAuth = ({ onLogin }: SupabaseAuthProps) => {
         });
 
         if (error) {
+          console.error('Sign up error:', error);
           setErrorMessage(error.message);
           toast({
             title: "Sign Up Error",
@@ -43,6 +45,8 @@ export const SupabaseAuth = ({ onLogin }: SupabaseAuthProps) => {
           return;
         }
 
+        console.log('Sign up response:', data);
+        
         if (data.user) {
           toast({
             title: "Account Created",
@@ -53,6 +57,7 @@ export const SupabaseAuth = ({ onLogin }: SupabaseAuthProps) => {
           setIsSignUp(false);
         }
       } else {
+        console.log('Attempting to sign in with email:', email);
         // Sign in with email and password
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
@@ -60,6 +65,7 @@ export const SupabaseAuth = ({ onLogin }: SupabaseAuthProps) => {
         });
 
         if (error) {
+          console.error('Login error:', error);
           setErrorMessage(error.message);
           toast({
             title: "Login Error",
@@ -69,53 +75,99 @@ export const SupabaseAuth = ({ onLogin }: SupabaseAuthProps) => {
           return;
         }
 
+        console.log('Sign in response:', data);
+        
         if (data.user) {
-          // Get user profile from user_profiles table
-          const { data: profileData, error: profileError } = await supabase
-            .from('user_profiles')
-            .select('*')
-            .eq('id', data.user.id)
-            .single();
+          try {
+            // Get user profile from user_profiles table
+            console.log('Fetching user profile for ID:', data.user.id);
+            const { data: profileData, error: profileError } = await supabase
+              .from('user_profiles')
+              .select('*')
+              .eq('id', data.user.id)
+              .single();
 
-          if (profileError) {
-            console.error('Error fetching user profile:', profileError);
+            if (profileError) {
+              console.error('Error fetching user profile:', profileError);
+              
+              // Wait a moment and retry once
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              
+              const { data: retryData, error: retryError } = await supabase
+                .from('user_profiles')
+                .select('*')
+                .eq('id', data.user.id)
+                .single();
+                
+              if (retryError) {
+                console.error('Error on retry fetching user profile:', retryError);
+                toast({
+                  title: "Profile Error",
+                  description: "Could not retrieve your user profile",
+                  variant: "destructive"
+                });
+                return;
+              }
+              
+              profileData = retryData;
+            }
+
+            if (!profileData) {
+              console.error('No profile data found');
+              toast({
+                title: "Profile Error",
+                description: "User profile not found",
+                variant: "destructive"
+              });
+              return;
+            }
+            
+            console.log('Profile data retrieved:', profileData);
+
+            // Create a properly formatted User object
+            const appUser: User = {
+              id: data.user.id,
+              username: profileData.login,
+              name: profileData.name,
+              role: profileData.type as 'admin' | 'user' | 'manager',
+              email: data.user.email,
+              type: profileData.type,
+              login: profileData.login,
+              job_position: profileData.job_position,
+              description: profileData.description,
+              department_id: profileData.department_id,
+              departmentId: profileData.department_id,
+              first_week: profileData.first_week,
+              firstWeek: profileData.first_week,
+              first_custom_week_id: profileData.first_custom_week_id,
+              firstCustomWeekId: profileData.first_custom_week_id,
+              user_head_id: profileData.user_head_id,
+              dark_theme: profileData.dark_theme,
+              language: profileData.language,
+              deletion_mark: false,
+              hidden: profileData.hidden
+            };
+
+            console.log('App user object created:', appUser);
+            
+            // Save to localStorage
+            localStorage.setItem('userSession', JSON.stringify(appUser));
+            
+            // Call the onLogin callback with user data
+            onLogin(appUser);
+            
             toast({
-              title: "Profile Error",
-              description: "Could not retrieve your user profile",
+              title: "Welcome back!",
+              description: `You are now logged in as ${profileData.name || email}`
+            });
+          } catch (err) {
+            console.error('Error processing user data:', err);
+            toast({
+              title: "Login Error",
+              description: "Error processing user data after authentication",
               variant: "destructive"
             });
-            return;
           }
-
-          // Create a properly formatted User object
-          const appUser: User = {
-            id: data.user.id,
-            username: profileData.login,
-            name: profileData.name,
-            role: profileData.type as 'admin' | 'user' | 'manager',
-            email: data.user.email,
-            type: profileData.type,
-            login: profileData.login,
-            job_position: profileData.job_position,
-            description: profileData.description,
-            department_id: profileData.department_id,
-            departmentId: profileData.department_id,
-            first_week: profileData.first_week,
-            firstWeek: profileData.first_week,
-            first_custom_week_id: profileData.first_custom_week_id,
-            firstCustomWeekId: profileData.first_custom_week_id,
-            user_head_id: profileData.user_head_id,
-            dark_theme: profileData.dark_theme,
-            language: profileData.language,
-          };
-
-          // Call the onLogin callback with user data
-          onLogin(appUser);
-          
-          toast({
-            title: "Welcome back!",
-            description: `You are now logged in as ${profileData.name || email}`
-          });
         }
       }
     } catch (error) {
