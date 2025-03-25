@@ -1,4 +1,3 @@
-
 import { Routes, Route, Navigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -18,6 +17,7 @@ import UserHeadView from "@/pages/UserHeadView";
 import Planning from "@/pages/Planning";
 import PlanningManagement from "@/pages/PlanningManagement";
 import { AdfsCallback } from "@/pages/AuthCallbacks";
+import { SamlCallback } from "@/pages/SamlCallback";
 import { useApp } from "@/contexts/AppContext";
 
 const AppRoutes = () => {
@@ -79,6 +79,7 @@ const AppRoutes = () => {
       />
 
       <Route path="/auth/adfs-callback" element={<AdfsCallback />} />
+      <Route path="/auth/saml-callback" element={<SamlCallback />} />
 
       <Route 
         path="/planning" 

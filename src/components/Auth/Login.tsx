@@ -7,6 +7,7 @@ import { User } from "@/types/timesheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon, User as UserIcon } from "lucide-react";
+import { SamlAuth } from "./SamlAuth";
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -278,10 +279,11 @@ export const Login = ({
         </div>
         
         <Tabs defaultValue="password" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="password">Password</TabsTrigger>
             <TabsTrigger value="kerberos">Kerberos SSO</TabsTrigger>
             <TabsTrigger value="adfs">ADFS SSO</TabsTrigger>
+            <TabsTrigger value="saml">SAML SSO</TabsTrigger>
           </TabsList>
           
           <TabsContent value="password">
@@ -351,6 +353,10 @@ export const Login = ({
                 {adfsLoading ? "Redirecting..." : "Sign in with ADFS"}
               </Button>
             </div>
+          </TabsContent>
+          
+          <TabsContent value="saml">
+            <SamlAuth onLogin={onLogin} />
           </TabsContent>
         </Tabs>
       </div>

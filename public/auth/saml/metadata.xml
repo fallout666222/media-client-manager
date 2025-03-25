@@ -1,0 +1,89 @@
+
+<?xml version="1.0"?>
+<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" 
+                     xmlns:ds="http://www.w3.org/2000/09/xmldsig#" 
+                     entityID="https://timesheet.app/saml2">
+  <md:SPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol" 
+                      AuthnRequestsSigned="true" 
+                      WantAssertionsSigned="true">
+    <md:KeyDescriptor use="signing">
+      <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+        <ds:X509Data>
+          <ds:X509Certificate>
+            MIICvDCCAaQCCQD6E8ZGsQ2usjANBgkqhkiG9w0BAQsFADAgMR4wHAYDVQQDDBVt
+            eXNlcnZpY2UuZXhhbXBsZS5jb20wHhcNMjIwMjE3MTQwNjM5WhcNMjMwMjE3MTQw
+            NjM5WjAgMR4wHAYDVQQDDBVteXNlcnZpY2UuZXhhbXBsZS5jb20wggEiMA0GCSqG
+            SIb3DQEBAQUAA4IBDwAwggEKAoIBAQC7XKdCRxUZXjdqVqwwwOJqc1Ch0nOSmk+U
+            erkUqlviWHdeLR+FolHKjqLzCBloAz4xVc0DFfR76gWcWAHJloqZ7GBS7NpDhzV8
+            G+cXQ+bTU0Lu2e73zCQb30XUdKhWiGfDKaU+1xg9CD/2gIfsYPs3TTq1sq7oCs5q
+            LdUHaVL5kcRaHKdnTi7cs5i9xzs3TsUnXcrJPwydjp+aEkyRh07oMpXBEobGisfF
+            2p1MA6pVW2gjmywdVP4+2MiLGOiebgzNEPNRoqcstWXqrK5WQNqCCpqqq3S0S6lf
+            1uMZglSslITGrcBryi9iZewoM8xDVJYg7t9J7kt7x5CCkqDV3JYlAgMBAAEwDQYJ
+            KoZIhvcNAQELBQADggEBAGC3BZ+euqoHWmnGHS3TgegEDgWMq2KbiT9u9WJHtpwW
+            KeCY9F9noVz0Vhta9IPG/Gm8PqZtXu89PpP/tPJpCh3ITFwR3KiGLyWsYBUqRwUc
+            a0gDlHeWDqodcor5jGnHzuHGjUb2DLyZ05bVXANZrEDgpAQC5hLPrXTHGR+AAqB9
+            lrXVzjyLOCQQUHpEiBZ+Exi7+WHlKYv47C8NW6AcqJY/615tzges3JPJmSuYW/Xm
+            RU6mRQDLODqp1xMJiAJXcrYbxSLLGX1lYUUH2lnOqX85FGFFzF1L1T+s0rMj0ZBe
+            nQqxk4ikPIKGZAXLpxP3L01izGWhFrQPxErG6cWxu9o=
+          </ds:X509Certificate>
+        </ds:X509Data>
+      </ds:KeyInfo>
+    </md:KeyDescriptor>
+    <md:KeyDescriptor use="encryption">
+      <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+        <ds:X509Data>
+          <ds:X509Certificate>
+            MIICvDCCAaQCCQD6E8ZGsQ2usjANBgkqhkiG9w0BAQsFADAgMR4wHAYDVQQDDBVt
+            eXNlcnZpY2UuZXhhbXBsZS5jb20wHhcNMjIwMjE3MTQwNjM5WhcNMjMwMjE3MTQw
+            NjM5WjAgMR4wHAYDVQQDDBVteXNlcnZpY2UuZXhhbXBsZS5jb20wggEiMA0GCSqG
+            SIb3DQEBAQUAA4IBDwAwggEKAoIBAQC7XKdCRxUZXjdqVqwwwOJqc1Ch0nOSmk+U
+            erkUqlviWHdeLR+FolHKjqLzCBloAz4xVc0DFfR76gWcWAHJloqZ7GBS7NpDhzV8
+            G+cXQ+bTU0Lu2e73zCQb30XUdKhWiGfDKaU+1xg9CD/2gIfsYPs3TTq1sq7oCs5q
+            LdUHaVL5kcRaHKdnTi7cs5i9xzs3TsUnXcrJPwydjp+aEkyRh07oMpXBEobGisfF
+            2p1MA6pVW2gjmywdVP4+2MiLGOiebgzNEPNRoqcstWXqrK5WQNqCCpqqq3S0S6lf
+            1uMZglSslITGrcBryi9iZewoM8xDVJYg7t9J7kt7x5CCkqDV3JYlAgMBAAEwDQYJ
+            KoZIhvcNAQELBQADggEBAGC3BZ+euqoHWmnGHS3TgegEDgWMq2KbiT9u9WJHtpwW
+            KeCY9F9noVz0Vhta9IPG/Gm8PqZtXu89PpP/tPJpCh3ITFwR3KiGLyWsYBUqRwUc
+            a0gDlHeWDqodcor5jGnHzuHGjUb2DLyZ05bVXANZrEDgpAQC5hLPrXTHGR+AAqB9
+            lrXVzjyLOCQQUHpEiBZ+Exi7+WHlKYv47C8NW6AcqJY/615tzges3JPJmSuYW/Xm
+            RU6mRQDLODqp1xMJiAJXcrYbxSLLGX1lYUUH2lnOqX85FGFFzF1L1T+s0rMj0ZBe
+            nQqxk4ikPIKGZAXLpxP3L01izGWhFrQPxErG6cWxu9o=
+          </ds:X509Certificate>
+        </ds:X509Data>
+      </ds:KeyInfo>
+    </md:KeyDescriptor>
+    <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" 
+                            Location="https://timesheet.app/auth/saml-logout"/>
+    <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" 
+                                 Location="https://timesheet.app/auth/saml-callback" 
+                                 index="0" 
+                                 isDefault="true"/>
+    <md:AttributeConsumingService index="0">
+      <md:ServiceName xml:lang="en">Timesheet App</md:ServiceName>
+      <md:RequestedAttribute Name="email" 
+                             NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic" 
+                             isRequired="true"/>
+      <md:RequestedAttribute Name="name" 
+                             NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic" 
+                             isRequired="true"/>
+      <md:RequestedAttribute Name="login" 
+                             NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic" 
+                             isRequired="true"/>
+    </md:AttributeConsumingService>
+  </md:SPSSODescriptor>
+  <md:Organization>
+    <md:OrganizationName xml:lang="en">Timesheet App</md:OrganizationName>
+    <md:OrganizationDisplayName xml:lang="en">Timesheet Application</md:OrganizationDisplayName>
+    <md:OrganizationURL xml:lang="en">https://timesheet.app</md:OrganizationURL>
+  </md:Organization>
+  <md:ContactPerson contactType="technical">
+    <md:Company>Timesheet App</md:Company>
+    <md:GivenName>Support</md:GivenName>
+    <md:EmailAddress>support@timesheet.app</md:EmailAddress>
+  </md:ContactPerson>
+  <md:ContactPerson contactType="support">
+    <md:Company>Timesheet App</md:Company>
+    <md:GivenName>Support</md:GivenName>
+    <md:EmailAddress>support@timesheet.app</md:EmailAddress>
+  </md:ContactPerson>
+</md:EntityDescriptor>
