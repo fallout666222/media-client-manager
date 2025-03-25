@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -144,4 +145,5 @@ export const SamlCallback = () => {
   );
 };
 
+// Also provide a default export
 export default SamlCallback;
