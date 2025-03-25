@@ -19,8 +19,19 @@ const Index = () => {
           
           if (savedWeekId) {
             // User has a saved week, load it
-            const { data: weeksData } = await getCustomWeeks();
-            const savedWeek = weeksData.find((week: any) => week.id === savedWeekId);
+            const { data: weeksData, error } = await getCustomWeeks();
+            
+            if (error) {
+              console.error('Error loading custom weeks:', error);
+              toast({
+                title: "Database Connection Error",
+                description: "Could not connect to the database. Please check your connection settings.",
+                variant: "destructive",
+              });
+              return;
+            }
+            
+            const savedWeek = weeksData?.find((week: any) => week.id === savedWeekId);
             
             if (savedWeek) {
               console.log('Found saved week in localStorage:', savedWeek.name);
@@ -34,19 +45,30 @@ const Index = () => {
             // Check for unconfirmed weeks
             console.log('No saved week found, looking for first unconfirmed week');
             const { getUserFirstUnconfirmedWeek } = await import('@/integrations/supabase/database');
-            const firstUnconfirmedWeek = await getUserFirstUnconfirmedWeek(user.id);
             
-            if (firstUnconfirmedWeek) {
-              console.log('Found unconfirmed week to redirect to:', firstUnconfirmedWeek);
-              // Set the redirect flag
-              localStorage.setItem('redirectToWeek', JSON.stringify({
-                weekId: firstUnconfirmedWeek.id,
-                date: firstUnconfirmedWeek.period_from
-              }));
+            try {
+              const firstUnconfirmedWeek = await getUserFirstUnconfirmedWeek(user.id);
+              
+              if (firstUnconfirmedWeek) {
+                console.log('Found unconfirmed week to redirect to:', firstUnconfirmedWeek);
+                // Set the redirect flag
+                localStorage.setItem('redirectToWeek', JSON.stringify({
+                  weekId: firstUnconfirmedWeek.id,
+                  date: firstUnconfirmedWeek.period_from
+                }));
+              }
+            } catch (error) {
+              console.error('Error getting unconfirmed week:', error);
+              // Continue without throwing - we'll just not redirect to an unconfirmed week
             }
           }
         } catch (error) {
           console.error('Error loading user preferences:', error);
+          toast({
+            title: "Error",
+            description: "Could not load user preferences. Please try again later.",
+            variant: "destructive",
+          });
         }
       } else {
         // If no user is logged in, redirect to login page
@@ -55,7 +77,7 @@ const Index = () => {
     };
     
     loadUserPreferences();
-  }, [user, navigate]);
+  }, [user, navigate, toast]);
 
   // Show a loading or welcome screen
   return (
