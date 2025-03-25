@@ -2,9 +2,6 @@
 import { supabase } from '../client';
 
 export const getWeekHours = async (userId: string, weekId: string) => {
-  // Set the user_id for RLS
-  await supabase.rpc('set_user_context', { user_id: userId });
-  
   return await supabase.from('week_hours').select(`
     *,
     client:clients(*),
@@ -19,9 +16,6 @@ export const updateWeekHours = async (
   mediaTypeId: string, 
   hours: number
 ) => {
-  // Set the user_id for RLS
-  await supabase.rpc('set_user_context', { user_id: userId });
-  
   // Check if hours entry already exists
   const { data } = await supabase.from('week_hours')
     .select('*')
@@ -60,9 +54,6 @@ export const updateWeekHours = async (
 // Update this function to handle zero hours by deleting records
 export const updateHours = async (userId: string, weekId: string, clientName: string, mediaTypeName: string, hours: number) => {
   try {
-    // Set the user_id for RLS
-    await supabase.rpc('set_user_context', { user_id: userId });
-    
     // Get the client and media type IDs from their names
     const { getClients } = await import('./client');
     const { getMediaTypes } = await import('./mediaType');

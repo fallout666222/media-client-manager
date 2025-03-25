@@ -19,9 +19,6 @@ export interface DatabaseAdapter<T = any> {
   
   // Run raw queries (if supported)
   query?: (sql: string, params?: any[]) => Promise<{ data: any; error: Error | null }>;
-  
-  // RPC functions
-  rpc?: (functionName: string, params?: any) => Promise<{ data: any; error: Error | null }>;
 }
 
 export interface QueryOptions {
