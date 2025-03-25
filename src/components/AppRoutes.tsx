@@ -18,6 +18,7 @@ import Planning from "@/pages/Planning";
 import PlanningManagement from "@/pages/PlanningManagement";
 import { AdfsCallback } from "@/pages/AuthCallbacks";
 import SamlCallback from "@/pages/SamlCallback";
+import AzureCallback from "@/pages/AzureCallback";
 import ResetPassword from "@/pages/ResetPassword";
 import { useApp } from "@/contexts/AppContext";
 
@@ -86,6 +87,7 @@ const AppRoutes = () => {
 
       <Route path="/auth/adfs-callback" element={<AdfsCallback />} />
       <Route path="/auth/saml-callback" element={<SamlCallback />} />
+      <Route path="/auth/azure-callback" element={<AzureCallback />} />
 
       <Route 
         path="/planning" 
