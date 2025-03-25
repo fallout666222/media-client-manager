@@ -30,8 +30,9 @@ export const TeamMemberSelectorSection: React.FC<TeamMemberSelectorSectionProps>
   return (
     <div className="mb-4">
       <TeamMemberSelector 
+        currentUser={currentUser}
         users={users} 
-        selectedUserId={viewedUser?.id} 
+        selectedUser={viewedUser} 
         onUserSelect={handleUserSelect}
       />
     </div>
