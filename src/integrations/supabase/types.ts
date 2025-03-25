@@ -207,6 +207,72 @@ export type Database = {
         }
         Relationships: []
       }
+      user_profiles: {
+        Row: {
+          created_at: string
+          dark_theme: boolean | null
+          department_id: string | null
+          description: string | null
+          first_custom_week_id: string | null
+          first_week: string | null
+          hidden: boolean | null
+          id: string
+          job_position: string | null
+          language: string | null
+          login: string | null
+          name: string | null
+          type: string
+          user_head_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          dark_theme?: boolean | null
+          department_id?: string | null
+          description?: string | null
+          first_custom_week_id?: string | null
+          first_week?: string | null
+          hidden?: boolean | null
+          id: string
+          job_position?: string | null
+          language?: string | null
+          login?: string | null
+          name?: string | null
+          type?: string
+          user_head_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          dark_theme?: boolean | null
+          department_id?: string | null
+          description?: string | null
+          first_custom_week_id?: string | null
+          first_week?: string | null
+          hidden?: boolean | null
+          id?: string
+          job_position?: string | null
+          language?: string | null
+          login?: string | null
+          name?: string | null
+          type?: string
+          user_head_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_profiles_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_profiles_first_custom_week_id_fkey"
+            columns: ["first_custom_week_id"]
+            isOneToOne: false
+            referencedRelation: "custom_weeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           created_at: string | null

@@ -1,8 +1,8 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Client } from '@/types/timesheet';
 import * as db from '@/integrations/supabase/database';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AppContextType {
   user: User | null;
@@ -48,30 +48,100 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   
   const { toast } = useToast();
 
-  // Load user session from localStorage
   useEffect(() => {
-    const loadUserSession = () => {
-      try {
-        const storedUser = localStorage.getItem('userSession');
-        if (storedUser) {
-          const userData = JSON.parse(storedUser);
-          console.log('Retrieved user session from localStorage:', userData);
-          setUser(userData);
-        }
-      } catch (error) {
-        console.error('Error loading user session:', error);
-        localStorage.removeItem('userSession');
-      } finally {
-        if (!localStorage.getItem('userSession')) {
-          setLoading(false);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Supabase auth event:', event);
+        
+        if (event === 'SIGNED_IN' && session?.user) {
+          try {
+            const { data: profileData, error: profileError } = await supabase
+              .from('user_profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+
+            if (profileError) {
+              console.error('Error fetching user profile:', profileError);
+              return;
+            }
+
+            if (profileData) {
+              const userData: User = {
+                id: session.user.id,
+                name: profileData.name,
+                role: profileData.type as 'admin' | 'user' | 'manager',
+                type: profileData.type,
+                username: profileData.login,
+                login: profileData.login,
+                email: session.user.email,
+                job_position: profileData.job_position,
+                description: profileData.description,
+                department_id: profileData.department_id,
+                departmentId: profileData.department_id,
+                first_week: profileData.first_week,
+                firstWeek: profileData.first_week,
+                first_custom_week_id: profileData.first_custom_week_id,
+                firstCustomWeekId: profileData.first_custom_week_id,
+                deletion_mark: false,
+                dark_theme: profileData.dark_theme,
+                language: profileData.language,
+                user_head_id: profileData.user_head_id
+              };
+
+              setUser(userData);
+              localStorage.setItem('userSession', JSON.stringify(userData));
+              console.log('User set from Supabase auth:', userData);
+            }
+          } catch (error) {
+            console.error('Error processing auth state change:', error);
+          }
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          localStorage.removeItem('userSession');
+          localStorage.removeItem('redirectToWeek');
+          console.log('User signed out');
         }
       }
+    );
+
+    const checkExistingSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        console.log('Found existing Supabase session');
+      } else {
+        console.log('No existing Supabase session found');
+        loadUserSession();
+      }
+      
+      setLoading(false);
     };
-    
-    loadUserSession();
+
+    checkExistingSession();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  // Fetch initial data when user is set
+  const loadUserSession = () => {
+    try {
+      const storedUser = localStorage.getItem('userSession');
+      if (storedUser) {
+        const userData = JSON.parse(storedUser);
+        console.log('Retrieved user session from localStorage:', userData);
+        setUser(userData);
+      }
+    } catch (error) {
+      console.error('Error loading user session:', error);
+      localStorage.removeItem('userSession');
+    } finally {
+      if (!localStorage.getItem('userSession')) {
+        setLoading(false);
+      }
+    }
+  };
+
   useEffect(() => {
     if (user) {
       fetchInitialData();
@@ -160,7 +230,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Error signing out from Supabase:', error);
+    }
+    
     setUser(null);
     localStorage.removeItem('userSession');
     localStorage.removeItem('redirectToWeek');

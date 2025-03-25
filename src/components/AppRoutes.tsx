@@ -1,4 +1,3 @@
-
 import { Routes, Route, Navigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -19,6 +18,7 @@ import Planning from "@/pages/Planning";
 import PlanningManagement from "@/pages/PlanningManagement";
 import { AdfsCallback } from "@/pages/AuthCallbacks";
 import SamlCallback from "@/pages/SamlCallback";
+import ResetPassword from "@/pages/ResetPassword";
 import { useApp } from "@/contexts/AppContext";
 
 const AppRoutes = () => {
@@ -77,6 +77,11 @@ const AppRoutes = () => {
       <Route 
         path="/login" 
         element={!user ? <Login onLogin={handleLogin} users={users} /> : <Navigate to="/" replace />} 
+      />
+
+      <Route 
+        path="/reset-password" 
+        element={!user ? <ResetPassword /> : <Navigate to="/" replace />} 
       />
 
       <Route path="/auth/adfs-callback" element={<AdfsCallback />} />
