@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { Pool, QueryResult } from 'pg';
 import type { Database } from './types';
@@ -54,14 +55,14 @@ if (USE_DIRECT_PG) {
 }
 
 // Create Supabase client when not using direct PostgreSQL
-let supabase: ReturnType<typeof createClient<Database>> | null = null;
+let supabaseClient: ReturnType<typeof createClient<Database>> | null = null;
 if (!USE_DIRECT_PG) {
   // Use local or remote configuration based on environment variable
   const SUPABASE_URL = USE_LOCAL_DB ? LOCAL_SUPABASE_URL : REMOTE_SUPABASE_URL;
   const SUPABASE_PUBLISHABLE_KEY = USE_LOCAL_DB ? LOCAL_SUPABASE_KEY : REMOTE_SUPABASE_KEY;
 
   // Create the supabase client with enhanced security
-  supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  supabaseClient = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
       autoRefreshToken: true,
       persistSession: true,
@@ -218,8 +219,8 @@ class DatabaseClient {
           }
         }
       };
-    } else if (supabase) {
-      return supabase.from(table);
+    } else if (supabaseClient) {
+      return supabaseClient.from(table);
     }
     
     throw new Error('No database connection available');
@@ -232,7 +233,7 @@ class DatabaseClient {
 export const db = new DatabaseClient();
 
 // For backward compatibility, still export supabase client
-export const supabase = USE_DIRECT_PG ? null : supabase;
+export const supabase = supabaseClient;
 
 // Add a connection test function with better error handling
 export const testConnection = async () => {
@@ -245,8 +246,8 @@ export const testConnection = async () => {
         environment: 'direct_postgres',
         timestamp: rows[0].now
       };
-    } else if (supabase) {
-      const { data, error } = await supabase.from('users').select('id').limit(1);
+    } else if (supabaseClient) {
+      const { data, error } = await supabaseClient.from('users').select('id').limit(1);
       if (error) throw error;
       console.log('Supabase connection successful!');
       return { success: true, environment: USE_LOCAL_DB ? 'local' : 'remote' };

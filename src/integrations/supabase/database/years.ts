@@ -19,31 +19,31 @@ export interface YearData {
 }
 
 export const getAllYears = async () => {
-  return await db
-    .from('years')
+  const result = await db.from('years');
+  return result
     .select('*')
     .order('year', { ascending: false });
 };
 
 export const getYearByName = async (yearName: string) => {
-  return await db
-    .from('years')
+  const result = await db.from('years');
+  return result
     .select('*')
     .eq('year', yearName)
     .single();
 };
 
 export const createYear = async (yearData: YearData) => {
-  return await db
-    .from('years')
+  const result = await db.from('years');
+  return result
     .insert(yearData)
     .select()
     .single();
 };
 
 export const updateYear = async (id: string, yearData: Partial<YearData>) => {
-  return await db
-    .from('years')
+  const result = await db.from('years');
+  return result
     .update(yearData)
     .eq('id', id)
     .select()
@@ -51,8 +51,8 @@ export const updateYear = async (id: string, yearData: Partial<YearData>) => {
 };
 
 export const deleteYear = async (id: string) => {
-  return await db
-    .from('years')
+  const result = await db.from('years');
+  return result
     .delete()
     .eq('id', id);
 };

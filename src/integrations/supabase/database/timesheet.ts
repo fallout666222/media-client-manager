@@ -3,7 +3,8 @@ import { db } from '../client';
 
 // Week Hours
 export const getWeekHours = async (userId: string, weekId: string) => {
-  return await db.from('week_hours').select(`
+  const result = await db.from('week_hours');
+  return result.select(`
     *,
     client:clients(*),
     media_type:media_types(*)
@@ -19,8 +20,8 @@ export const updateWeekHours = async (
 ) => {
   if (hours === 0) {
     // Delete if hours is 0
-    return await db.from('week_hours')
-      .delete()
+    const fromResult = await db.from('week_hours');
+    return fromResult.delete()
       .eq('user_id', userId)
       .eq('week_id', weekId)
       .eq('client_id', clientId)
@@ -28,7 +29,8 @@ export const updateWeekHours = async (
   }
 
   // Check if entry exists
-  const { data } = await db.from('week_hours')
+  const fromResult = await db.from('week_hours');
+  const { data } = await fromResult
     .select('*')
     .eq('user_id', userId)
     .eq('week_id', weekId)
@@ -38,14 +40,16 @@ export const updateWeekHours = async (
 
   if (data) {
     // Update existing entry
-    return await db.from('week_hours')
+    const updateResult = await db.from('week_hours');
+    return updateResult
       .update({ hours })
       .eq('id', data.id)
       .select()
       .single();
   } else {
     // Insert new entry
-    return await db.from('week_hours')
+    const insertResult = await db.from('week_hours');
+    return insertResult
       .insert({
         user_id: userId,
         week_id: weekId,

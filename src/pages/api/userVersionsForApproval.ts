@@ -4,8 +4,8 @@ import { db } from "@/integrations/supabase/client";
 export async function fetchUserVersionsForApproval(headId: string) {
   try {
     // Get all users where this person is head
-    const { data: users, error: usersError } = await db
-      .from('users')
+    const userResult = await db.from('users');
+    const { data: users, error: usersError } = await userResult
       .select('id, name')
       .eq('user_head_id', headId);
     
@@ -18,7 +18,8 @@ export async function fetchUserVersionsForApproval(headId: string) {
     const userIds = users.map(user => user.id);
     
     // Get version statuses for these users
-    const { data, error } = await db.from('version_statuses')
+    const statusResult = await db.from('version_statuses');
+    const { data, error } = await statusResult
       .select(`
         *,
         user:users(id, name),

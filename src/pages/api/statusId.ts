@@ -3,8 +3,8 @@ import { db } from "@/integrations/supabase/client";
 
 export async function fetchStatusId(name: string) {
   try {
-    const { data, error } = await db
-      .from('week_status_names')
+    const result = await db.from('week_status_names');
+    const { data, error } = await result
       .select('id')
       .eq('name', name)
       .single();
